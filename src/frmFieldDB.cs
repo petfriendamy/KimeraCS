@@ -1,19 +1,11 @@
 ﻿using System;
 using System.IO;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace KimeraCS
 {
 
     using static FileTools;
-    using static FolderBrowserDialogEX;
 
     public partial class FrmFieldDB : Form
     {
@@ -73,7 +65,29 @@ namespace KimeraCS
 
         private void BtnSelectDirBrowser_Click(object sender, EventArgs e)
         {
-            FolderBrowserDialogEX fbdFieldDataDirectory = new FolderBrowserDialogEX();
+            DialogResult result;
+            string path;
+
+            using (var folderDialog = new FolderBrowserDialog())
+            {
+                folderDialog.Description =
+                    "Select the Folder where CHAR.LGP file has been extracted:";
+                result = folderDialog.ShowDialog();
+                path = folderDialog.SelectedPath;
+            }
+
+            if (result == DialogResult.OK)
+            {
+                if (!string.IsNullOrEmpty(path))
+                {
+                    // Put Global folder for input unswizzled.
+                    strCharLGPPathSrc = path;
+                    txtFieldDataDir.Text = path;
+                }
+            }
+
+            /* The Tmr function crashes so I'm removing it
+             FolderBrowserDialogEX fbdFieldDataDirectory = new FolderBrowserDialogEX();
 
             // We must select the directory from where to read the files.
             fbdFieldDataDirectory.folderBrowser.Description =
@@ -102,7 +116,7 @@ namespace KimeraCS
                 }
             }
 
-            fbdFieldDataDirectory.Dispose();
+            fbdFieldDataDirectory.Dispose();*/
         }
 
         public void UpdatelbAnimation()

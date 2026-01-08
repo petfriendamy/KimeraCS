@@ -1,7 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Linq;
 using System.Reflection;
@@ -70,6 +68,28 @@ namespace KimeraCS
 
         private void BtnSelectDirBrowser_Click(object sender, EventArgs e)
         {
+            DialogResult result;
+            string path;
+
+            using (var folderDialog = new FolderBrowserDialog())
+            {
+                folderDialog.Description =
+                    "Select the Folder where MAGIC.LGP file has been extracted:";
+                result = folderDialog.ShowDialog();
+                path = folderDialog.SelectedPath;
+            }
+
+            if (result == DialogResult.OK)
+            {
+                if (!string.IsNullOrEmpty(path))
+                {
+                    // Put Global folder for input unswizzled.
+                    strMagicLGPPathSrc = path;
+                    txtMagicDataDir.Text = path;
+                }
+            }
+
+            /* The Tmr function crashes so I'm removing it
             FolderBrowserDialogEX fbdMagicDataDirectory = new FolderBrowserDialogEX();
 
             // We must select the directory from where to read the files.
@@ -99,7 +119,7 @@ namespace KimeraCS
                 }
             }
 
-            fbdMagicDataDirectory.Dispose();
+            fbdMagicDataDirectory.Dispose();*/
         }
 
         private void BtnSaveMagicDataDir_Click(object sender, EventArgs e)

@@ -1,9 +1,10 @@
 ﻿using System;
-using System.IO;
-using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
+using System.Reflection;
+using System.Windows.Forms;
 using OpenTK.Graphics.OpenGL.Compatibility;
 
 
@@ -34,7 +35,6 @@ namespace KimeraCS
     using static UndoRedo;
     using static Utils;
     using static FileTools;
-    using System.Reflection;
 
     public partial class FrmSkeletonEditor : Form
     {

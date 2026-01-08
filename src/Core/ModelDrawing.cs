@@ -205,6 +205,16 @@ namespace KimeraCS
 
                 GLRenderer.DrawPModelModern(ref Model, tex_ids, HideHiddenGroupsQ);
 
+                // Show normals if enabled (must be done after model drawing)
+                if (bShowVertexNormals || bShowFaceNormals)
+                {
+                    for (int g = 0; g < Model.Header.numGroups; g++)
+                    {
+                        ShowNormals(Model.Groups[g], Model.Polys, Model.Verts,
+                                    Model.Normals, Model.NormalIndex);
+                    }
+                }
+
                 // Restore original matrices
                 GLRenderer.ProjectionMatrix = savedProjection;
                 GLRenderer.ViewMatrix = savedView;
@@ -455,6 +465,16 @@ namespace KimeraCS
                 GLRenderer.ModelMatrix = legacyModelView;
 
                 GLRenderer.DrawPModelModern(ref Model, tex_ids, false);
+
+                // Show normals if enabled (must be done after model drawing)
+                if (bShowVertexNormals || bShowFaceNormals)
+                {
+                    for (int g = 0; g < Model.Header.numGroups; g++)
+                    {
+                        ShowNormals(Model.Groups[g], Model.Polys, Model.Verts,
+                                    Model.Normals, Model.NormalIndex);
+                    }
+                }
 
                 // Restore original matrices
                 GLRenderer.ProjectionMatrix = savedProjection;
