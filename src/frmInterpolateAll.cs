@@ -22,7 +22,6 @@ namespace KimeraCS
 
     using static FileTools;
     using static Utils;
-    using static GDI32;
 
     public partial class FrmInterpolateAll : Form
     {

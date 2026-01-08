@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Windows.Forms;
+using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 
 namespace KimeraCS
 {
 
-    using Defines;
+    using Core;
+    using Rendering;
 
     using static FrmSkeletonEditor;
 
@@ -18,8 +20,6 @@ namespace KimeraCS
     using static FF7PModel;
 
     using static FF7BattleSkeleton;
-
-    using static OpenGL32;
 
     public class Utils
     {
@@ -559,14 +559,14 @@ namespace KimeraCS
         {
             double[] rot_mat = new double[16];
 
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            //glLoadIdentity();
-            glTranslatef(cX, cY, cZ);
+            GL.MatrixMode(MatrixMode.Modelview);
+            //GL.LoadIdentity();
+            GL.Translate(cX, cY, cZ);
 
             BuildRotationMatrixWithQuaternionsXYZ(alpha, beta, gamma, ref rot_mat);
 
-            glMultMatrixd(rot_mat);
-            glScalef(rszX, rszY, rszZ);
+            GL.MultMatrix(rot_mat);
+            GL.Scale(rszX, rszY, rszZ);
         }
 
         public static void ConcatenateCameraModelViewQuat(float cX, float cY, float cZ,
@@ -575,14 +575,14 @@ namespace KimeraCS
         {
             double[] rot_mat = new double[16];
 
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            glLoadIdentity();
-            glTranslatef(cX, cY, cZ);
+            GL.MatrixMode(MatrixMode.Modelview);
+            GL.LoadIdentity();
+            GL.Translate(cX, cY, cZ);
 
             BuildMatrixFromQuaternion(quat, ref rot_mat);
 
-            glMultMatrixd(rot_mat);
-            glScalef(rszX, rszY, rszZ);
+            GL.MultMatrix(rot_mat);
+            GL.Scale(rszX, rszY, rszZ);
         }
 
         public static void SetCameraModelView(float cX, float cY, float cZ, 
@@ -591,16 +591,16 @@ namespace KimeraCS
         {
             double[] rot_mat = new double[16];
 
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            glLoadIdentity();
+            GL.MatrixMode(MatrixMode.Modelview);
+            GL.LoadIdentity();
 
-            glTranslatef(cX, cY, cZ);
+            GL.Translate(cX, cY, cZ);
 
             BuildRotationMatrixWithQuaternionsXYZ(alpha, beta, gamma, ref rot_mat);
 
-            glMultMatrixd(rot_mat);
+            GL.MultMatrix(rot_mat);
 
-            glScalef(rszX, rszY, rszZ);
+            GL.Scale(rszX, rszY, rszZ);
         }
 
         public static void SetCameraModelViewQuat(float cX, float cY, float cZ,
@@ -609,16 +609,16 @@ namespace KimeraCS
         {
             double[] rot_mat = new double[16];
 
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            glLoadIdentity();
+            GL.MatrixMode(MatrixMode.Modelview);
+            GL.LoadIdentity();
 
-            glTranslatef(cX, cY, cZ);
+            GL.Translate(cX, cY, cZ);
 
             BuildMatrixFromQuaternion(quat, ref rot_mat);
 
-            glMultMatrixd(rot_mat);
+            GL.MultMatrix(rot_mat);
 
-            glScalef(rszX, rszY, rszZ);
+            GL.Scale(rszX, rszY, rszZ);
         }
 
         public static void SetCameraPModel(PModel Model, float cX, float cY, float cZ,
@@ -637,12 +637,12 @@ namespace KimeraCS
 
             ComputePModelBoundingBox(Model, ref p_min, ref p_max);
 
-            glGetIntegerv((uint)GLCapability.GL_VIEWPORT, vp);
+            GL.GetInteger(GetPName.Viewport,vp);
             width = vp[2];
             height = vp[3];
 
-            glMatrixMode(GLMatrixModeList.GL_PROJECTION);
-            glLoadIdentity();
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadIdentity();
 
             center_model = new Point3D((p_min.x + p_max.x) / 2,
                                        (p_min.y + p_max.y) / 2,
@@ -656,30 +656,72 @@ namespace KimeraCS
             gluPerspective(60, (float)width / height, Math.Max(0.1, -cZ - scene_radius), Math.Max(0.1, -cZ + scene_radius));
 
             SetCameraModelView(cX, cY, cZ, alpha, beta, gamma, rszX, rszY, rszZ);
+
+            // Read matrices directly from OpenGL to ensure picking matches rendering exactly
+            float[] projArray = new float[16];
+            float[] mvArray = new float[16];
+            GL.GetFloat(GetPName.ProjectionMatrix, projArray);
+            GL.GetFloat(GetPName.ModelviewMatrix, mvArray);
+
+            GLRenderer.ProjectionMatrix = new Matrix4(
+                projArray[0], projArray[1], projArray[2], projArray[3],
+                projArray[4], projArray[5], projArray[6], projArray[7],
+                projArray[8], projArray[9], projArray[10], projArray[11],
+                projArray[12], projArray[13], projArray[14], projArray[15]);
+
+            GLRenderer.ViewMatrix = new Matrix4(
+                mvArray[0], mvArray[1], mvArray[2], mvArray[3],
+                mvArray[4], mvArray[5], mvArray[6], mvArray[7],
+                mvArray[8], mvArray[9], mvArray[10], mvArray[11],
+                mvArray[12], mvArray[13], mvArray[14], mvArray[15]);
+
+            GLRenderer.ModelMatrix = Matrix4.Identity;
+            GLRenderer.ViewPosition = new Vector3(cX, cY, -cZ);
         }
 
 
-        public static void SetCameraAroundModel(ref Point3D p_min, ref Point3D p_max, 
-                                                float cX, float cY, float cZ, 
-                                                float alpha, float beta, float gamma, 
+        public static void SetCameraAroundModel(ref Point3D p_min, ref Point3D p_max,
+                                                float cX, float cY, float cZ,
+                                                float alpha, float beta, float gamma,
                                                 float rszX, float rszY, float rszZ)
         {
             float width, height;
             float scene_radius;
             int[] vp = new int[4];
 
-            glGetIntegerv((uint)GLCapability.GL_VIEWPORT, vp);
+            GL.GetInteger(GetPName.Viewport,vp);
             width = vp[2];
             height = vp[3];
 
-            glMatrixMode(GLMatrixModeList.GL_PROJECTION);
-            glLoadIdentity();
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadIdentity();
 
             scene_radius = ComputeSceneRadius(p_min, p_max);
 
             gluPerspective(60, (float)width / height, Math.Max(0.1, -cZ - scene_radius), Math.Max(0.1, -cZ + scene_radius));
 
             SetCameraModelView(cX, cY, cZ, alpha, beta, gamma, rszX, rszY, rszZ);
+
+            // Read matrices directly from OpenGL to ensure picking matches rendering exactly
+            float[] projArray = new float[16];
+            float[] mvArray = new float[16];
+            GL.GetFloat(GetPName.ProjectionMatrix, projArray);
+            GL.GetFloat(GetPName.ModelviewMatrix, mvArray);
+
+            GLRenderer.ProjectionMatrix = new Matrix4(
+                projArray[0], projArray[1], projArray[2], projArray[3],
+                projArray[4], projArray[5], projArray[6], projArray[7],
+                projArray[8], projArray[9], projArray[10], projArray[11],
+                projArray[12], projArray[13], projArray[14], projArray[15]);
+
+            GLRenderer.ViewMatrix = new Matrix4(
+                mvArray[0], mvArray[1], mvArray[2], mvArray[3],
+                mvArray[4], mvArray[5], mvArray[6], mvArray[7],
+                mvArray[8], mvArray[9], mvArray[10], mvArray[11],
+                mvArray[12], mvArray[13], mvArray[14], mvArray[15]);
+
+            GLRenderer.ModelMatrix = Matrix4.Identity;
+            GLRenderer.ViewPosition = new Vector3(cX, cY, -cZ);
         }
 
         public static void SetCameraAroundModelQuat(ref Point3D p_min, ref Point3D p_max,
@@ -691,18 +733,39 @@ namespace KimeraCS
             float scene_radius;
             int[] vp = new int[4];
 
-            glGetIntegerv((uint)GLCapability.GL_VIEWPORT, vp);
+            GL.GetInteger(GetPName.Viewport,vp);
             width = vp[2];
             height = vp[3];
 
-            glMatrixMode(GLMatrixModeList.GL_PROJECTION);
-            glLoadIdentity();
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadIdentity();
 
             scene_radius = ComputeSceneRadius(p_min, p_max);
 
             gluPerspective(60, (float)width / height, Math.Max(0.1, -cZ - scene_radius), Math.Max(0.1, -cZ + scene_radius));
 
             SetCameraModelViewQuat(cX, cY, cZ, quat, rszX, rszY, rszZ);
+
+            // Read matrices directly from OpenGL to ensure picking matches rendering exactly
+            float[] projArray = new float[16];
+            float[] mvArray = new float[16];
+            GL.GetFloat(GetPName.ProjectionMatrix, projArray);
+            GL.GetFloat(GetPName.ModelviewMatrix, mvArray);
+
+            GLRenderer.ProjectionMatrix = new Matrix4(
+                projArray[0], projArray[1], projArray[2], projArray[3],
+                projArray[4], projArray[5], projArray[6], projArray[7],
+                projArray[8], projArray[9], projArray[10], projArray[11],
+                projArray[12], projArray[13], projArray[14], projArray[15]);
+
+            GLRenderer.ViewMatrix = new Matrix4(
+                mvArray[0], mvArray[1], mvArray[2], mvArray[3],
+                mvArray[4], mvArray[5], mvArray[6], mvArray[7],
+                mvArray[8], mvArray[9], mvArray[10], mvArray[11],
+                mvArray[12], mvArray[13], mvArray[14], mvArray[15]);
+
+            GLRenderer.ModelMatrix = Matrix4.Identity;
+            GLRenderer.ViewPosition = new Vector3(cX, cY, -cZ);
         }
 
         public static bool IsCameraUnderGround()
@@ -711,7 +774,7 @@ namespace KimeraCS
             Point3D originTrans = new Point3D();
             double[] MV_matrix = new double[16];
 
-            glGetDoublev((uint)GLCapability.GL_MODELVIEW_MATRIX, MV_matrix);
+            GL.GetDouble(GetPName.ModelviewMatrix,MV_matrix);
 
             InvertMatrix(ref MV_matrix);
 
@@ -1689,8 +1752,482 @@ namespace KimeraCS
 
 
 
+        //  -------------------------------------------------------------------------------------------------
+        //  ================================= OPENTK MATRIX UTILITIES =======================================
+        //  -------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Creates a perspective projection matrix (replaces gluPerspective)
+        /// </summary>
+        /// <param name="fovDegrees">Field of view in degrees</param>
+        /// <param name="aspect">Aspect ratio (width/height)</param>
+        /// <param name="near">Near clipping plane</param>
+        /// <param name="far">Far clipping plane</param>
+        public static Matrix4 CreatePerspectiveMatrix(float fovDegrees, float aspect, float near, float far)
+        {
+            return Matrix4.CreatePerspectiveFieldOfView(
+                MathHelper.DegreesToRadians(fovDegrees),
+                aspect,
+                near,
+                far);
+        }
+
+        /// <summary>
+        /// Creates a view matrix looking at a target (replaces gluLookAt)
+        /// </summary>
+        public static Matrix4 CreateLookAtMatrix(Vector3 eye, Vector3 target, Vector3 up)
+        {
+            return Matrix4.LookAt(eye, target, up);
+        }
+
+        /// <summary>
+        /// Projects a 3D world coordinate to 2D screen coordinates (replaces gluProject)
+        /// </summary>
+        /// <param name="worldPos">World position to project</param>
+        /// <param name="model">Model matrix</param>
+        /// <param name="view">View matrix</param>
+        /// <param name="projection">Projection matrix</param>
+        /// <param name="viewport">Viewport (x, y, width, height)</param>
+        /// <returns>Screen coordinates (x, y, depth)</returns>
+        public static Vector3 Project(Vector3 worldPos, Matrix4 model, Matrix4 view, Matrix4 projection, Vector4 viewport)
+        {
+            Vector4 clipPos = new Vector4(worldPos, 1.0f) * model * view * projection;
+
+            if (Math.Abs(clipPos.W) < float.Epsilon)
+                return Vector3.Zero;
+
+            Vector3 ndc = clipPos.Xyz / clipPos.W;
+
+            float winX = viewport.Z * (ndc.X + 1.0f) / 2.0f + viewport.X;
+            float winY = viewport.W * (ndc.Y + 1.0f) / 2.0f + viewport.Y;
+            float winZ = (ndc.Z + 1.0f) / 2.0f;
+
+            return new Vector3(winX, winY, winZ);
+        }
+
+        /// <summary>
+        /// Unprojects 2D screen coordinates to 3D world coordinates (replaces gluUnProject)
+        /// </summary>
+        /// <param name="screenPos">Screen position (x, y, depth)</param>
+        /// <param name="model">Model matrix</param>
+        /// <param name="view">View matrix</param>
+        /// <param name="projection">Projection matrix</param>
+        /// <param name="viewport">Viewport (x, y, width, height)</param>
+        /// <returns>World coordinates</returns>
+        public static Vector3 Unproject(Vector3 screenPos, Matrix4 model, Matrix4 view, Matrix4 projection, Vector4 viewport)
+        {
+            // Use row-vector convention to match Project function: pos * M * V * P
+            Matrix4 mvp = model * view * projection;
+            Matrix4 invMvp = mvp.Inverted();
+
+            Vector4 ndc = new Vector4(
+                2.0f * (screenPos.X - viewport.X) / viewport.Z - 1.0f,
+                2.0f * (screenPos.Y - viewport.Y) / viewport.W - 1.0f,
+                2.0f * screenPos.Z - 1.0f,
+                1.0f);
+
+            // Row vector multiplication: ndc * invMvp
+            Vector4 worldPos = ndc * invMvp;
+
+            if (Math.Abs(worldPos.W) < float.Epsilon)
+                return Vector3.Zero;
+
+            return worldPos.Xyz / worldPos.W;
+        }
+
+        /// <summary>
+        /// Creates a model-view matrix from camera parameters (replaces SetCameraModelView pattern)
+        /// </summary>
+        public static Matrix4 CreateModelViewMatrix(float cX, float cY, float cZ,
+                                                     float alpha, float beta, float gamma,
+                                                     float scaleX, float scaleY, float scaleZ)
+        {
+            // Build rotation from quaternions (matching existing BuildRotationMatrixWithQuaternionsXYZ)
+            var quatX = OpenTK.Mathematics.Quaternion.FromAxisAngle(Vector3.UnitX, MathHelper.DegreesToRadians(alpha));
+            var quatY = OpenTK.Mathematics.Quaternion.FromAxisAngle(Vector3.UnitY, MathHelper.DegreesToRadians(beta));
+            var quatZ = OpenTK.Mathematics.Quaternion.FromAxisAngle(Vector3.UnitZ, MathHelper.DegreesToRadians(gamma));
+            var rotation = quatX * quatY * quatZ;
+
+            Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(rotation);
+            Matrix4 translationMatrix = Matrix4.CreateTranslation(cX, cY, cZ);
+            Matrix4 scaleMatrix = Matrix4.CreateScale(scaleX, scaleY, scaleZ);
+
+            return translationMatrix * rotationMatrix * scaleMatrix;
+        }
+
+        /// <summary>
+        /// Creates a model-view matrix from camera parameters using a quaternion for rotation
+        /// </summary>
+        public static Matrix4 CreateModelViewMatrixQuat(float cX, float cY, float cZ,
+                                                         Quaternion quat,
+                                                         float scaleX, float scaleY, float scaleZ)
+        {
+            var openTkQuat = new OpenTK.Mathematics.Quaternion((float)quat.x, (float)quat.y, (float)quat.z, (float)quat.w);
+
+            Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(openTkQuat);
+            Matrix4 translationMatrix = Matrix4.CreateTranslation(cX, cY, cZ);
+            Matrix4 scaleMatrix = Matrix4.CreateScale(scaleX, scaleY, scaleZ);
+
+            return translationMatrix * rotationMatrix * scaleMatrix;
+        }
+
+        /// <summary>
+        /// Converts the app's Quaternion struct to OpenTK Quaternion
+        /// </summary>
+        public static OpenTK.Mathematics.Quaternion ToOpenTKQuaternion(Quaternion quat)
+        {
+            return new OpenTK.Mathematics.Quaternion((float)quat.x, (float)quat.y, (float)quat.z, (float)quat.w);
+        }
+
+        /// <summary>
+        /// Converts OpenTK Quaternion to the app's Quaternion struct
+        /// </summary>
+        public static Quaternion FromOpenTKQuaternion(OpenTK.Mathematics.Quaternion quat)
+        {
+            return new Quaternion { x = quat.X, y = quat.Y, z = quat.Z, w = quat.W };
+        }
+
+        /// <summary>
+        /// Converts Point3D to OpenTK Vector3
+        /// </summary>
+        public static Vector3 ToVector3(Point3D p)
+        {
+            return new Vector3(p.x, p.y, p.z);
+        }
+
+        /// <summary>
+        /// Converts OpenTK Vector3 to Point3D
+        /// </summary>
+        public static Point3D ToPoint3D(Vector3 v)
+        {
+            return new Point3D(v.X, v.Y, v.Z);
+        }
+
+        /// <summary>
+        /// Converts the double[] matrix (16 elements, column-major) to OpenTK Matrix4
+        /// </summary>
+        public static Matrix4 ToMatrix4(double[] mat)
+        {
+            return new Matrix4(
+                (float)mat[0], (float)mat[1], (float)mat[2], (float)mat[3],
+                (float)mat[4], (float)mat[5], (float)mat[6], (float)mat[7],
+                (float)mat[8], (float)mat[9], (float)mat[10], (float)mat[11],
+                (float)mat[12], (float)mat[13], (float)mat[14], (float)mat[15]);
+        }
+
+        /// <summary>
+        /// Converts OpenTK Matrix4 to double[] (16 elements, column-major)
+        /// </summary>
+        public static double[] FromMatrix4(Matrix4 mat)
+        {
+            return new double[]
+            {
+                mat.M11, mat.M12, mat.M13, mat.M14,
+                mat.M21, mat.M22, mat.M23, mat.M24,
+                mat.M31, mat.M32, mat.M33, mat.M34,
+                mat.M41, mat.M42, mat.M43, mat.M44
+            };
+        }
+
+        /// <summary>
+        /// Alias for ToMatrix4 - converts double[] matrix to OpenTK Matrix4
+        /// </summary>
+        public static Matrix4 DoubleArrayToMatrix4(double[] mat)
+        {
+            return ToMatrix4(mat);
+        }
 
 
+        //  -------------------------------------------------------------------------------------------------
+        //  ================================= OPENGL LEGACY HELPER FUNCTIONS ================================
+        //  -------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Set blend mode (legacy helper) - uses Defines.BLEND_MODE enum
+        /// </summary>
+        public static void SetBlendMode(BlendModes bmMode)
+        {
+            if (bmMode == BlendModes.Disabled)
+            {
+                GL.Disable(EnableCap.Blend);
+            }
+            else
+            {
+                GL.Enable(EnableCap.Blend);
+                GL.BlendEquation(BlendEquationMode.FuncAdd);
+
+                switch (bmMode)
+                {
+                    case BlendModes.Average:
+                        GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+                        break;
+
+                    case BlendModes.Add:
+                        GL.BlendFunc(BlendingFactor.One, BlendingFactor.One);
+                        break;
+
+                    case BlendModes.Subtract:
+                        GL.BlendFunc(BlendingFactor.One, BlendingFactor.One);
+                        GL.BlendEquation(BlendEquationMode.FuncReverseSubtract);
+                        break;
+
+                    case BlendModes._25P:
+                        GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
+                        break;
+
+                    case BlendModes.None:
+                        GL.BlendFunc(BlendingFactor.One, BlendingFactor.Zero);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Clear the OpenGL panel with default background color
+        /// </summary>
+        public static void ClearPanel()
+        {
+            GL.ClearColor(0.4f, 0.4f, 0.65f, 0);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+        }
+
+        /// <summary>
+        /// Set default OpenGL render state
+        /// </summary>
+        public static void SetDefaultOGLRenderState()
+        {
+            GL.PolygonMode(MaterialFace.FrontAndBack, OpenTK.Graphics.OpenGL.PolygonMode.Fill);
+            GL.CullFace(CullFaceMode.Front);
+            GL.Enable(EnableCap.CullFace);
+
+            GL.DepthFunc(DepthFunction.Lequal);
+            GL.Enable(EnableCap.DepthTest);
+            GL.DepthMask(true);
+
+            GL.TexParameter(TextureTarget.Texture2D, OpenTK.Graphics.OpenGL.TextureParameterName.TextureMinFilter, (int)OpenTK.Graphics.OpenGL.TextureMinFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, OpenTK.Graphics.OpenGL.TextureParameterName.TextureMagFilter, (int)OpenTK.Graphics.OpenGL.TextureMagFilter.Linear);
+
+            SetBlendMode(BlendModes.Disabled);
+        }
+
+        /// <summary>
+        /// GLU perspective wrapper - also loads the matrix into the current matrix mode
+        /// </summary>
+        public static void gluPerspective(double fov, double aspect, double zNear, double zFar)
+        {
+            Matrix4 perspectiveMatrix = CreatePerspectiveMatrix((float)fov, (float)aspect, (float)zNear, (float)zFar);
+            GL.MultMatrix(ref perspectiveMatrix);
+        }
+
+        /// <summary>
+        /// GLU ortho 2D wrapper - sets up 2D orthographic projection
+        /// </summary>
+        public static void gluOrtho2D(double left, double right, double bottom, double top)
+        {
+            Matrix4 orthoMatrix = Matrix4.CreateOrthographicOffCenter((float)left, (float)right, (float)bottom, (float)top, -1, 1);
+            GL.MultMatrix(ref orthoMatrix);
+        }
+
+        /// <summary>
+        /// Get projected coordinates (world to screen)
+        /// </summary>
+        public static Point3D GetProjectedCoords(Point3D p)
+        {
+            float[] mm = new float[16];
+            float[] pm = new float[16];
+            int[] vp = new int[4];
+
+            GL.GetFloat(GetPName.ModelviewMatrix, mm);
+            GL.GetFloat(GetPName.ProjectionMatrix, pm);
+            GL.GetInteger(GetPName.Viewport, vp);
+
+            Matrix4 modelView = new Matrix4(
+                mm[0], mm[1], mm[2], mm[3],
+                mm[4], mm[5], mm[6], mm[7],
+                mm[8], mm[9], mm[10], mm[11],
+                mm[12], mm[13], mm[14], mm[15]);
+
+            Matrix4 projection = new Matrix4(
+                pm[0], pm[1], pm[2], pm[3],
+                pm[4], pm[5], pm[6], pm[7],
+                pm[8], pm[9], pm[10], pm[11],
+                pm[12], pm[13], pm[14], pm[15]);
+
+            Vector4 viewport = new Vector4(vp[0], vp[1], vp[2], vp[3]);
+            Vector3 result = Project(ToVector3(p), Matrix4.Identity, modelView, projection, viewport);
+
+            return new Point3D(result.X, result.Y, result.Z);
+        }
+
+        /// <summary>
+        /// Get unprojected coordinates (screen to world)
+        /// </summary>
+        public static Point3D GetUnProjectedCoords(Point3D p)
+        {
+            float[] mm = new float[16];
+            float[] pm = new float[16];
+            int[] vp = new int[4];
+
+            GL.GetFloat(GetPName.ModelviewMatrix, mm);
+            GL.GetFloat(GetPName.ProjectionMatrix, pm);
+            GL.GetInteger(GetPName.Viewport, vp);
+
+            Matrix4 modelView = new Matrix4(
+                mm[0], mm[1], mm[2], mm[3],
+                mm[4], mm[5], mm[6], mm[7],
+                mm[8], mm[9], mm[10], mm[11],
+                mm[12], mm[13], mm[14], mm[15]);
+
+            Matrix4 projection = new Matrix4(
+                pm[0], pm[1], pm[2], pm[3],
+                pm[4], pm[5], pm[6], pm[7],
+                pm[8], pm[9], pm[10], pm[11],
+                pm[12], pm[13], pm[14], pm[15]);
+
+            Vector4 viewport = new Vector4(vp[0], vp[1], vp[2], vp[3]);
+            // Note: Y coordinate is flipped in screen space
+            Vector3 screenPos = new Vector3(p.x, vp[3] - p.y, p.z);
+            Vector3 result = Unproject(screenPos, Matrix4.Identity, modelView, projection, viewport);
+
+            return new Point3D(result.X, result.Y, result.Z);
+        }
+
+        /// <summary>
+        /// Get projected vertex coordinates
+        /// </summary>
+        public static Point3D GetVertexProjectedCoords(Point3D[] lstVerts, int iVertIdx)
+        {
+            GL.Clear(ClearBufferMask.DepthBufferBit);
+            return GetProjectedCoords(lstVerts[iVertIdx]);
+        }
+
+        /// <summary>
+        /// Get depth Z of a point
+        /// </summary>
+        public static float GetDepthZ(Point3D pUP3D)
+        {
+            return GetProjectedCoords(pUP3D).z;
+        }
+
+        /// <summary>
+        /// Get eye space coordinates
+        /// </summary>
+        public static Point3D GetEyeSpaceCoords(Point3D p)
+        {
+            float[] mm = new float[16];
+            GL.GetFloat(GetPName.ModelviewMatrix, mm);
+
+            return new Point3D(
+                p.x * mm[0] + p.y * mm[4] + p.z * mm[8] + mm[12],
+                p.x * mm[1] + p.y * mm[5] + p.z * mm[9] + mm[13],
+                p.x * mm[2] + p.y * mm[6] + p.z * mm[10] + mm[14]);
+        }
+
+        /// <summary>
+        /// Get vertex color with lighting applied
+        /// </summary>
+        public static Color GetVertColor(Point3D p, Point3D n, Color c)
+        {
+            byte[] pcolor = new byte[4];
+            int[] vp0 = new int[4];
+            int[] vp = new int[4];
+
+            GL.GetInteger(GetPName.Viewport, vp0);
+            GL.Viewport(0, 0, 3, 3);
+
+            GL.GetInteger(GetPName.Viewport, vp);
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.PushMatrix();
+
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            GL.PointSize(100.0f);
+
+            GL.Begin(PrimitiveType.Points);
+            GL.Color4(c.R / 255.0f, c.G / 255.0f, c.B / 255.0f, 1.0f);
+            GL.ColorMaterial(MaterialFace.FrontAndBack, ColorMaterialParameter.AmbientAndDiffuse);
+
+            GL.Normal3(n.x, n.y, n.z);
+            GL.Vertex3(p.x, p.y, p.z);
+            GL.End();
+
+            GL.Flush();
+            GL.ReadBuffer(ReadBufferMode.Back);
+
+            GL.ReadPixels(1, 1, 1, 1, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, OpenTK.Graphics.OpenGL.PixelType.UnsignedByte, pcolor);
+
+            Color result = Color.FromArgb(255, pcolor[0] * 2, pcolor[1] * 2, pcolor[2] * 2);
+
+            GL.PopMatrix();
+            GL.Viewport(vp0[0], vp0[1], vp0[2], vp0[3]);
+
+            return result;
+        }
+
+
+        //  ------------------------------------------------------------------------------------------------
+        //  ======================================== BITMAP HELPERS ========================================
+        //  ------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Fits a bitmap to a PictureBox, scaling with NearestNeighbor interpolation.
+        /// </summary>
+        public static Bitmap FitBitmapToPictureBox(PictureBox pbIn, int iImgWidth, int iImgHeight, Bitmap srcBitmap)
+        {
+            if (srcBitmap == null)
+                return null;
+
+            Bitmap tmpBMP;
+            float fAspectRatio = (float)iImgWidth / (float)iImgHeight;
+
+            // Get the size available
+            float fWidth = pbIn.ClientSize.Width;
+            float fHeight = pbIn.ClientSize.Height;
+
+            // Adjust the wid/hgt ratio to match aspect_src
+            if (fWidth / fHeight > fAspectRatio)
+            {
+                // The area is too short and wide. Make it narrower.
+                fWidth = fAspectRatio * fHeight;
+            }
+            else
+            {
+                // The area is too tall and thin. Make it shorter.
+                fHeight = fWidth / fAspectRatio;
+            }
+
+            // Create image at the correct size.
+            if (iImgWidth < pbIn.ClientSize.Width && iImgHeight < pbIn.ClientSize.Height)
+                tmpBMP = new Bitmap(pbIn.ClientSize.Width, pbIn.ClientSize.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            else
+                tmpBMP = new Bitmap(iImgWidth, iImgHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            using (Graphics g = Graphics.FromImage(tmpBMP))
+            {
+                g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+                g.DrawImage(srcBitmap, 0, 0, fWidth, fHeight);
+            }
+
+            return tmpBMP;
+        }
+
+        /// <summary>
+        /// Copies a bitmap to a new bitmap of the specified size with NearestNeighbor interpolation.
+        /// </summary>
+        public static Bitmap PutDIBIntoBitmap(int iImgWidth, int iImgHeight, Bitmap srcBitmap)
+        {
+            Bitmap tmpBMP = new Bitmap(iImgWidth, iImgHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            using (Graphics g = Graphics.FromImage(tmpBMP))
+            {
+                g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+                g.DrawImage(srcBitmap, 0, 0, iImgWidth, iImgHeight);
+            }
+
+            return tmpBMP;
+        }
 
     }
 }

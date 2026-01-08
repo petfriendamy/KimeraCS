@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using OpenTK.Graphics.OpenGL;
 
 namespace KimeraCS
 {
-
-    using Defines;
-
     using static FrmSkeletonEditor;
 
     using static FF7Skeleton;
@@ -16,15 +9,11 @@ namespace KimeraCS
     using static FF7PModel;
 
     using static FF7BattleSkeleton;
-    using static FF7BattleAnimation;
-    using static FF7BattleAnimationsPack;
 
     using static Utils;
-    using static OpenGL32;
 
     class Lighting
     {
-
         public const int LIGHT_STEPS = 20;
 
         public static void SetLights()
@@ -39,7 +28,7 @@ namespace KimeraCS
             if (!bchkFrontLight && !bchkRearLight &&
                 !bchkRightLight && !bchkLeftLight)
             {
-                glDisable(GLCapability.GL_LIGHTING);
+                GL.Disable(EnableCap.Lighting);
                 return;
             }
 
@@ -69,24 +58,24 @@ namespace KimeraCS
             light_y = scene_diameter / LIGHT_STEPS * fLightPosYScroll;
             light_z = scene_diameter / LIGHT_STEPS * fLightPosZScroll;
 
-            if (bchkRightLight) SetLighting(GLCapability.GL_LIGHT0, light_z, light_y, light_x, 0.5f, 0.5f, 0.5f, infinityFarQ);
+            if (bchkRightLight) SetLighting(LightName.Light0, light_z, light_y, light_x, 0.5f, 0.5f, 0.5f, infinityFarQ);
             else
-                glDisable(GLCapability.GL_LIGHT0);
+                GL.Disable(EnableCap.Light0);
 
-            if (bchkLeftLight) SetLighting(GLCapability.GL_LIGHT1, -light_z, light_y, light_x, 0.5f, 0.5f, 0.5f, infinityFarQ);
+            if (bchkLeftLight) SetLighting(LightName.Light1, -light_z, light_y, light_x, 0.5f, 0.5f, 0.5f, infinityFarQ);
             else
-                glDisable(GLCapability.GL_LIGHT1);
+                GL.Disable(EnableCap.Light1);
 
-            if (bchkFrontLight) SetLighting(GLCapability.GL_LIGHT2, light_x, light_y, light_z, 1f, 1f, 1f, infinityFarQ);
+            if (bchkFrontLight) SetLighting(LightName.Light2, light_x, light_y, light_z, 1f, 1f, 1f, infinityFarQ);
             else
-                glDisable(GLCapability.GL_LIGHT2);
+                GL.Disable(EnableCap.Light2);
 
-            if (bchkRearLight) SetLighting(GLCapability.GL_LIGHT3, light_x, light_y, -light_z, 0.75f, 0.75f, 0.75f, infinityFarQ);
+            if (bchkRearLight) SetLighting(LightName.Light3, light_x, light_y, -light_z, 0.75f, 0.75f, 0.75f, infinityFarQ);
             else
-                glDisable(GLCapability.GL_LIGHT3);
+                GL.Disable(EnableCap.Light3);
         }
 
-        public static void SetLighting(GLCapability lightNumber, float x, float y, float z, float red, float green, float blue, bool infinityFarQ)
+        public static void SetLighting(LightName lightNumber, float x, float y, float z, float red, float green, float blue, bool infinityFarQ)
         {
             float[] l_color = new float[4];
             float[] l_pos = new float[4];
@@ -103,13 +92,14 @@ namespace KimeraCS
             l_color[2] = blue;
             l_color[3] = 1;
 
-            glEnable(GLCapability.GL_LIGHTING);
-            glDisable(lightNumber);
+            GL.Enable(EnableCap.Lighting);
+            // Cast LightName to EnableCap - they share the same underlying values
+            GL.Disable((EnableCap)lightNumber);
 
-            glLightfv(lightNumber, GLLightParameter.GL_POSITION, l_pos);
-            glLightfv(lightNumber, GLLightParameter.GL_DIFFUSE, l_color);
+            GL.Light(lightNumber, LightParameter.Position, l_pos);
+            GL.Light(lightNumber, LightParameter.Diffuse, l_color);
 
-            glEnable(lightNumber);
+            GL.Enable((EnableCap)lightNumber);
         }
     }
 }

@@ -4,21 +4,16 @@ using System.Drawing.Imaging;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using OpenTK.Graphics.OpenGL;
 
 namespace KimeraCS
 {
 
-    using Defines;
-
     using static Utils;
-    using static User32;
-    using static OpenGL32;
-    using static GDI32;
+    //using static User32;
+    //using static GDI32;
 
     public class FF7TEXTexture
     {
@@ -26,8 +21,7 @@ namespace KimeraCS
         {
             public string TEXfileName;
             public uint texID;
-            public IntPtr HDC;
-            public IntPtr HBMP;
+            public Bitmap bitmap;
 
             // TEX file format by Mirex and Aali
             // http://wiki.qhimm.com/FF7/TEX_format
@@ -255,7 +249,7 @@ namespace KimeraCS
             {
                 if (inTEXTexture.bitDepth == 16)
                 {
-                    imageSize = 0;
+                    imageSize = inTEXTexture.width * inTEXTexture.height * inTEXTexture.bytesPerPixel;
 
                     textureImg = new byte[inTEXTexture.width * inTEXTexture.height * 4];
 
@@ -278,6 +272,23 @@ namespace KimeraCS
                         offsetBit += 2;
                     }
                 }
+                else if (inTEXTexture.bitDepth == 24)
+                {
+                    // Expand 24-bit BGR to 32-bit BGRA
+                    imageSize = inTEXTexture.width * inTEXTexture.height * 3;
+                    textureImg = new byte[inTEXTexture.width * inTEXTexture.height * 4];
+
+                    while (offsetBit < imageSize)
+                    {
+                        textureImg[ti] = inTEXTexture.pixelData[offsetBit];         // B
+                        textureImg[ti + 1] = inTEXTexture.pixelData[offsetBit + 1]; // G
+                        textureImg[ti + 2] = inTEXTexture.pixelData[offsetBit + 2]; // R
+                        textureImg[ti + 3] = 255;                                    // A (fully opaque)
+
+                        ti += 4;
+                        offsetBit += 3;
+                    }
+                }
                 else textureImg = inTEXTexture.pixelData;
             }
         }
@@ -288,55 +299,42 @@ namespace KimeraCS
             IntPtr hTIPtr;
             byte[] textureImg = null;
 
-            GLPixelFormat format = 0x0;
-            GLInternalFormat internalformat = 0x0;
+            OpenTK.Graphics.OpenGL.PixelFormat format = 0x0;
+            InternalFormat internalformat = 0x0;
 
-            glGenTextures(1, ref inTEXTexture.texID);
-            glBindTexture(GLTextureTarget.GL_TEXTURE_2D, inTEXTexture.texID);
+            var tex = new uint[] { inTEXTexture.texID };
 
-            glTexParameterf(GLTextureTarget.GL_TEXTURE_2D, GLTextureParameter.GL_TEXTURE_MAG_FILTER, (float)GLTextureMagFilter.GL_LINEAR);
-            glTexParameterf(GLTextureTarget.GL_TEXTURE_2D, GLTextureParameter.GL_TEXTURE_MIN_FILTER, (float)GLTextureMagFilter.GL_LINEAR);
+            GL.GenTextures(1, tex);
+            inTEXTexture.texID = tex[0];  // Copy generated ID back to struct
+            GL.BindTexture(TextureTarget.Texture2D, inTEXTexture.texID);
+
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
 
             switch (inTEXTexture.bitDepth)
             {
                 case 1:
-                    format = GLPixelFormat.GL_BGRA;
-                    internalformat = GLInternalFormat.GL_RGBA;
-                    break;
-
                 case 2:
-                    format = GLPixelFormat.GL_BGRA;
-                    internalformat = GLInternalFormat.GL_RGBA;
-                    break;
-
                 case 4:
-                    format = GLPixelFormat.GL_BGRA;
-                    internalformat = GLInternalFormat.GL_RGBA;
-                    break;
-
                 case 8:
-                    format = GLPixelFormat.GL_BGRA;
-                    internalformat = GLInternalFormat.GL_RGBA;
+                case 32:
+                    format = OpenTK.Graphics.OpenGL.PixelFormat.Bgra;
+                    internalformat = InternalFormat.Rgba;
                     break;
 
                 case 16:
-                    format = GLPixelFormat.GL_RGBA;
-                    internalformat = GLInternalFormat.GL_RGB5;
+                    format = OpenTK.Graphics.OpenGL.PixelFormat.Bgra;
+                    internalformat = InternalFormat.Rgb5;
                     break;
 
                 case 24:
-                    format = GLPixelFormat.GL_BGR;
-                    internalformat = GLInternalFormat.GL_RGB;
-                    break;
-
-                case 32:
-                    format = GLPixelFormat.GL_BGRA;
-                    internalformat = GLInternalFormat.GL_RGBA;
+                    format = OpenTK.Graphics.OpenGL.PixelFormat.Bgr;
+                    internalformat = InternalFormat.Rgb;
                     break;
 
             }
 
-            glPixelStorei(GLPixelStoreParameter.GL_UNPACK_ALIGNMENT, 1);
+            GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
 
             GetTEXTexturev(ref inTEXTexture, ref textureImg);
 
@@ -347,9 +345,9 @@ namespace KimeraCS
             GCHandle pinnedArray = GCHandle.Alloc(textureImg, GCHandleType.Pinned);
             hTIPtr = pinnedArray.AddrOfPinnedObject();
 
-            glTexImage2D(GLTexture2DProxyTarget.GL_TEXTURE_2D, 0, internalformat,
-                         inTEXTexture.width, inTEXTexture.height, 0, format, 
-                         GLPixelDataType.GL_UNSIGNED_BYTE, hTIPtr);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, (PixelInternalFormat)internalformat,
+                         inTEXTexture.width, inTEXTexture.height, 0, format,
+                         PixelType.UnsignedByte, hTIPtr);
 
             pinnedArray.Free();
         }
@@ -357,121 +355,33 @@ namespace KimeraCS
 
         public static void LoadBitmapFromTEXTexture(ref TEX inTEXTexture)
         {
-            long li, si, ti, pi;
-            byte aux_val;
-            long lineLength, lineLengthBytes, linePad, linePadUseful, linePadBytes, line_end;
-            short shift, parts, parts_left, i;
-            long bmpSizeBytes;
-
-            BitmapInfo pictureInfo = new BitmapInfo();
-            byte[] pictureData;
-
             try
             {
-                pictureInfo.bmiHeader.biSize = 40;
-                pictureInfo.bmiHeader.biWidth = inTEXTexture.width;
-                pictureInfo.bmiHeader.biHeight = inTEXTexture.height;
-                pictureInfo.bmiHeader.biPlanes = 1;
+                // Get 32-bit BGRA pixel data using existing conversion function
+                byte[] textureImg = null;
+                GetTEXTexturev(ref inTEXTexture, ref textureImg);
 
-                //if (inTEXTexture.hasPal == 1)
-                //    pictureInfo.bmiHeader.biBitCount = (BitCount)(byte)(Math.Log(inTEXTexture.paletteSize) / Math.Log(2));
-                //else
-                pictureInfo.bmiHeader.biBitCount = (BitCount)(byte)inTEXTexture.bitDepth;
+                // Create managed bitmap
+                inTEXTexture.bitmap = new Bitmap(inTEXTexture.width, inTEXTexture.height,
+                                                  System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-                pictureInfo.bmiHeader.biCompression = BitmapCompression.BI_RGB;
+                // Lock bitmap memory and copy pixel data
+                Rectangle rect = new Rectangle(0, 0, inTEXTexture.width, inTEXTexture.height);
+                BitmapData bmpData = inTEXTexture.bitmap.LockBits(rect, ImageLockMode.WriteOnly,
+                                                                   System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-                lineLength = pictureInfo.bmiHeader.biWidth * (int)pictureInfo.bmiHeader.biBitCount;
-                linePad = lineLength % 32 == 0 ? 0 : 32 * ((lineLength / 32) + 1) - 8 * (lineLength / 8);
+                // Both TEX and .NET Bitmap store pixels top-to-bottom, so copy directly
+                int stride = bmpData.Stride;
+                int rowBytes = inTEXTexture.width * 4;
 
-                linePadUseful = linePad == 0 ? 0 : lineLength - 8 * (lineLength / 8);
-                linePadBytes = linePad > 0 && linePad < 8 ? 1 : linePad / 8;
-
-                lineLengthBytes = lineLength / 8 + linePadBytes;
-
-                bmpSizeBytes = (uint)(lineLengthBytes * pictureInfo.bmiHeader.biHeight);
-
-                pictureInfo.bmiHeader.biSizeImage = (uint)bmpSizeBytes;
-                pictureInfo.bmiHeader.biXPelsPerMeter = 0;
-                pictureInfo.bmiHeader.biYPelsPerMeter = 0;
-
-                pictureInfo.bmiHeader.biClrUsed = inTEXTexture.ColorKeyFlag == 1 ? (uint)inTEXTexture.paletteSize : 0;
-                pictureInfo.bmiHeader.biClrImportant = pictureInfo.bmiHeader.biClrUsed;
-
-                if (pictureInfo.bmiHeader.biBitCount <= BitCount.BitPerPixel8BPP)
+                for (int y = 0; y < inTEXTexture.height; y++)
                 {
-                    pictureInfo.bmiColors = new RgbQuad[256];
-
-                    for (i = 0; i < inTEXTexture.paletteSize; i++)
-                    {
-                        pictureInfo.bmiColors[i].rgbRed = inTEXTexture.palette[(4 * i) + 2];
-                        pictureInfo.bmiColors[i].rgbGreen = inTEXTexture.palette[(4 * i) + 1];
-                        pictureInfo.bmiColors[i].rgbBlue = inTEXTexture.palette[(4 * i)];
-                    }
+                    int srcOffset = y * rowBytes;
+                    IntPtr dstRow = bmpData.Scan0 + y * stride;
+                    Marshal.Copy(textureImg, srcOffset, dstRow, rowBytes);
                 }
 
-                pictureData = new byte[bmpSizeBytes];
-
-                if (pictureInfo.bmiHeader.biBitCount == BitCount.BitPerPixel1BPP ||
-                    pictureInfo.bmiHeader.biBitCount == BitCount.BitPerPixel4BPP)
-                {
-                    si = 0;
-                    shift = (short)Math.Pow(2, (double)pictureInfo.bmiHeader.biBitCount);
-                    parts = (short)(8 / (int)pictureInfo.bmiHeader.biBitCount);
-                    parts_left = (short)(linePadUseful / (int)pictureInfo.bmiHeader.biBitCount);
-
-                    for (li = pictureInfo.bmiHeader.biHeight - 2; li >= 0; li--)
-                    {
-                        line_end = (li + 1) * lineLengthBytes - linePadBytes;
-
-                        for (ti = li * lineLengthBytes; ti < line_end; ti++)
-                        {
-                            aux_val = 0;
-
-                            for (pi = 0; pi < parts; pi++)
-                            {
-                                aux_val = (byte)((aux_val * shift) | inTEXTexture.pixelData[si]);
-                                si++;
-                            }
-
-                            pictureData[ti] = aux_val;
-                        }
-
-                        if (linePad > 0)
-                        {
-                            aux_val = 0;
-
-                            for (pi = 0; pi < parts_left; pi++)
-                            {
-                                aux_val = (byte)((aux_val * shift) | inTEXTexture.pixelData[si]);
-                            }
-
-                            if (parts_left > -1) si = -1;
-                            else si = 0;
-
-                            ti += linePadBytes;
-                        }
-                    }
-                }
-                else
-                {
-                    long lineLengthDIV = lineLength / 8;
-
-                    for (li = 0; li < pictureInfo.bmiHeader.biHeight; li++)
-                    {
-                        for (i = 0; i < lineLengthDIV; i++)
-                        {
-                            pictureData[((pictureInfo.bmiHeader.biHeight - 1 - li) * lineLengthBytes) + i] =
-                                inTEXTexture.pixelData[(li * lineLengthDIV) + i];
-                        }
-                    }
-                }
-   
-                IntPtr mDC = GetDC(IntPtr.Zero);
-                inTEXTexture.HDC = CreateCompatibleDC(mDC);
-                inTEXTexture.HBMP = CreateDIBSection(inTEXTexture.HDC, ref pictureInfo, DIBColorTable.DIB_RGB_COLORS, out IntPtr ppvBits, IntPtr.Zero, 0);
-
-                SelectObject(inTEXTexture.HDC, inTEXTexture.HBMP);
-                SetDIBits(inTEXTexture.HDC, inTEXTexture.HBMP, 0, (uint)pictureInfo.bmiHeader.biHeight, pictureData, ref pictureInfo, DIBColorTable.DIB_RGB_COLORS);
+                inTEXTexture.bitmap.UnlockBits(bmpData);
             }
             catch (Exception e)
             {
@@ -514,7 +424,7 @@ namespace KimeraCS
                 return false;
 
             // Indexed format, and no alpha colours in the image's palette: immediate pass.
-            if ((bmpTexture.PixelFormat & PixelFormat.Indexed) != 0 && bmpTexture.Palette.Entries.All(c => c.A == 255))
+            if ((bmpTexture.PixelFormat & System.Drawing.Imaging.PixelFormat.Indexed) != 0 && bmpTexture.Palette.Entries.All(c => c.A == 255))
                 return false;
 
             // Check the alpha bytes in the data. Since the data is little-endian, the actual byte order is [BB GG RR AA]
@@ -534,25 +444,25 @@ namespace KimeraCS
             byte aux_val;
             bool bHasAlpha;
 
-            IntPtr mDC = GetDC(IntPtr.Zero);
-
             try
-            {              
-                IntPtr tmphDC = CreateCompatibleDC(mDC);
-                IntPtr tmphBMP = CreateCompatibleBitmap(mDC, bmpTexture.Width, bmpTexture.Height);
+            {
+                // Extract pixel data directly from DirectBitmap
+                int bmpSize = bmpTexture.Width * bmpTexture.Height;
+                byte[] pictureData = new byte[bmpSize * 4];
 
-                BitmapInfo pictureInfo = new BitmapInfo();
-
-                GetHeaderBitmapInfo(tmphDC, tmphBMP, ref pictureInfo);
-                GetAllBitmapData(tmphDC, tmphBMP, bmpTexture, ref pictureInfo, out byte[] pictureData);
-
-                ReleaseDC(IntPtr.Zero, mDC);
+                for (int idx = 0; idx < bmpSize; idx++)
+                {
+                    pictureData[idx * 4] = (byte)(bmpTexture.Bits[idx] & 0xFF);
+                    pictureData[idx * 4 + 1] = (byte)(bmpTexture.Bits[idx] >> 8 & 0xFF);
+                    pictureData[idx * 4 + 2] = (byte)(bmpTexture.Bits[idx] >> 16 & 0xFF);
+                    pictureData[idx * 4 + 3] = (byte)(bmpTexture.Bits[idx] >> 24 & 0xFF);
+                }
 
                 bHasAlpha = IsAlphaBitmap(bmpTexture.Bitmap, pictureData);
 
-                bits = (short)pictureInfo.bmiHeader.biBitCount;
+                // DirectBitmap always uses 32bpp
+                bits = 32;
                 palSize = 0;
-                if (bits <= 8) palSize = (int)Math.Pow(2, bits);
 
                 outTEX.version = 1;
                 outTEX.unk1 = 0;
@@ -576,8 +486,8 @@ namespace KimeraCS
                 outTEX.numColorsPerPalette = palSize;
 
                 outTEX.bitDepth = bits;
-                outTEX.width = pictureInfo.bmiHeader.biWidth;
-                outTEX.height = pictureInfo.bmiHeader.biHeight;
+                outTEX.width = bmpTexture.Width;
+                outTEX.height = bmpTexture.Height;
 
                 outTEX.pitch = bits < 8 ? outTEX.width : (bits * outTEX.width) / 8;
 
@@ -729,35 +639,22 @@ namespace KimeraCS
                     }
                 }
 
-                if (outTEX.hasPal == 1)
-                {
-                    outTEX.palette = new byte[4 * outTEX.numColorsPerPalette];
-
-                    for (i = 0; i < outTEX.numColorsPerPalette; i++)
-                    {
-                        outTEX.palette[(4 * i) + 3] = 0xFF;
-                        outTEX.palette[(4 * i) + 2] = pictureInfo.bmiColors[i].rgbRed;
-                        outTEX.palette[(4 * i) + 1] = pictureInfo.bmiColors[i].rgbGreen;
-                        outTEX.palette[(4 * i)] = pictureInfo.bmiColors[i].rgbBlue;
-                    }
-                }
+                // Note: DirectBitmap always produces 32bpp, so no palette handling needed
             }
             catch (Exception ex)
             {
                 strGlobalExceptionMessage = ex.Message;
-
-                ReleaseDC(IntPtr.Zero, mDC);
             }
         }
 
         public static void UnloadTexture(ref TEX inTEX)
         {
-            uint[] lstTEX = new uint[1];
-            lstTEX[0] = inTEX.texID;
+            int[] lstTEX = new int[1];
+            lstTEX[0] = (int)inTEX.texID;
 
-            glDeleteTextures(1, lstTEX);
-            DeleteDC(inTEX.HDC);
-            DeleteObject(inTEX.HBMP);
+            GL.DeleteTextures(1, lstTEX);
+            inTEX.bitmap?.Dispose();
+            inTEX.bitmap = null;
         }
 
  

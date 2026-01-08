@@ -3,18 +3,13 @@ using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows.Forms;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using OpenTK.Graphics.OpenGL;
 
 namespace KimeraCS
 {
 
-    using static FF7Skeleton;
     using static FF7BattleSkeleton;
-
     using static Utils;
-    using static OpenGL32;
 
 
     public class FF7BattleAnimation
@@ -748,7 +743,7 @@ namespace KimeraCS
                 //while (!(bSkeleton.bones[bi].parentBone.ToString() == joint_stack[jsp]) && jsp > 0)
                 while (!(bSkeleton.bones[bi].parentBone == joint_stack[jsp]) && jsp > 0)
                 {
-                    glPopMatrix();
+                    GL.PopMatrix();
                     jsp--;
                 }
 

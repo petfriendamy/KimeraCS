@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -7,11 +7,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 
 namespace KimeraCS
 {
-
-    using Defines;
+    using Core;
+    using Rendering;
 
     using static FrmPEditor;
 
@@ -20,7 +22,6 @@ namespace KimeraCS
     using static ModelDrawing;
 
     using static Utils;
-    using static OpenGL32;
     using static FileTools;
 
     public class FF7PModel
@@ -1052,11 +1053,6 @@ namespace KimeraCS
         {
             Point3D p_min_aux = new Point3D();
             Point3D p_max_aux = new Point3D();
-            double[] MV_matrix = new double[16];
-
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            glPushMatrix();
-            glLoadIdentity();
 
             p_min_aux.x = Model.BoundingBox.min_x;
             p_min_aux.y = Model.BoundingBox.min_y;
@@ -1066,16 +1062,30 @@ namespace KimeraCS
             p_max_aux.y = Model.BoundingBox.max_y;
             p_max_aux.z = Model.BoundingBox.max_z;
 
-            ConcatenateCameraModelView(Model.repositionX, Model.repositionY, Model.repositionZ,
-                                       Model.rotateAlpha, Model.rotateBeta, Model.rotateGamma,
-                                       Model.resizeX, Model.resizeY, Model.resizeZ);
+            // Build transformation matrix using pure math (no GL state)
+            Matrix4 modelMatrix = CreateModelViewMatrix(
+                Model.repositionX, Model.repositionY, Model.repositionZ,
+                Model.rotateAlpha, Model.rotateBeta, Model.rotateGamma,
+                Model.resizeX, Model.resizeY, Model.resizeZ);
 
-            glGetDoublev((uint)GLCapability.GL_MODELVIEW_MATRIX, MV_matrix);
+            // Convert Matrix4 to double[16] for ComputeTransformedBoxBoundingBox
+            double[] MV_matrix = Matrix4ToDoubleArray(modelMatrix);
 
             ComputeTransformedBoxBoundingBox(MV_matrix, ref p_min_aux, ref p_max_aux, ref p_min, ref p_max);
+        }
 
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            glPopMatrix();
+        /// <summary>
+        /// Converts OpenTK Matrix4 to double[16] array in OpenGL column-major order
+        /// </summary>
+        public static double[] Matrix4ToDoubleArray(Matrix4 m)
+        {
+            return
+            [
+                m.M11, m.M12, m.M13, m.M14,
+                m.M21, m.M22, m.M23, m.M24,
+                m.M31, m.M32, m.M33, m.M34,
+                m.M41, m.M42, m.M43, m.M44
+            ];
         }
 
         public static bool CheckModelConsistency(ref PModel Model)
@@ -1414,37 +1424,27 @@ namespace KimeraCS
             }
         }
 
-        public static void CreateDListFromPGroup(ref PGroup Group, PPolygon[] Polys,  Point3D[] Verts,
+        /// <summary>
+        /// Legacy display list function - now invalidates GLRenderer mesh cache instead.
+        /// Display lists are deprecated in modern OpenGL.
+        /// </summary>
+        public static void CreateDListFromPGroup(ref PGroup Group, PPolygon[] Polys, Point3D[] Verts,
                                                  Color[] Vcolors, Point3D[] Normals, int[] NormalsIndex,
                                                  Point2D[] TexCoords, PHundret Hundret)
         {
-
-            if (Group.DListNum < 0)
-            {
-                Group.DListNum = (int)glGenLists(1);
-            }
-            else
-            {
-                glDeleteLists((uint)Group.DListNum, 1);
-                Group.DListNum = (int)glGenLists(1);
-            }
-
-            glNewList((uint)Group.DListNum, GLListMode.GL_COMPILE);
-
-            DrawGroup(Group, Polys, Verts, Vcolors, Normals, NormalsIndex, TexCoords, Hundret, false);
-            glEndList();
+            // Display lists are deprecated - mesh caching is now handled by GLRenderer
+            // This function is kept for API compatibility but does nothing
+            // The mesh will be recreated on next render via GLRenderer.GetOrCreateMesh()
         }
 
+        /// <summary>
+        /// Legacy display list function - now invalidates GLRenderer mesh cache instead.
+        /// Display lists are deprecated in modern OpenGL.
+        /// </summary>
         public static void CreateDListsFromPModel(ref PModel Model)
         {
-            int iGroupIdx;
-
-            for (iGroupIdx = 0; iGroupIdx < Model.Header.numGroups; iGroupIdx++)
-            {
-                CreateDListFromPGroup(ref Model.Groups[iGroupIdx], Model.Polys, 
-                                      Model.Verts, Model.Vcolors, Model.Normals, Model.NormalIndex, 
-                                      Model.TexCoords, Model.Hundrets[iGroupIdx]);
-            }
+            // Invalidate mesh cache to force recreation on next render
+            GLRenderer.InvalidateMeshAllContexts(ref Model);
         }
 
         public static void RotatePModelGroupModifiers(ref PGroup Group, float alpha, float beta, float gamma)
@@ -1699,7 +1699,7 @@ namespace KimeraCS
         {
             int iVertIdx;
 
-            SetBlendMode(BLEND_MODE.BLEND_DISABLED);
+            SetBlendMode(BlendModes.Disabled);
 
             for (iVertIdx = 0; iVertIdx < Model.Header.numVerts; iVertIdx++)
             {
@@ -2198,39 +2198,49 @@ namespace KimeraCS
         public static void ApplyCurrentVCoordsPE(ref PModel Model)
         {
             int iVertIdx, iActualGroup;
-            double[] rot_mat = new double[16];
 
-            SetCameraModelViewQuat(repXPE, repYPE, repZPE,
-                                   EditedPModel.rotationQuaternion,
-                                   rszXPE, rszYPE, rszZPE);
+            // Build base camera matrix using pure math
+            Matrix4 baseMatrix = CreateModelViewMatrixQuat(repXPE, repYPE, repZPE,
+                                                            EditedPModel.rotationQuaternion,
+                                                            rszXPE, rszYPE, rszZPE);
 
             iActualGroup = GetNextGroup(Model, -1);
 
             while (iActualGroup != -1)
             {
-                glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-                //glLoadIdentity();
-                glPushMatrix();
+                // Build group transformation matrix
+                Matrix4 groupTranslate = Matrix4.CreateTranslation(
+                    Model.Groups[iActualGroup].repGroupX,
+                    Model.Groups[iActualGroup].repGroupY,
+                    Model.Groups[iActualGroup].repGroupZ);
 
-                glTranslatef(Model.Groups[iActualGroup].repGroupX, Model.Groups[iActualGroup].repGroupY, Model.Groups[iActualGroup].repGroupZ);
+                Matrix4 groupScale = Matrix4.CreateScale(
+                    Model.Groups[iActualGroup].rszGroupX != 0 ? Model.Groups[iActualGroup].rszGroupX : 1,
+                    Model.Groups[iActualGroup].rszGroupY != 0 ? Model.Groups[iActualGroup].rszGroupY : 1,
+                    Model.Groups[iActualGroup].rszGroupZ != 0 ? Model.Groups[iActualGroup].rszGroupZ : 1);
 
-                glScalef(Model.Groups[iActualGroup].rszGroupX, Model.Groups[iActualGroup].rszGroupY, Model.Groups[iActualGroup].rszGroupZ);
+                // Build rotation from Euler angles
+                var quatX = OpenTK.Mathematics.Quaternion.FromAxisAngle(Vector3.UnitX,
+                    MathHelper.DegreesToRadians(Model.Groups[iActualGroup].rotGroupAlpha));
+                var quatY = OpenTK.Mathematics.Quaternion.FromAxisAngle(Vector3.UnitY,
+                    MathHelper.DegreesToRadians(Model.Groups[iActualGroup].rotGroupBeta));
+                var quatZ = OpenTK.Mathematics.Quaternion.FromAxisAngle(Vector3.UnitZ,
+                    MathHelper.DegreesToRadians(Model.Groups[iActualGroup].rotGroupGamma));
+                var rotation = quatX * quatY * quatZ;
+                Matrix4 groupRotation = Matrix4.CreateFromQuaternion(rotation);
 
-                BuildRotationMatrixWithQuaternionsXYZ(Model.Groups[iActualGroup].rotGroupAlpha,
-                                                      Model.Groups[iActualGroup].rotGroupBeta,
-                                                      Model.Groups[iActualGroup].rotGroupGamma,
-                                                      ref rot_mat);
+                // Combine: base * translate * scale * rotate
+                Matrix4 combinedMatrix = groupRotation * groupScale * groupTranslate * baseMatrix;
 
-                glMultMatrixd(rot_mat);
-
-                for (iVertIdx = Model.Groups[iActualGroup].offsetVert; 
-                     iVertIdx < Model.Groups[iActualGroup].offsetVert + Model.Groups[iActualGroup].numVert; 
+                // Transform vertices using the combined matrix
+                for (iVertIdx = Model.Groups[iActualGroup].offsetVert;
+                     iVertIdx < Model.Groups[iActualGroup].offsetVert + Model.Groups[iActualGroup].numVert;
                      iVertIdx++)
                 {
-                    Model.Verts[iVertIdx] = GetEyeSpaceCoords(Model.Verts[iVertIdx]);
+                    Vector4 v = new Vector4(Model.Verts[iVertIdx].x, Model.Verts[iVertIdx].y, Model.Verts[iVertIdx].z, 1.0f);
+                    Vector4 transformed = v * combinedMatrix;
+                    Model.Verts[iVertIdx] = new Point3D(transformed.X, transformed.Y, transformed.Z);
                 }
-
-                glPopMatrix();
 
                 iActualGroup = GetNextGroup(Model, iActualGroup);
             }
@@ -2580,12 +2590,8 @@ namespace KimeraCS
         //  ---------------------------------------------------------------------------------------------------
         public static void DestroyPModelResources(ref PModel Model)
         {
-            int iGroupIdx;
-
-            for (iGroupIdx = 0; iGroupIdx < Model.Header.numGroups; iGroupIdx++)
-            {
-                glDeleteLists((uint)Model.Groups[iGroupIdx].DListNum, 1);
-            }
+            // Clear mesh cache for this model (display lists are deprecated)
+            GLRenderer.InvalidateMeshAllContexts(ref Model);
         }
 
 
@@ -3132,7 +3138,7 @@ namespace KimeraCS
             pUP3D.y = py;
             pUP3D.z = 0;
 
-            glGetIntegerv((uint)GLCapability.GL_VIEWPORT, vp);
+            GL.GetInteger(GetPName.Viewport, vp);
             iHeight = vp[3];
 
             //pi = GetClosestPolygon(Model, px, py, DIST0, panelEditorPModel);
@@ -3168,135 +3174,125 @@ namespace KimeraCS
             return iGetClosestVertexResult;
         }
 
-        //public static int GetClosestPolygon(PModel Model, int px, int py, float DIST, PictureBox panelEditorPModel)
+        /// <summary>
+        /// Finds the closest polygon in the model at the given screen coordinates using ray casting.
+        /// Replaces deprecated GL_SELECT mode with CPU-based ray-triangle intersection.
+        /// </summary>
         public static int GetClosestPolygon(PModel Model, int px, int py)
         {
-            int iGetClosestPolygonResult;
             Point3D p_min = new Point3D();
             Point3D p_max = new Point3D();
 
-            int iGroupIdx, iPolyIdx, iVertIdx, iNumPolys, iHeight;
-            float minZ;
-            double[] rot_mat = new double[16];
-            int[] vp = new int[4];
-            
-            int[] selBuff = new int[Model.Header.numPolys * 4];
-
-            //glViewport(0, 0, panelEditorPModel.ClientRectangle.Width, panelEditorPModel.ClientRectangle.Height);
-            //ClearPanel();
-
-            //SetDefaultOGLRenderState();
-
+            // Set up camera (this also syncs GLRenderer matrices)
             ComputePModelBoundingBox(EditedPModel, ref p_min, ref p_max);
-
             SetCameraAroundModel(ref p_min, ref p_max,
                                  panXPE, panYPE, panZPE + DISTPE,
                                  alphaPE, betaPE, gammaPE, 1, 1, 1);
 
-            glDisable(GLCapability.GL_LIGHTING);
+            // Get viewport
+            int[] vp = new int[4];
+            GL.GetInteger(GetPName.Viewport, vp);
+            int height = vp[3];
 
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
+            // Build model transformation matrix for the edited model
+            Matrix4 modelTransform = CreateModelViewMatrix(
+                EditedPModel.repositionX, EditedPModel.repositionY, EditedPModel.repositionZ,
+                EditedPModel.rotateAlpha, EditedPModel.rotateBeta, EditedPModel.rotateGamma,
+                EditedPModel.resizeX, EditedPModel.resizeY, EditedPModel.resizeZ);
 
-            glPushMatrix();
+            // Get view and projection matrices from GLRenderer
+            Matrix4 view = GLRenderer.ViewMatrix;
+            Matrix4 projection = GLRenderer.ProjectionMatrix;
 
-            glTranslatef(EditedPModel.repositionX,
-                         EditedPModel.repositionY,
-                         EditedPModel.repositionZ);
+            // Create ray from screen coordinates
+            Vector4 viewport = new Vector4(vp[0], vp[1], vp[2], vp[3]);
 
-            BuildRotationMatrixWithQuaternionsXYZ(EditedPModel.rotateAlpha,
-                                                  EditedPModel.rotateBeta,
-                                                  EditedPModel.rotateGamma,
-                                                  ref rot_mat);
+            // Unproject near and far points to create ray
+            // Note: OpenGL Y is flipped from screen Y
+            float screenY = height - py;
+            Vector3 nearPoint = Unproject(new Vector3(px, screenY, 0.0f), modelTransform, view, projection, viewport);
+            Vector3 farPoint = Unproject(new Vector3(px, screenY, 1.0f), modelTransform, view, projection, viewport);
 
-            glMultMatrixd(rot_mat);
-            glScalef(EditedPModel.resizeX,
-                     EditedPModel.resizeY,
-                     EditedPModel.resizeZ);
+            Vector3 rayOrigin = nearPoint;
+            Vector3 rayDir = Vector3.Normalize(farPoint - nearPoint);
 
-            glEnable(GLCapability.GL_POLYGON_OFFSET_FILL);
-            glPolygonOffset(1, 1);
+            // Test intersection with each polygon
+            int closestPoly = -1;
+            float closestDist = float.MaxValue;
 
-            glSelectBuffer(Model.Header.numPolys * 4, selBuff);
-
-            glPolygonMode(GLFace.GL_FRONT, GLPolygon.GL_LINE);
-            glPolygonMode(GLFace.GL_BACK, GLPolygon.GL_FILL);
-            glEnable(GLCapability.GL_COLOR_MATERIAL);
-
-            glGetIntegerv((uint)GLCapability.GL_VIEWPORT, vp);
-            iHeight = vp[3];
-
-            glRenderMode(GLRenderingMode.GL_SELECT);
-
-            glMatrixMode(GLMatrixModeList.GL_PROJECTION);
-            glPushMatrix();
-            glGetDoublev((uint)GLCapability.GL_PROJECTION_MATRIX, rot_mat);
-            glLoadIdentity();
-
-            gluPickMatrix(px - 1, iHeight - py + 1, 3, 3, vp);
-            glMultMatrixd(rot_mat);
-
-            for (iGroupIdx = 0; iGroupIdx < Model.Header.numGroups; iGroupIdx++)
+            for (int iGroupIdx = 0; iGroupIdx < Model.Header.numGroups; iGroupIdx++)
             {
-                glInitNames();
+                if (Model.Groups[iGroupIdx].HiddenQ) continue;
 
-                if (!Model.Groups[iGroupIdx].HiddenQ)
+                int offsetVert = Model.Groups[iGroupIdx].offsetVert;
+
+                for (int iPolyIdx = Model.Groups[iGroupIdx].offsetPoly;
+                     iPolyIdx < Model.Groups[iGroupIdx].offsetPoly + Model.Groups[iGroupIdx].numPoly;
+                     iPolyIdx++)
                 {
-                    for (iPolyIdx = Model.Groups[iGroupIdx].offsetPoly; 
-                         iPolyIdx < Model.Groups[iGroupIdx].offsetPoly + Model.Groups[iGroupIdx].numPoly;
-                         iPolyIdx++)
+                    // Get triangle vertices
+                    Vector3 v0 = new Vector3(
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].x,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].y,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].z);
+                    Vector3 v1 = new Vector3(
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].x,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].y,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].z);
+                    Vector3 v2 = new Vector3(
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].x,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].y,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].z);
+
+                    // Test ray-triangle intersection (Möller–Trumbore algorithm)
+                    if (RayTriangleIntersect(rayOrigin, rayDir, v0, v1, v2, out float dist))
                     {
-                        glColor4f(Model.Pcolors[iPolyIdx].R / 255.0f, 
-                                  Model.Pcolors[iPolyIdx].G / 255.0f, 
-                                  Model.Pcolors[iPolyIdx].B / 255.0f, 
-                                  Model.Pcolors[iPolyIdx].A / 255.0f);
-
-                        glColorMaterial(GLFace.GL_FRONT_AND_BACK, GLMaterialParameter.GL_AMBIENT_AND_DIFFUSE);
-
-                        glPushName((uint)iPolyIdx);
-                        glBegin(GLDrawMode.GL_TRIANGLES);
-                        for (iVertIdx = 0; iVertIdx < 3; iVertIdx++)
+                        if (dist > 0 && dist < closestDist)
                         {
-                            glNormal3f(Model.Normals[Model.NormalIndex[Model.Polys[iPolyIdx].Verts[iVertIdx]] +
-                                                                       Model.Groups[iGroupIdx].offsetVert].x,
-                                       Model.Normals[Model.NormalIndex[Model.Polys[iPolyIdx].Verts[iVertIdx]] +
-                                                                       Model.Groups[iGroupIdx].offsetVert].y,
-                                       Model.Normals[Model.NormalIndex[Model.Polys[iPolyIdx].Verts[iVertIdx]] +
-                                                                       Model.Groups[iGroupIdx].offsetVert].z);
-
-                            glVertex3f(Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + 
-                                                   Model.Groups[iGroupIdx].offsetVert].x,
-                                       Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + 
-                                                   Model.Groups[iGroupIdx].offsetVert].y,
-                                       Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + 
-                                                   Model.Groups[iGroupIdx].offsetVert].z);
+                            closestDist = dist;
+                            closestPoly = iPolyIdx;
                         }
-                        glEnd();
-                        glPopName();
                     }
                 }
             }
-            
-            glDisable(GLCapability.GL_POLYGON_OFFSET_FILL);
-            glPopMatrix();
 
-            iNumPolys = glRenderMode(GLRenderingMode.GL_RENDER);
-            iGetClosestPolygonResult = -1;
-            minZ = -1;
+            return closestPoly;
+        }
 
-            for (iPolyIdx = 0; iPolyIdx < iNumPolys; iPolyIdx++)
-            {
-                if (CompareLongs((long)minZ, selBuff[iPolyIdx * 4 + 1]) ||
-                    selBuff[iPolyIdx * 4 + 1] == minZ)
-                {
-                    minZ = selBuff[iPolyIdx * 4 + 1];
-                    iGetClosestPolygonResult = selBuff[iPolyIdx * 4 + 3];
-                }
-            }
+        /// <summary>
+        /// Möller–Trumbore ray-triangle intersection algorithm.
+        /// </summary>
+        private static bool RayTriangleIntersect(Vector3 rayOrigin, Vector3 rayDir,
+                                                  Vector3 v0, Vector3 v1, Vector3 v2,
+                                                  out float distance)
+        {
+            distance = 0;
+            const float EPSILON = 0.0000001f;
 
-            glMatrixMode(GLMatrixModeList.GL_PROJECTION);
-            glPopMatrix();
+            Vector3 edge1 = v1 - v0;
+            Vector3 edge2 = v2 - v0;
+            Vector3 h = Vector3.Cross(rayDir, edge2);
+            float a = Vector3.Dot(edge1, h);
 
-            return iGetClosestPolygonResult;
+            if (a > -EPSILON && a < EPSILON)
+                return false; // Ray is parallel to triangle
+
+            float f = 1.0f / a;
+            Vector3 s = rayOrigin - v0;
+            float u = f * Vector3.Dot(s, h);
+
+            if (u < 0.0f || u > 1.0f)
+                return false;
+
+            Vector3 q = Vector3.Cross(s, edge1);
+            float v = f * Vector3.Dot(rayDir, q);
+
+            if (v < 0.0f || u + v > 1.0f)
+                return false;
+
+            // Compute distance to intersection point
+            distance = f * Vector3.Dot(edge2, q);
+            return distance > EPSILON;
         }
 
         public static int GetPolygonGroup(PModel Model, int iPolyIdx)
@@ -3379,7 +3375,7 @@ namespace KimeraCS
             int height, offsetVerts;
             int[] vp = new int[4];
 
-            glGetIntegerv((uint)GLCapability.GL_VIEWPORT, vp);
+            GL.GetInteger(GetPName.Viewport, vp);
             height = vp[3];
 
             tmpUP3D.x = px;
@@ -4627,7 +4623,7 @@ namespace KimeraCS
 
         public static float GetVertexProjectedDepth(ref Point3D[] lstVerts, int iVertIdx)
         {
-            glClear(GLBufferMask.GL_DEPTH_BUFFER_BIT);
+            GL.Clear(ClearBufferMask.DepthBufferBit);
             return (float)GetDepthZ(lstVerts[iVertIdx]);
         }
 

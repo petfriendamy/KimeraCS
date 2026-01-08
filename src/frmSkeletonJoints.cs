@@ -12,10 +12,6 @@ using System.Windows.Forms;
 
 namespace KimeraCS
 {
-    using Defines;
-
-    using static FrmSkeletonEditor;
-
     using static FF7Skeleton;
     using static FF7FieldSkeleton;
     using static FF7FieldAnimation;

@@ -19,7 +19,6 @@ namespace KimeraCS
     using static FF7PModel;
 
     using static Utils;
-    using static GDI32;
 
     public partial class FrmTextureViewer : Form
     {
@@ -242,7 +241,7 @@ namespace KimeraCS
 
         public void DrawUVs()
         {
-            IntPtr hTmpBMP = IntPtr.Zero;
+            Bitmap hTmpBMP = null;
 
             int iGroupIdx, iPolyIdx, iVertCounter, iWidth, iHeight, iTexID;
             Point[] pointTriPoly = new Point[4];
@@ -252,7 +251,7 @@ namespace KimeraCS
             switch (modelType)
             {
                 case K_HRC_SKELETON:
-                    hTmpBMP = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[iTexID].HBMP;
+                    hTmpBMP = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[iTexID].bitmap;
 
                     iTCWidth = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[iTexID].width;
                     iTCHeight = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[iTexID].height;
@@ -261,7 +260,7 @@ namespace KimeraCS
 
                 case K_AA_SKELETON:
                 case K_MAGIC_SKELETON:
-                    hTmpBMP = bSkeleton.textures[iTexID].HBMP;
+                    hTmpBMP = bSkeleton.textures[iTexID].bitmap;
 
                     iTCWidth = bSkeleton.textures[iTexID].width;
                     iTCHeight = bSkeleton.textures[iTexID].height;
@@ -307,7 +306,7 @@ namespace KimeraCS
                 g.PixelOffsetMode = PixelOffsetMode.Half;
                 g.InterpolationMode = InterpolationMode.NearestNeighbor;
 
-                g.DrawImage(Image.FromHbitmap(hTmpBMP), 0, 0, iWidth, iHeight);
+                g.DrawImage(hTmpBMP, 0, 0, iWidth, iHeight);
 
                 g.PixelOffsetMode = PixelOffsetMode.None;
                 g.InterpolationMode = InterpolationMode.Default ;

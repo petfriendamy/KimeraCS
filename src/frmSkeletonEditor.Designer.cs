@@ -211,7 +211,10 @@ namespace KimeraCS
             this.showBattlelgpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.showMagiclgpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveFile = new System.Windows.Forms.SaveFileDialog();
-            this.panelModel = new System.Windows.Forms.PictureBox();
+            this.panelModel = new OpenTK.GLControl.GLControl(new OpenTK.GLControl.GLControlSettings
+            {
+                Profile = OpenTK.Windowing.Common.ContextProfile.Compatability
+            });
             this.panel1.SuspendLayout();
             this.gbTexturesFrame.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nUDMoveTextureUpDown)).BeginInit();
@@ -236,7 +239,6 @@ namespace KimeraCS
             this.panel3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.tbCurrentFrameScroll)).BeginInit();
             this.menuStrip1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.panelModel)).BeginInit();
             this.SuspendLayout();
             // 
             // panel1
@@ -2183,13 +2185,13 @@ namespace KimeraCS
             this.showMagiclgpToolStripMenuItem.Size = new System.Drawing.Size(204, 22);
             this.showMagiclgpToolStripMenuItem.Text = "Show MAGIC.LGP";
             this.showMagiclgpToolStripMenuItem.Click += new System.EventHandler(this.ShowMagiclgpToolStripMenuItem_Click);
-            // 
+            //
             // panelModel
-            // 
-            this.panelModel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            //
+            this.panelModel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.panelModel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.panelModel.BackColor = System.Drawing.Color.Black;
             this.panelModel.Location = new System.Drawing.Point(159, 25);
             this.panelModel.Name = "panelModel";
             this.panelModel.Size = new System.Drawing.Size(415, 553);
@@ -2263,7 +2265,6 @@ namespace KimeraCS
             ((System.ComponentModel.ISupportInitialize)(this.tbCurrentFrameScroll)).EndInit();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.panelModel)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -2273,7 +2274,7 @@ namespace KimeraCS
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.Panel panel3;
-        public System.Windows.Forms.PictureBox panelModel;
+        public OpenTK.GLControl.GLControl panelModel;
         private System.Windows.Forms.Label lblBoneSelector;
         private System.Windows.Forms.ComboBox cbBoneSelector;
         private System.Windows.Forms.Label lblAnimationFrame;

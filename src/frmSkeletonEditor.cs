@@ -1,32 +1,18 @@
 ﻿using System;
 using System.IO;
 using System.Windows.Forms;
-using System.Windows.Forms.Design;
 using System.Collections.Generic;
-using System.Timers;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-
-
-using HDC = System.IntPtr;
+using OpenTK.Graphics.OpenGL;
 
 
 namespace KimeraCS
 {
-
-    using Defines;
+    using Core;
+    using Rendering;
 
     using static FrmPEditor;
-    using static FrmStatistics;
 
     using static FF7Skeleton;
     using static FF7FieldSkeleton;
@@ -43,16 +29,11 @@ namespace KimeraCS
 
     using static ModelDrawing;
     using static InputBoxCS;
-
-    using static Lighting;
     using static Model_3DS;
 
     using static UndoRedo;
     using static Utils;
     using static FileTools;
-    using static OpenGL32;
-    using static User32;
-    using static GDI32;
     using System.Reflection;
 
     public partial class FrmSkeletonEditor : Form
@@ -84,10 +65,6 @@ namespace KimeraCS
         public static bool controlPressedQ;
 
         //public static bool OpenGLValid = false;
-
-        public static HDC panelModelDC;
-        public static HDC textureViewerDC;
-        public static HDC OGLContext;
 
         // This is for the Copy/Paste Frame feature
         FieldFrame CopyfFieldFrame;
@@ -178,33 +155,34 @@ namespace KimeraCS
         public void SetOGLSettings()
         {
 
-            glClearDepth(1.0f);
+            GL.ClearDepth(1.0f);
 
-            glEnable(GLCapability.GL_DEPTH_TEST);
-            glDepthFunc(GLFunc.GL_LEQUAL);
+            GL.Enable(EnableCap.DepthTest);
+            GL.DepthFunc(DepthFunction.Lequal);
 
-            SetBlendMode(BLEND_MODE.BLEND_NONE);
+            SetBlendMode(BlendModes.None);
 
-            glCullFace(GLFace.GL_FRONT);
-            glEnable(GLCapability.GL_CULL_FACE);
+            GL.CullFace(CullFaceMode.Front);
+            GL.Enable(EnableCap.CullFace);
 
-            glEnable(GLCapability.GL_ALPHA_TEST);
-            glAlphaFunc(GLFunc.GL_GREATER, 0);
+            GL.Enable(EnableCap.AlphaTest);
+            GL.AlphaFunc(AlphaFunction.Greater, 0);
 
         }
 
         public void InitOpenGLContext()
         {
+            // GLControl handles context creation internally
+            panelModel.MakeCurrent();
 
-            //DisableOpenGL(OGLContext);
-            panelModelDC = GetDC(panelModel.Handle);
-            OGLContext = CreateOGLContext(panelModelDC);
+            // Set context ID for GLRenderer (each GL context needs separate resources)
+            GLRenderer.SetCurrentContext("SkeletonEditor");
 
-            glEnable(GLCapability.GL_DEPTH_TEST);
-            glClearColor(0.4f, 0.4f, 0.65f, 0);
-            //glClearColor(0.20f, 0.20f, 0.28f, 0);
+            GL.Enable(EnableCap.DepthTest);
+            GL.ClearColor(0.4f, 0.4f, 0.65f, 0);
 
-            SetOGLContext(panelModelDC, OGLContext);
+            // Initialize modern renderer
+            GLRenderer.Initialize();
         }
         /////////////////////////////////////////////////////////////
 
@@ -370,20 +348,14 @@ namespace KimeraCS
             this.SetStyle(ControlStyles.AllPaintingInWmPaint, true);
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
 
-            // Let's detect the original DPI Scale Factor of the computer
-            Screen[] screenList = Screen.AllScreens;
-
-            foreach (Screen screen in screenList)
+            // Detect the DPI scale factor using managed APIs
+            using (Graphics g = this.CreateGraphics())
             {
-                DEVMODE dm = new DEVMODE()
-                {
-                    dmSize = (short)Marshal.SizeOf(typeof(DEVMODE)),
-                };
-
-                EnumDisplaySettings(screen.DeviceName, -1, ref dm);
-
-                dDPIScaleFactor = Math.Round(Decimal.Divide(dm.dmPelsWidth, screen.Bounds.Width), 2);
+                dDPIScaleFactor = Math.Round((decimal)(g.DpiX / 96.0), 2);
             }
+
+            // Initialize OpenGL panel reference for FF7Skeleton
+            glPanel = panelModel;
 
 
             // Initialize Databases files
@@ -418,8 +390,6 @@ namespace KimeraCS
             hsbLightPosY.Minimum = -Lighting.LIGHT_STEPS;
             hsbLightPosZ.Maximum = Lighting.LIGHT_STEPS;
             hsbLightPosZ.Minimum = -Lighting.LIGHT_STEPS;
-
-            textureViewerDC = GetDC(pbTextureViewer.Handle);
 
             bLoaded = false;
 
@@ -471,8 +441,9 @@ namespace KimeraCS
         private void FrmSkeletonEditor_FormClosed(object sender, FormClosedEventArgs e)
         {
             DestroySkeleton();
-
-            DisableOpenGL(OGLContext);
+            // Shutdown modern renderer for this context
+            GLRenderer.Shutdown();
+            // GLControl handles its own cleanup
             btnPlayStopAnim.Checked = false;
         }
 
@@ -1001,7 +972,7 @@ namespace KimeraCS
                                     FitBitmapToPictureBox(pbTextureViewer,
                                          fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].width,
                                          fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].height,
-                                         fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].HBMP);
+                                         fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].bitmap);
 
                             }
                         }
@@ -1021,7 +992,7 @@ namespace KimeraCS
                                 FitBitmapToPictureBox(pbTextureViewer,
                                                       bSkeleton.textures[cbTextureSelect.SelectedIndex].width,
                                                       bSkeleton.textures[cbTextureSelect.SelectedIndex].height,
-                                                      bSkeleton.textures[cbTextureSelect.SelectedIndex].HBMP);
+                                                      bSkeleton.textures[cbTextureSelect.SelectedIndex].bitmap);
                         }
 
                         break;
@@ -1042,26 +1013,23 @@ namespace KimeraCS
 
         public void PanelModel_Paint(object sender, PaintEventArgs e)
         {
-
             if (bLoaded)
             {
-                if (GetOGLContext() != OGLContext)
-                    SetOGLContext(panelModelDC, OGLContext);
+                panelModel.MakeCurrent();
+                GLRenderer.SetCurrentContext("SkeletonEditor");
 
                 SetOGLSettings();
 
-                glViewport(0, 0, panelModel.ClientRectangle.Width,
+                GL.Viewport(0, 0, panelModel.ClientRectangle.Width,
                                  panelModel.ClientRectangle.Height);
                 ClearPanel();
-                //SetDefaultOGLRenderState();
 
                 DrawSkeletonModel(bDListsEnable);
 
                 if (bShowAxesSkeletonWindow) DrawAxes(panelModel, tbCurrentFrameScroll.Value);
 
-                glFlush();
-                SwapBuffers(panelModelDC);
-
+                GL.Flush();
+                panelModel.SwapBuffers();
             }
         }
 
@@ -1112,15 +1080,15 @@ namespace KimeraCS
             DIST = -2 * ComputeSceneRadius(p_min, p_max);
             selectBoneForWeaponAttachmentQ = false;
 
-            glClearDepth(1.0f);
-            glDepthFunc(GLFunc.GL_LEQUAL);
-            glEnable(GLCapability.GL_DEPTH_TEST);
-            glEnable(GLCapability.GL_BLEND);
-            glEnable(GLCapability.GL_ALPHA_TEST);
-            glBlendFunc(GLBlendFuncFactor.GL_SRC_ALPHA, GLBlendFuncFactor.GL_ONE_MINUS_SRC_ALPHA);
-            glAlphaFunc(GLFunc.GL_GREATER, 0);
-            glCullFace(GLFace.GL_FRONT);
-            glEnable(GLCapability.GL_CULL_FACE);
+            GL.ClearDepth(1.0f);
+            GL.DepthFunc(DepthFunction.Lequal);
+            GL.Enable(EnableCap.DepthTest);
+            GL.Enable(EnableCap.Blend);
+            GL.Enable(EnableCap.AlphaTest);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            GL.AlphaFunc(AlphaFunction.Greater, 0);
+            GL.CullFace(CullFaceMode.Front);
+            GL.Enable(EnableCap.CullFace);
         }
 
         private void CheckBDListEnable_CheckedChanged(object sender, EventArgs e)
@@ -1485,14 +1453,15 @@ namespace KimeraCS
 
             if (bLoaded)
             {
-                // We will block the MouseDown if FrmPEditor is enabled and 
+                // Ensure GL context is current and viewport is set for picking
+                panelModel.MakeCurrent();
+                GLRenderer.SetCurrentContext("SkeletonEditor");
+                GL.Viewport(0, 0, panelModel.ClientRectangle.Width, panelModel.ClientRectangle.Height);
+
+                // We will block the MouseDown if FrmPEditor is enabled and
                 // the user clicked in "empty" place
                 if (FindWindowOpened("FrmPEditor")) bWindowPEOpened = true;
                 else bWindowPEOpened = false;
-
-                //glClearColor(0.4f, 0.4f, 0.65f, 0);
-                //glViewport(0, 0, panelModel.ClientRectangle.Width, panelModel.ClientRectangle.Height);
-                //glClear(GLBufferMask.GL_COLOR_BUFFER_BIT | GLBufferMask.GL_DEPTH_BUFFER_BIT);
 
                 switch (modelType)
                 {
@@ -4335,30 +4304,30 @@ namespace KimeraCS
             if (bLoaded && !loadingBonePieceModifiersQ)
             {
                 float fOldValue = 0.0f;
-                float.TryParse(((UpDownBase)sender).Text, out float fNudBoneLengthValue);
-
-                switch (modelType)
+                if (float.TryParse(((UpDownBase)sender).Text, out float fNudBoneLengthValue))
                 {
-                    case K_HRC_SKELETON:
-                        fOldValue = (float)fSkeleton.bones[SelectedBone].len;
-                        break;
+                    switch (modelType)
+                    {
+                        case K_HRC_SKELETON:
+                            fOldValue = (float)fSkeleton.bones[SelectedBone].len;
+                            break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
-                        fOldValue = bSkeleton.bones[SelectedBone].len;
-                        break;
+                        case K_AA_SKELETON:
+                        case K_MAGIC_SKELETON:
+                            fOldValue = bSkeleton.bones[SelectedBone].len;
+                            break;
 
+                    }
+
+                    if (fNudBoneLengthValue > (float)nUDBoneOptionsLength.Maximum ||
+                        fNudBoneLengthValue < (float)nUDBoneOptionsLength.Minimum)
+                    {
+                        ((UpDownBase)sender).Text = fOldValue.ToString("F6");
+                        return;
+                    }
+                    else
+                        NudBoneLength_ValueChanged(sender, e);
                 }
-
-                if (fNudBoneLengthValue > (float)nUDBoneOptionsLength.Maximum ||
-                    fNudBoneLengthValue < (float)nUDBoneOptionsLength.Minimum)
-                {
-                    ((UpDownBase)sender).Text = fOldValue.ToString("F6");
-                    return;
-                }
-                else
-                    NudBoneLength_ValueChanged(sender, e);
-
             }
 
         }
@@ -6591,16 +6560,16 @@ namespace KimeraCS
 
             AddStateToBuffer(frmSkEditor);
 
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            glPushMatrix();
-            glLoadIdentity();
+            GL.MatrixMode(MatrixMode.Modelview);
+            GL.PushMatrix();
+            GL.LoadIdentity();
 
             for (fi = 0; fi < bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort; fi++)
             {
                 if (middleQ) jsp = MoveToBattleBoneMiddle(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi], SelectedBone);
                 else jsp = MoveToBattleBoneEnd(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi], SelectedBone);
 
-                glGetDoublev((uint)GLCapability.GL_MODELVIEW_MATRIX, MV_matrix);
+                GL.GetDouble(GetPName.ModelviewMatrix, MV_matrix);
 
                 tmpbFrame = bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi];
                 tmpbFrame.startX = (int)MV_matrix[12];
@@ -6610,12 +6579,12 @@ namespace KimeraCS
 
                 while (jsp > 0)
                 {
-                    glPopMatrix();
+                    GL.PopMatrix();
                     jsp--;
                 }
             }
 
-            glPopMatrix();
+            GL.PopMatrix();
 
             selectBoneForWeaponAttachmentQ = false;
             SetFrameEditorFields();

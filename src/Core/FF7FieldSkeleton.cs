@@ -2,16 +2,15 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+
+using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 
 namespace KimeraCS
 {
+    using Rendering;
 
-    using Defines;
-
-    using static FF7Skeleton;
     using static FF7FieldAnimation;
     using static FF7FieldRSDResource;
 
@@ -20,9 +19,7 @@ namespace KimeraCS
 
     using static ModelDrawing;
 
-    using static OpenGL32;
     using static Utils;
-    using static FileTools;
 
     public class FF7FieldSkeleton
     {
@@ -233,8 +230,9 @@ namespace KimeraCS
             Point3D p_max_bone_trans = new Point3D();
             Point3D p_min_bone_trans = new Point3D();
 
-            //joint_stack = new string[Skeleton.nBones + 1];
             joint_stack = new string[fSkeleton.bones.Count + 1];
+            Matrix4[] matrixStack = new Matrix4[fSkeleton.bones.Count + 2];
+            int matrixStackPtr = 0;
             jsp = 0;
 
             joint_stack[jsp] = fSkeleton.bones[0].joint_f;
@@ -247,33 +245,36 @@ namespace KimeraCS
             p_min_field.y = (float)INFINITY_SINGLE;
             p_min_field.z = (float)INFINITY_SINGLE;
 
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            glPushMatrix();
-            glLoadIdentity();
-
-            glTranslated(fFrame.rootTranslationX, 0, 0);
-            glTranslated(0, -fFrame.rootTranslationY, 0);
-            glTranslated(0, 0, fFrame.rootTranslationZ);
+            // Build initial transform
+            Matrix4 currentMatrix = Matrix4.Identity;
+            currentMatrix *= Matrix4.CreateTranslation((float)fFrame.rootTranslationX, 0, 0);
+            currentMatrix *= Matrix4.CreateTranslation(0, (float)(-fFrame.rootTranslationY), 0);
+            currentMatrix *= Matrix4.CreateTranslation(0, 0, (float)fFrame.rootTranslationZ);
 
             BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma, ref rot_mat);
-            glMultMatrixd(rot_mat);
+            Matrix4 rotMatrix = DoubleArrayToMatrix4(rot_mat);
+            currentMatrix *= rotMatrix;
+
+            matrixStack[matrixStackPtr++] = currentMatrix;
 
             for (bi = 0; bi < fSkeleton.bones.Count; bi++)
             {
                 while (!(fSkeleton.bones[bi].joint_f == joint_stack[jsp]) && jsp > 0)
                 {
-                    glPopMatrix();
+                    matrixStackPtr--;
+                    currentMatrix = matrixStack[matrixStackPtr - 1];
                     jsp--;
                 }
-                glPushMatrix();
+                matrixStack[matrixStackPtr++] = currentMatrix;
 
                 BuildRotationMatrixWithQuaternions(fFrame.rotations[bi].alpha, fFrame.rotations[bi].beta,
                                                          fFrame.rotations[bi].gamma, ref rot_mat);
-                glMultMatrixd(rot_mat);
+                rotMatrix = DoubleArrayToMatrix4(rot_mat);
+                currentMatrix *= rotMatrix;
 
                 ComputeFieldBoneBoundingBox(fSkeleton.bones[bi], ref p_min_bone, ref p_max_bone);
 
-                glGetDoublev((uint)GLCapability.GL_MODELVIEW_MATRIX, MV_matrix);
+                MV_matrix = Matrix4ToDoubleArray(currentMatrix);
 
                 ComputeTransformedBoxBoundingBox(MV_matrix, ref p_min_bone, ref p_max_bone, ref p_min_bone_trans, ref p_max_bone_trans);
 
@@ -285,18 +286,11 @@ namespace KimeraCS
                 if (p_min_field.y > p_min_bone_trans.y) p_min_field.y = p_min_bone_trans.y;
                 if (p_min_field.z > p_min_bone_trans.z) p_min_field.z = p_min_bone_trans.z;
 
-                glTranslated(0, 0, -fSkeleton.bones[bi].len);
+                currentMatrix *= Matrix4.CreateTranslation(0, 0, (float)(-fSkeleton.bones[bi].len));
 
                 jsp++;
                 joint_stack[jsp] = fSkeleton.bones[bi].joint_i;
             }
-
-            while (jsp > 0)
-            {
-                glPopMatrix();
-                jsp--;
-            }
-            glPopMatrix();
         }
 
         public static float ComputeFieldBoneDiameter(FieldBone bone)
@@ -362,15 +356,15 @@ namespace KimeraCS
             int i, jsp;
             double[] rot_mat = new double[16];
 
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            glPushMatrix();
+            GL.MatrixMode(MatrixMode.Modelview);
+            GL.PushMatrix();
 
-            glTranslated(fFrame.rootTranslationX, 0, 0);
-            glTranslated(0, -fFrame.rootTranslationY, 0);
-            glTranslated(0, 0, fFrame.rootTranslationZ);
+            GL.Translate(fFrame.rootTranslationX, 0, 0);
+            GL.Translate(0, -fFrame.rootTranslationY, 0);
+            GL.Translate(0, 0, fFrame.rootTranslationZ);
 
             BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma, ref rot_mat);
-            glMultMatrixd(rot_mat);
+            GL.MultMatrix(rot_mat);
 
             if (b_index > -1)
             {
@@ -380,227 +374,367 @@ namespace KimeraCS
                 if (p_index > -1)
                     DrawFieldBonePieceBoundingBox(fSkeleton.bones[b_index], p_index);
 
-                for (i = 0; i <= jsp; i++) glPopMatrix();
+                for (i = 0; i <= jsp; i++) GL.PopMatrix();
             }
 
-            glPopMatrix();
+            GL.PopMatrix();
+        }
+
+        /// <summary>
+        /// Möller–Trumbore ray-triangle intersection algorithm.
+        /// </summary>
+        private static bool RayTriangleIntersect(Vector3 rayOrigin, Vector3 rayDir,
+                                                  Vector3 v0, Vector3 v1, Vector3 v2,
+                                                  out float distance)
+        {
+            distance = 0;
+            const float EPSILON = 0.0000001f;
+
+            Vector3 edge1 = v1 - v0;
+            Vector3 edge2 = v2 - v0;
+            Vector3 h = Vector3.Cross(rayDir, edge2);
+            float a = Vector3.Dot(edge1, h);
+
+            if (a > -EPSILON && a < EPSILON)
+                return false; // Ray is parallel to triangle
+
+            float f = 1.0f / a;
+            Vector3 s = rayOrigin - v0;
+            float u = f * Vector3.Dot(s, h);
+
+            if (u < 0.0f || u > 1.0f)
+                return false;
+
+            Vector3 q = Vector3.Cross(s, edge1);
+            float v = f * Vector3.Dot(rayDir, q);
+
+            if (v < 0.0f || u + v > 1.0f)
+                return false;
+
+            // Compute distance to intersection point
+            distance = f * Vector3.Dot(edge2, q);
+            return distance > EPSILON;
+        }
+
+        /// <summary>
+        /// Tests ray intersection with a bone's geometry.
+        /// </summary>
+        private static bool RayIntersectsBone(Vector3 rayOrigin, Vector3 rayDir,
+                                               FieldBone bone, Matrix4 boneTransform,
+                                               out float minDist)
+        {
+            minDist = float.MaxValue;
+            bool hit = false;
+
+            for (int ri = 0; ri < bone.nResources; ri++)
+            {
+                var model = bone.fRSDResources[ri].Model;
+                if (model.Polys == null) continue;
+
+                // Build model transform (pre-multiply order to match OpenGL)
+                // OpenGL does: Push bone matrix, Translate, Rotate, Scale, Draw
+                // For row-vectors: v * Scale * Rotate * Translate * Bone
+                var openTkQuat = new OpenTK.Mathematics.Quaternion(
+                    (float)model.rotationQuaternion.x, (float)model.rotationQuaternion.y,
+                    (float)model.rotationQuaternion.z, (float)model.rotationQuaternion.w);
+
+                Matrix4 fullTransform = Matrix4.CreateScale(model.resizeX, model.resizeY, model.resizeZ)
+                    * Matrix4.CreateFromQuaternion(openTkQuat)
+                    * Matrix4.CreateTranslation(model.repositionX, model.repositionY, model.repositionZ)
+                    * boneTransform;
+
+                for (int gi = 0; gi < model.Header.numGroups; gi++)
+                {
+                    if (model.Groups[gi].HiddenQ) continue;
+
+                    int offsetVert = model.Groups[gi].offsetVert;
+
+                    for (int pi = model.Groups[gi].offsetPoly;
+                         pi < model.Groups[gi].offsetPoly + model.Groups[gi].numPoly;
+                         pi++)
+                    {
+                        // Transform vertices by the full transform
+                        Vector4 v0h = new Vector4(
+                            model.Verts[model.Polys[pi].Verts[0] + offsetVert].x,
+                            model.Verts[model.Polys[pi].Verts[0] + offsetVert].y,
+                            model.Verts[model.Polys[pi].Verts[0] + offsetVert].z, 1.0f) * fullTransform;
+                        Vector4 v1h = new Vector4(
+                            model.Verts[model.Polys[pi].Verts[1] + offsetVert].x,
+                            model.Verts[model.Polys[pi].Verts[1] + offsetVert].y,
+                            model.Verts[model.Polys[pi].Verts[1] + offsetVert].z, 1.0f) * fullTransform;
+                        Vector4 v2h = new Vector4(
+                            model.Verts[model.Polys[pi].Verts[2] + offsetVert].x,
+                            model.Verts[model.Polys[pi].Verts[2] + offsetVert].y,
+                            model.Verts[model.Polys[pi].Verts[2] + offsetVert].z, 1.0f) * fullTransform;
+
+                        Vector3 v0 = v0h.Xyz / v0h.W;
+                        Vector3 v1 = v1h.Xyz / v1h.W;
+                        Vector3 v2 = v2h.Xyz / v2h.W;
+
+                        if (RayTriangleIntersect(rayOrigin, rayDir, v0, v1, v2, out float dist))
+                        {
+                            if (dist > 0 && dist < minDist)
+                            {
+                                minDist = dist;
+                                hit = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return hit;
         }
 
         public static int GetClosestFieldBone(FieldSkeleton fSkeleton, FieldFrame fFrame,
                                               int px, int py)
         {
-            int iGetClosestFieldBoneResult;
-
-            int bi, nBones, height, jsp;
-            float min_z;
-
+            // Get viewport
             int[] vp = new int[4];
-            double[] P_matrix = new double[16];
+            GL.GetInteger(GetPName.Viewport, vp);
+            int height = vp[3];
+
+            // Get view and projection matrices from GLRenderer
+            Matrix4 view = GLRenderer.ViewMatrix;
+            Matrix4 projection = GLRenderer.ProjectionMatrix;
+
+            // Create ray from screen coordinates
+            Vector4 viewport = new Vector4(vp[0], vp[1], vp[2], vp[3]);
+            float screenY = height - py;
+
+            // Build skeleton root transform
+            // Use pre-multiplication to match OpenGL's column-vector convention:
+            // OpenGL: M = M * T * R means v' = M * T * R * v (R applied first, then T)
+            // Row-vector equivalent: v * R_row * T_row requires building R * T
             double[] rot_mat = new double[16];
-
-            int[] selBuff = new int[fSkeleton.bones.Count * 4];
-
-            string[] joint_stack = new string[fSkeleton.bones.Count * 4];
-
-            jsp = 0;
-            joint_stack[jsp] = fSkeleton.bones[0].joint_f;
-
-            glSelectBuffer(fSkeleton.bones.Count * 4, selBuff);
-            glInitNames();
-
-            glRenderMode(GLRenderingMode.GL_SELECT);
-
-            glMatrixMode(GLMatrixModeList.GL_PROJECTION);
-            glPushMatrix();
-            glGetDoublev((uint)GLCapability.GL_PROJECTION_MATRIX, P_matrix);
-            glLoadIdentity();
-
-            glGetIntegerv((uint)GLCapability.GL_VIEWPORT, vp);
-            height = vp[3];
-
-            gluPickMatrix(px - 1, height - py + 1, 3, 3, vp);
-            //gluPerspective(60, (float)width / height, 0.1, 10000); //'max(0.1 - DIST, 0.1), ComputeHRCDiameter(obj) * 2 - DIST
-            glMultMatrixd(P_matrix);
-
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            glPushMatrix();
-
-            glTranslated(fFrame.rootTranslationX, 0, 0);
-            glTranslated(0, -fFrame.rootTranslationY, 0);
-            glTranslated(0, 0, fFrame.rootTranslationZ);
-
             BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma, ref rot_mat);
-            glMultMatrixd(rot_mat);
+            Matrix4 rotMatrix = DoubleArrayToMatrix4(rot_mat);
 
-            for (bi = 0; bi < fSkeleton.bones.Count; bi++)
+            // Build root transform: rotation first, then translations (in reverse order of OpenGL calls)
+            Matrix4 rootTransform = rotMatrix
+                * Matrix4.CreateTranslation((float)fFrame.rootTranslationX,
+                                           (float)(-fFrame.rootTranslationY),
+                                           (float)fFrame.rootTranslationZ);
+
+            // Unproject to create ray (using identity for model since we transform vertices manually)
+            Vector3 nearPoint = Unproject(new Vector3(px, screenY, 0.0f), Matrix4.Identity, view, projection, viewport);
+            Vector3 farPoint = Unproject(new Vector3(px, screenY, 1.0f), Matrix4.Identity, view, projection, viewport);
+            Vector3 rayOrigin = nearPoint;
+            Vector3 rayDir = Vector3.Normalize(farPoint - nearPoint);
+
+            // Setup matrix stack for hierarchy traversal
+            string[] joint_stack = new string[fSkeleton.bones.Count + 1];
+            Matrix4[] matrixStack = new Matrix4[fSkeleton.bones.Count + 2];
+            int matrixStackPtr = 0;
+            int jsp = 0;
+
+            joint_stack[jsp] = fSkeleton.bones[0].joint_f;
+            Matrix4 currentMatrix = rootTransform;
+            matrixStack[matrixStackPtr++] = currentMatrix;
+
+            int closestBone = -1;
+            float closestDist = float.MaxValue;
+
+            for (int bi = 0; bi < fSkeleton.bones.Count; bi++)
             {
-                glPushName((uint)bi);
-
                 while (!(fSkeleton.bones[bi].joint_f == joint_stack[jsp]) && jsp > 0)
                 {
-                    glPopMatrix();
+                    matrixStackPtr--;
+                    currentMatrix = matrixStack[matrixStackPtr - 1];
                     jsp--;
                 }
-                glPushMatrix();
-
-                //            'glRotated Frame.Rotations(bi).Beta, 0#, 1#, 0#
-                //            'glRotated Frame.Rotations(bi).Alpha, 1#, 0#, 0#
-                //            'glRotated Frame.Rotations(bi).Gamma, 0#, 0#, 1#
+                matrixStack[matrixStackPtr++] = currentMatrix;
 
                 BuildRotationMatrixWithQuaternions(fFrame.rotations[bi].alpha, fFrame.rotations[bi].beta, fFrame.rotations[bi].gamma, ref rot_mat);
-                glMultMatrixd(rot_mat);
+                rotMatrix = DoubleArrayToMatrix4(rot_mat);
+                // Pre-multiply to match OpenGL's transform order
+                currentMatrix = rotMatrix * currentMatrix;
 
-                DrawFieldBone(fSkeleton.bones[bi], false);
+                // Test ray intersection with this bone
+                if (RayIntersectsBone(rayOrigin, rayDir, fSkeleton.bones[bi], currentMatrix, out float dist))
+                {
+                    if (dist < closestDist)
+                    {
+                        closestDist = dist;
+                        closestBone = bi;
+                    }
+                }
 
-                glTranslated(0, 0, -fSkeleton.bones[bi].len);
+                // Pre-multiply translation to match OpenGL's GL.Translate behavior
+                currentMatrix = Matrix4.CreateTranslation(0, 0, (float)(-fSkeleton.bones[bi].len)) * currentMatrix;
                 jsp++;
                 joint_stack[jsp] = fSkeleton.bones[bi].joint_i;
-
-                glPopName();
             }
 
-            while (jsp > 0)
+            return closestBone;
+        }
+
+        /// <summary>
+        /// Tests ray intersection with a specific resource's geometry.
+        /// </summary>
+        private static bool RayIntersectsResource(Vector3 rayOrigin, Vector3 rayDir,
+                                                   FieldRSDResource resource, Matrix4 boneTransform,
+                                                   out float minDist)
+        {
+            minDist = float.MaxValue;
+            bool hit = false;
+
+            var model = resource.Model;
+            if (model.Polys == null) return false;
+
+            // Build model transform (pre-multiply order to match OpenGL)
+            // OpenGL does: Push bone matrix, Translate, Rotate, Scale, Draw
+            // For row-vectors: v * Scale * Rotate * Translate * Bone
+            var openTkQuat = new OpenTK.Mathematics.Quaternion(
+                (float)model.rotationQuaternion.x, (float)model.rotationQuaternion.y,
+                (float)model.rotationQuaternion.z, (float)model.rotationQuaternion.w);
+
+            Matrix4 fullTransform = Matrix4.CreateScale(model.resizeX, model.resizeY, model.resizeZ)
+                * Matrix4.CreateFromQuaternion(openTkQuat)
+                * Matrix4.CreateTranslation(model.repositionX, model.repositionY, model.repositionZ)
+                * boneTransform;
+
+            for (int gi = 0; gi < model.Header.numGroups; gi++)
             {
-                glPopMatrix();
-                jsp--;
-            }
-            glPopMatrix();
+                if (model.Groups[gi].HiddenQ) continue;
 
-            glMatrixMode(GLMatrixModeList.GL_PROJECTION);
-            glPopMatrix();
+                int offsetVert = model.Groups[gi].offsetVert;
 
-            nBones = glRenderMode(GLRenderingMode.GL_RENDER);
-
-            iGetClosestFieldBoneResult = -1;
-            min_z = -1;
-
-            for (bi = 0; bi < nBones; bi++)
-            {
-                if (CompareLongs((long)min_z, selBuff[bi * 4 + 1]))
+                for (int pi = model.Groups[gi].offsetPoly;
+                     pi < model.Groups[gi].offsetPoly + model.Groups[gi].numPoly;
+                     pi++)
                 {
-                    min_z = selBuff[bi * 4 + 1];
-                    iGetClosestFieldBoneResult = selBuff[bi * 4 + 3];
+                    // Transform vertices by the full transform
+                    Vector4 v0h = new Vector4(
+                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].x,
+                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].y,
+                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].z, 1.0f) * fullTransform;
+                    Vector4 v1h = new Vector4(
+                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].x,
+                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].y,
+                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].z, 1.0f) * fullTransform;
+                    Vector4 v2h = new Vector4(
+                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].x,
+                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].y,
+                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].z, 1.0f) * fullTransform;
+
+                    Vector3 v0 = v0h.Xyz / v0h.W;
+                    Vector3 v1 = v1h.Xyz / v1h.W;
+                    Vector3 v2 = v2h.Xyz / v2h.W;
+
+                    if (RayTriangleIntersect(rayOrigin, rayDir, v0, v1, v2, out float dist))
+                    {
+                        if (dist > 0 && dist < minDist)
+                        {
+                            minDist = dist;
+                            hit = true;
+                        }
+                    }
                 }
             }
 
-            return iGetClosestFieldBoneResult;
+            return hit;
         }
 
         public static int GetClosestFieldBonePiece(FieldSkeleton fSkeleton, FieldFrame fFrame,
                                                    int iBoneSelected, int px, int py)
         {
-            int iGetClosestFieldBonePieceResult;
-
-            int iBoneIdx, iPolyIdx, iNumPieces, width, height, jsp;
-            float min_z;
-
+            // Get viewport
             int[] vp = new int[4];
-            double[] P_matrix = new double[16];
+            GL.GetInteger(GetPName.Viewport, vp);
+            int height = vp[3];
+
+            // Get view and projection matrices from GLRenderer
+            Matrix4 view = GLRenderer.ViewMatrix;
+            Matrix4 projection = GLRenderer.ProjectionMatrix;
+
+            // Create ray from screen coordinates
+            Vector4 viewport = new Vector4(vp[0], vp[1], vp[2], vp[3]);
+            float screenY = height - py;
+
+            // Build skeleton root transform (pre-multiply to match OpenGL)
             double[] rot_mat = new double[16];
-
-            int[] selBuff = new int[fSkeleton.bones[iBoneSelected].nResources * 4];
-
-            //string[] joint_stack = new string[Skeleton.nBones];
-            string[] joint_stack = new string[fSkeleton.bones.Count];
-            jsp = 0;
-
-            glSelectBuffer(fSkeleton.bones[iBoneSelected].nResources * 4, selBuff);
-            glInitNames();
-
-            glRenderMode(GLRenderingMode.GL_SELECT);
-
-            glMatrixMode(GLMatrixModeList.GL_PROJECTION);
-            glPushMatrix();
-            glGetDoublev((uint)GLCapability.GL_PROJECTION_MATRIX, P_matrix);
-            glLoadIdentity();
-
-            glGetIntegerv((uint)GLCapability.GL_VIEWPORT, vp);
-            width = vp[2];
-            height = vp[3];
-
-            gluPickMatrix(px - 1, height - py + 1, 3, 3, vp);
-            gluPerspective(60, (float)width / height, 0.1, 10000);        // max(0.1 - DIST, 0.1) , ComputeFieldDiameter(ref Skeleton) * 2 - DIST);
-            //glMultMatrixd(P_matrix);
-
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            glPushMatrix();
-
-            glTranslated(fFrame.rootTranslationX, 0, 0);
-            glTranslated(0, -fFrame.rootTranslationY, 0);
-            glTranslated(0, 0, fFrame.rootTranslationZ);
-
             BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma, ref rot_mat);
-            glMultMatrixd(rot_mat);
+            Matrix4 rotMatrix = DoubleArrayToMatrix4(rot_mat);
 
-            for (iBoneIdx = 0; iBoneIdx < iBoneSelected; iBoneIdx++)
+            Matrix4 rootTransform = rotMatrix
+                * Matrix4.CreateTranslation((float)fFrame.rootTranslationX,
+                                           (float)(-fFrame.rootTranslationY),
+                                           (float)fFrame.rootTranslationZ);
+
+            // Navigate to the selected bone through the hierarchy
+            string[] joint_stack = new string[fSkeleton.bones.Count + 1];
+            Matrix4[] matrixStack = new Matrix4[fSkeleton.bones.Count + 2];
+            int matrixStackPtr = 0;
+            int jsp = 0;
+
+            joint_stack[jsp] = fSkeleton.bones[0].joint_f;
+            Matrix4 currentMatrix = rootTransform;
+            matrixStack[matrixStackPtr++] = currentMatrix;
+
+            for (int iBoneIdx = 0; iBoneIdx < iBoneSelected; iBoneIdx++)
             {
                 while (!(fSkeleton.bones[iBoneIdx].joint_f == joint_stack[jsp]) && jsp > 0)
                 {
-                    glPopMatrix();
+                    matrixStackPtr--;
+                    currentMatrix = matrixStack[matrixStackPtr - 1];
                     jsp--;
                 }
-                glPushMatrix();
+                matrixStack[matrixStackPtr++] = currentMatrix;
 
-                //  glRotated Frame.Rotations(bi).Beta, 0#, 1#, 0#
-                //  glRotated Frame.Rotations(bi).Alpha, 1#, 0#, 0#
-                //  glRotated Frame.Rotations(bi).Gamma, 0#, 0#, 1#
-
-                BuildRotationMatrixWithQuaternions(fFrame.rotations[iBoneIdx].alpha, 
-                                                   fFrame.rotations[iBoneIdx].beta, 
+                BuildRotationMatrixWithQuaternions(fFrame.rotations[iBoneIdx].alpha,
+                                                   fFrame.rotations[iBoneIdx].beta,
                                                    fFrame.rotations[iBoneIdx].gamma, ref rot_mat);
-                glMultMatrixd(rot_mat);
+                rotMatrix = DoubleArrayToMatrix4(rot_mat);
+                // Pre-multiply to match OpenGL's transform order
+                currentMatrix = rotMatrix * currentMatrix;
 
-                glTranslated(0, 0, -fSkeleton.bones[iBoneIdx].len);
+                // Pre-multiply translation
+                currentMatrix = Matrix4.CreateTranslation(0, 0, (float)(-fSkeleton.bones[iBoneIdx].len)) * currentMatrix;
 
                 jsp++;
                 joint_stack[jsp] = fSkeleton.bones[iBoneIdx].joint_i;
             }
 
+            // Navigate to selected bone
             while (!(fSkeleton.bones[iBoneSelected].joint_f == joint_stack[jsp]) && jsp > 0)
             {
-                glPopMatrix();
+                matrixStackPtr--;
+                currentMatrix = matrixStack[matrixStackPtr - 1];
                 jsp--;
             }
-            glPushMatrix();
 
-            glRotated(fFrame.rotations[iBoneSelected].beta, 0, 1, 0);
-            glRotated(fFrame.rotations[iBoneSelected].alpha, 1, 0, 0);
-            glRotated(fFrame.rotations[iBoneSelected].gamma, 0, 0, 1);
-            jsp++;
+            // Apply selected bone's rotation (pre-multiply)
+            BuildRotationMatrixWithQuaternions(fFrame.rotations[iBoneSelected].alpha,
+                                               fFrame.rotations[iBoneSelected].beta,
+                                               fFrame.rotations[iBoneSelected].gamma, ref rot_mat);
+            rotMatrix = DoubleArrayToMatrix4(rot_mat);
+            currentMatrix = rotMatrix * currentMatrix;
 
-            for (iPolyIdx = 0; iPolyIdx < fSkeleton.bones[iBoneSelected].nResources; iPolyIdx++)
+            // Unproject to create ray
+            Vector3 nearPoint = Unproject(new Vector3(px, screenY, 0.0f), Matrix4.Identity, view, projection, viewport);
+            Vector3 farPoint = Unproject(new Vector3(px, screenY, 1.0f), Matrix4.Identity, view, projection, viewport);
+            Vector3 rayOrigin = nearPoint;
+            Vector3 rayDir = Vector3.Normalize(farPoint - nearPoint);
+
+            // Test each resource in the bone
+            int closestPiece = -1;
+            float closestDist = float.MaxValue;
+
+            for (int iPolyIdx = 0; iPolyIdx < fSkeleton.bones[iBoneSelected].nResources; iPolyIdx++)
             {
-                glPushName((uint)iPolyIdx);
-
-                DrawRSDResource(fSkeleton.bones[iBoneSelected].fRSDResources[iPolyIdx], false);
-
-                glPopName();
-            }
-
-            while (jsp > 0)
-            {
-                glPopMatrix();
-                jsp--;
-            }
-            glPopMatrix();
-            glMatrixMode(GLMatrixModeList.GL_PROJECTION);
-            glPopMatrix();
-
-            iNumPieces = glRenderMode(GLRenderingMode.GL_RENDER);
-            iGetClosestFieldBonePieceResult = -1;
-            min_z = -1;
-
-            for (iPolyIdx = 0; iPolyIdx < iNumPieces; iPolyIdx++)
-            {
-                if (CompareLongs((long)min_z, selBuff[iPolyIdx * 4 + 1]))
+                if (RayIntersectsResource(rayOrigin, rayDir, fSkeleton.bones[iBoneSelected].fRSDResources[iPolyIdx],
+                                          currentMatrix, out float dist))
                 {
-                    min_z = selBuff[iPolyIdx * 4 + 1];
-                    iGetClosestFieldBonePieceResult = selBuff[iPolyIdx * 4 + 3];
+                    if (dist < closestDist)
+                    {
+                        closestDist = dist;
+                        closestPiece = iPolyIdx;
+                    }
                 }
             }
-            //  Debug.Print GetClosestHRCBonePiece, nPieces
 
-            return iGetClosestFieldBonePieceResult;
+            return closestPiece;
         }
 
         public static void AddFieldBone(ref FieldBone fBone, ref PModel Model)
@@ -702,28 +836,28 @@ namespace KimeraCS
             for (ri = 0; ri < fBone.nResources; ri++)
             {
                 //  Debug.Print "File=", bone.Resources(ri).res_file, bone.Resources(ri).Model.fileName
-                if (glIsEnabled(GLCapability.GL_LIGHTING))
+                if (GL.IsEnabled(EnableCap.Lighting))
                 {
                     tmpRSDResource = fBone.fRSDResources[ri];
                     ApplyCurrentVColors(ref tmpRSDResource.Model);
                     fBone.fRSDResources[ri] = tmpRSDResource;
                 }
 
-                glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-                glPushMatrix();
+                GL.MatrixMode(MatrixMode.Modelview);
+                GL.PushMatrix();
 
                 SetCameraModelViewQuat(fBone.fRSDResources[ri].Model.repositionX, fBone.fRSDResources[ri].Model.repositionY, fBone.fRSDResources[ri].Model.repositionZ,
                                        fBone.fRSDResources[ri].Model.rotationQuaternion,
                                        fBone.fRSDResources[ri].Model.resizeX, fBone.fRSDResources[ri].Model.resizeY, fBone.fRSDResources[ri].Model.resizeZ);
 
-                glScalef(fBone.resizeX, fBone.resizeY, fBone.resizeZ);
+                GL.Scale(fBone.resizeX, fBone.resizeY, fBone.resizeZ);
 
                 tmpRSDResource = fBone.fRSDResources[ri];
                 ApplyPChanges(ref tmpRSDResource.Model, false);
                 fBone.fRSDResources[ri] = tmpRSDResource;
 
-                glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-                glPopMatrix();
+                GL.MatrixMode(MatrixMode.Modelview);
+                GL.PopMatrix();
             }
 
             if (merge)
@@ -745,7 +879,6 @@ namespace KimeraCS
         public static void ApplyFieldChanges(ref FieldSkeleton fSkeleton, FieldFrame fFrame, bool merge)
         {
             int bi, jsp;
-            //string[] joint_stack = new string[fSkeleton.nBones];
             string[] joint_stack = new string[fSkeleton.bones.Count + 1];
 
             FieldBone tmpfBone;
@@ -753,28 +886,26 @@ namespace KimeraCS
             jsp = 0;
             joint_stack[jsp] = fSkeleton.bones[0].joint_f;
 
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
+            GL.MatrixMode(MatrixMode.Modelview);
 
-            //for (bi = 0; bi < fSkeleton.nBones; bi++)
             for (bi = 0; bi < fSkeleton.bones.Count; bi++)
             {
                 while ((fSkeleton.bones[bi].joint_f != joint_stack[jsp]) && jsp > 0)
                 {
-                    glPopMatrix();
+                    GL.PopMatrix();
                     jsp--;
                 }
-                glPushMatrix();
+                GL.PushMatrix();
 
-                glRotated(fFrame.rotations[bi].beta, 0, 1, 0);
-                glRotated(fFrame.rotations[bi].alpha, 1, 0, 0);
-                glRotated(fFrame.rotations[bi].gamma, 0, 0, 1);
+                GL.Rotate(fFrame.rotations[bi].beta, 0, 1, 0);
+                GL.Rotate(fFrame.rotations[bi].alpha, 1, 0, 0);
+                GL.Rotate(fFrame.rotations[bi].gamma, 0, 0, 1);
 
-                //  Debug.Print bi, obj.Bones(bi).joint_f, obj.Bones(bi).NumResources
                 tmpfBone = fSkeleton.bones[bi];
                 ApplyFieldBoneChanges(ref tmpfBone, merge);
                 fSkeleton.bones[bi] = tmpfBone;
 
-                glTranslated(0, 0, -fSkeleton.bones[bi].len);
+                GL.Translate(0, 0, -fSkeleton.bones[bi].len);
 
                 jsp++;
                 joint_stack[jsp] = fSkeleton.bones[bi].joint_i;
@@ -782,7 +913,7 @@ namespace KimeraCS
 
             while (jsp > 0)
             {
-                glPopMatrix();
+                GL.PopMatrix();
                 jsp--;
             }
         }

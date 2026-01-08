@@ -2,14 +2,11 @@
 using System.IO;
 using System.Windows.Forms;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using OpenTK.Graphics.OpenGL;
 
 namespace KimeraCS
 {
-
-    using Defines;
 
     using static FF7FieldSkeleton;
     using static FF7PModel;
@@ -17,8 +14,6 @@ namespace KimeraCS
     using static FF7TEXTexture;
 
     using static Utils;
-    using static OpenGL32;
-    using static GDI32;
     using static FileTools;
 
     public class FF7FieldRSDResource
@@ -104,10 +99,10 @@ namespace KimeraCS
                     while (rsdString[rsdNTEXpos].Length == 0 || rsdString[rsdNTEXpos][0] != 'N') rsdNTEXpos++;
 
                     // Let's get the num textures
-                    numTextures = Int32.Parse(rsdString[rsdNTEXpos].Split('=')[1]);
+                    numTextures = int.Parse(rsdString[rsdNTEXpos].Split('=')[1]);
 
-                    glTexParameterf(GLTextureTarget.GL_TEXTURE_2D, GLTextureParameter.GL_TEXTURE_MAG_FILTER, (float)GLTextureMagFilter.GL_LINEAR);
-                    glTexParameterf(GLTextureTarget.GL_TEXTURE_2D, GLTextureParameter.GL_TEXTURE_MIN_FILTER, (float)GLTextureMagFilter.GL_LINEAR);
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
 
                     for (ti = 0; ti < numTextures; ti++)
                     {
@@ -254,17 +249,16 @@ namespace KimeraCS
         public static void DestroyRSDResources(ref FieldRSDResource Resource)
         {
             int ti;
-            uint[] lstTexID = new uint[1];
+            int[] lstTexID = new int[1];
 
             DestroyPModelResources(ref Resource.Model);
 
             for (ti = 0; ti < Resource.numTextures; ti++)
             {
-                lstTexID[0] = Resource.textures[ti].texID;
+                lstTexID[0] = (int)Resource.textures[ti].texID;
 
-                glDeleteTextures(1, lstTexID);
-                DeleteDC(Resource.textures[ti].HDC);
-                DeleteObject(Resource.textures[ti].HBMP);
+                GL.DeleteTextures(1, lstTexID);
+                Resource.textures[ti].bitmap?.Dispose();
             }
 
             Resource.textures.Clear();

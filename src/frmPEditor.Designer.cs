@@ -164,7 +164,10 @@ namespace KimeraCS
             this.chkEnableLighting = new System.Windows.Forms.CheckBox();
             this.openFile = new System.Windows.Forms.OpenFileDialog();
             this.saveFile = new System.Windows.Forms.SaveFileDialog();
-            this.panelEditorPModel = new System.Windows.Forms.PictureBox();
+            this.panelEditorPModel = new OpenTK.GLControl.GLControl(new OpenTK.GLControl.GLControlSettings
+            {
+                Profile = OpenTK.Windowing.Common.ContextProfile.Compatability
+            });
             this.tmrRenderPModel = new System.Windows.Forms.Timer(this.components);
             this.menuStrip1.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -186,7 +189,6 @@ namespace KimeraCS
             this.gbDrawingOptions.SuspendLayout();
             this.gbGroups.SuspendLayout();
             this.gbLight.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.panelEditorPModel)).BeginInit();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -1670,10 +1672,9 @@ namespace KimeraCS
             // 
             // panelEditorPModel
             // 
-            this.panelEditorPModel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            this.panelEditorPModel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.panelEditorPModel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this.panelEditorPModel.Location = new System.Drawing.Point(159, 25);
             this.panelEditorPModel.Name = "panelEditorPModel";
             this.panelEditorPModel.Size = new System.Drawing.Size(417, 322);
@@ -1746,7 +1747,6 @@ namespace KimeraCS
             this.gbGroups.ResumeLayout(false);
             this.gbLight.ResumeLayout(false);
             this.gbLight.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.panelEditorPModel)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -1763,7 +1763,7 @@ namespace KimeraCS
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.Panel panel3;
-        public System.Windows.Forms.PictureBox panelEditorPModel;
+        public OpenTK.GLControl.GLControl panelEditorPModel;
         private System.Windows.Forms.GroupBox gbRotation;
         private System.Windows.Forms.GroupBox gbReposition;
         private System.Windows.Forms.GroupBox gbResize;

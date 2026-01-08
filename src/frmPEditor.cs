@@ -1,21 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-
-using HDC = System.IntPtr;
+using OpenTK.Graphics.OpenGL;
 
 namespace KimeraCS
 {
-    using Defines;
+    using Core;
+    using Rendering;
 
     using static FrmSkeletonEditor;
 
@@ -34,9 +29,6 @@ namespace KimeraCS
     using static UndoRedoPE;
     using static Utils;
     using static FileTools;
-    using static OpenGL32;
-    using static User32;
-    using static GDI32;
 
     public partial class FrmPEditor : Form
     {
@@ -73,7 +65,7 @@ namespace KimeraCS
 
         // Vars
         public static PModel EditedPModel;
-        public uint[] tex_ids = new uint[1] { 0 };
+        public uint[] tex_ids = [0];
 
         public static int EditedBone, EditedBonePiece;
 
@@ -127,8 +119,8 @@ namespace KimeraCS
         public int shiftPressedQ;
         public bool DoNotAddPEStateQ;
 
-        public static HDC panelEditorPModelDC;
-        public static HDC OGLContextPEditor;
+        public static nint panelEditorPModelDC;
+        public static nint OGLContextPEditor;
 
         // Palette
         public static List<Color> colorTable = new List<Color>();
@@ -166,21 +158,21 @@ namespace KimeraCS
         // OpenGL methods:
         public void SetOGLEditorSettings()
         {
-            glClearDepth(1.0f);
+            GL.ClearDepth(1.0f);
 
-            glEnable(GLCapability.GL_DEPTH_TEST);
-            glDepthFunc(GLFunc.GL_LEQUAL);
+            GL.Enable(EnableCap.DepthTest);
+            GL.DepthFunc(DepthFunction.Lequal);
 
-            SetBlendMode(BLEND_MODE.BLEND_NONE);
+            SetBlendMode(BlendModes.None);
 
-            glCullFace(GLFace.GL_FRONT);
-            glEnable(GLCapability.GL_CULL_FACE);
+            GL.CullFace(CullFaceMode.Front);
+            GL.Enable(EnableCap.CullFace);
 
-            glEnable(GLCapability.GL_ALPHA_TEST);
-            glAlphaFunc(GLFunc.GL_GREATER, 0);
+            GL.Enable(EnableCap.AlphaTest);
+            GL.AlphaFunc(AlphaFunction.Greater, 0);
 
-            //glEnable(GLCapability.GL_BLEND);
-            //glBlendFunc(GLBlendFuncFactor.GL_SRC_ALPHA, GLBlendFuncFactor.GL_ONE_MINUS_SRC_ALPHA);
+            //GL.Enable(EnableCap.Blend);
+            //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
         }
         /////////////////////////////////////////////////////////////
@@ -369,11 +361,11 @@ namespace KimeraCS
             {
                 pbMouseIsDownPE = true;
 
-                if (chkEnableLighting.Checked) glEnable(GLCapability.GL_LIGHTING);
+                if (chkEnableLighting.Checked) GL.Enable(EnableCap.Lighting);
 
-                //glClearColor(0.4f, 0.4f, 0.65f, 0);
-                glViewport(0, 0, panelEditorPModel.ClientRectangle.Width, panelEditorPModel.ClientRectangle.Height);
-                //glClear(GLBufferMask.GL_COLOR_BUFFER_BIT | GLBufferMask.GL_DEPTH_BUFFER_BIT);
+                //GL.ClearColor(0.4f, 0.4f, 0.65f, 0);
+                GL.Viewport(0, 0, panelEditorPModel.ClientRectangle.Width, panelEditorPModel.ClientRectangle.Height);
+                //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
                 SetCameraPModel(EditedPModel, panXPE, panYPE, panZPE + DISTPE,
                                 alphaPE, betaPE, gammaPE, 1, 1, 1);
@@ -412,9 +404,9 @@ namespace KimeraCS
                 if (loadedPModel && e.Button != MouseButtons.None)
                 {
 
-                    glClearColor(0.4f, 0.4f, 0.65f, 0);
-                    glViewport(0, 0, panelEditorPModel.ClientRectangle.Width, panelEditorPModel.ClientRectangle.Height);
-                    glClear(GLBufferMask.GL_COLOR_BUFFER_BIT | GLBufferMask.GL_DEPTH_BUFFER_BIT);
+                    GL.ClearColor(0.4f, 0.4f, 0.65f, 0);
+                    GL.Viewport(0, 0, panelEditorPModel.ClientRectangle.Width, panelEditorPModel.ClientRectangle.Height);
+                    GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
                     SetCameraPModel(EditedPModel, panXPE, panYPE, panZPE + DISTPE,
                                     alphaPE, betaPE, gammaPE, 1, 1, 1);
@@ -482,12 +474,12 @@ namespace KimeraCS
 
             if (loadedPModel)
             {
-                if (GetOGLContext() != OGLContextPEditor)
-                    SetOGLContext(panelEditorPModelDC, OGLContextPEditor);
+                panelEditorPModel.MakeCurrent();
+                GLRenderer.SetCurrentContext("PEditor");
 
                 SetOGLEditorSettings();
 
-                glViewport(0, 0, panelEditorPModel.ClientRectangle.Width,
+                GL.Viewport(0, 0, panelEditorPModel.ClientRectangle.Width,
                                  panelEditorPModel.ClientRectangle.Height);
                 ClearPanel();
                 //SetDefaultOGLRenderState();
@@ -503,9 +495,8 @@ namespace KimeraCS
 
                 if (chkShowAxes.Checked) DrawAxesPE(panelEditorPModel);
 
-                glFlush();
-                SwapBuffers(panelEditorPModelDC);
-
+                GL.Flush();
+                panelEditorPModel.SwapBuffers();
             }
         }
 
@@ -2580,9 +2571,13 @@ namespace KimeraCS
             if (bmpFullGradientPalette != null) bmpFullGradientPalette.Dispose();
             DestroyPModelResources(ref EditedPModel);
 
-            DisableOpenGL(OGLContextPEditor);
+            // Shutdown modern renderer for this context
+            panelEditorPModel.MakeCurrent();
+            GLRenderer.SetCurrentContext("PEditor");
+            GLRenderer.Shutdown();
+
+            // GLControl handles its own cleanup
             if (frmGroupProp != null) frmGroupProp.Dispose();
-            this.Dispose();
 
             // Change sliders status
             frmSkelEdit.ChangeGroupBoxesStatusPEditor(true);
@@ -2707,12 +2702,17 @@ namespace KimeraCS
         // Local methods:
         public void InitializeLoadPEditor()
         {
-            //  Get HDC for picturebox
-            panelEditorPModelDC = GetDC(panelEditorPModel.Handle);
-            OGLContextPEditor = CreateOGLContext(panelEditorPModelDC);
+            // GLControl handles context creation internally
+            panelEditorPModel.MakeCurrent();
 
-            // Initialize OpenGL Context;
-            //SetOGLEditorSettings();
+            // Set context ID for GLRenderer (each GL context needs separate resources)
+            GLRenderer.SetCurrentContext("PEditor");
+
+            // Load GL extension functions (needed for legacy P/Invoke calls)
+            //GLExt.Load_Extensions();
+
+            // Initialize modern renderer for this context
+            GLRenderer.Initialize();
 
             loadedPModel = false;
 
@@ -3016,40 +3016,40 @@ namespace KimeraCS
                                    EditedPModel.rotationQuaternion,
                                    rszXPE, rszYPE, rszZPE);
 
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            glPushMatrix();
+            GL.MatrixMode(MatrixMode.Modelview);
+            GL.PushMatrix();
 
             ComputeCurrentBoundingBox(ref EditedPModel);
             ComputePModelBoundingBox(EditedPModel, ref p_min, ref p_max);
             tmpDist = -2 * ComputeSceneRadius(p_min, p_max);
-            
+
             if (chkEnableLighting.Checked)
             {
-                glViewport(0, 0, panelEditorPModel.ClientRectangle.Width, panelEditorPModel.ClientRectangle.Height);
-                glClear(GLBufferMask.GL_COLOR_BUFFER_BIT | GLBufferMask.GL_DEPTH_BUFFER_BIT);
+                GL.Viewport(0, 0, panelEditorPModel.ClientRectangle.Width, panelEditorPModel.ClientRectangle.Height);
+                GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
                 SetCameraAroundModelQuat(ref p_min, ref p_max, repXPE, repYPE, repZPE + tmpDist,
                                          EditedPModel.rotationQuaternion,
                                          rszXPE, rszYPE, rszZPE);
 
-                glDisable(GLCapability.GL_LIGHT0);
-                glDisable(GLCapability.GL_LIGHT1);
-                glDisable(GLCapability.GL_LIGHT2);
-                glDisable(GLCapability.GL_LIGHT3);
+                GL.Disable(EnableCap.Light0);
+                GL.Disable(EnableCap.Light1);
+                GL.Disable(EnableCap.Light2);
+                GL.Disable(EnableCap.Light3);
 
                 //ComputePModelBoundingBox(EditedPModel, ref p_min, ref p_max);
                 modelDiameterNormalized = (-2 * ComputeSceneRadius(p_min, p_max)) / LIGHT_STEPS;
 
-                SetLighting(GLCapability.GL_LIGHT0, modelDiameterNormalized * hsbLightX.Value,
-                                                    modelDiameterNormalized * hsbLightY.Value,
-                                                    modelDiameterNormalized * hsbLightZ.Value,
-                                                    1, 1, 1, false);
+                SetLighting(LightName.Light0, modelDiameterNormalized * hsbLightX.Value,
+                                              modelDiameterNormalized * hsbLightY.Value,
+                                              modelDiameterNormalized * hsbLightZ.Value,
+                                              1, 1, 1, false);
 
                 ApplyCurrentVColors(ref EditedPModel);
             }
 
-            glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            glPopMatrix();
+            GL.MatrixMode(MatrixMode.Modelview);
+            GL.PopMatrix();
 
             SetCameraModelViewQuat(repXPE, repYPE, repZPE,
                                    EditedPModel.rotationQuaternion,
@@ -3442,17 +3442,17 @@ namespace KimeraCS
                 }
 
                 if (bmpFullPalette != null) bmpFullPalette.Dispose();
-                bmpFullPalette.Bitmap = bmpFullGradientPalette.Bitmap.Clone(new Rectangle(0, 0, 
-                                                                                          bmpFullGradientPalette.Width, 
+                bmpFullPalette.Bitmap = bmpFullGradientPalette.Bitmap.Clone(new Rectangle(0, 0,
+                                                                                          bmpFullGradientPalette.Width,
                                                                                           bmpFullGradientPalette.Height),
-                                                                            PixelFormat.Format32bppRgb);
+                                                                            System.Drawing.Imaging.PixelFormat.Format32bppRgb);
             }
 
             if (pbPalette.Image != null) pbPalette.Image.Dispose();
             pbPalette.Image = bmpFullPalette.Bitmap.Clone(new Rectangle(0, 0,
                                                                         pbPalette.ClientRectangle.Width,
                                                                         pbPalette.ClientRectangle.Height),
-                                                          PixelFormat.Format32bppRgb);
+                                                          System.Drawing.Imaging.PixelFormat.Format32bppRgb);
         }
 
         public void ChangeGroupStatus(bool bChangeGroup)
@@ -3521,7 +3521,7 @@ namespace KimeraCS
         //{
         //    int i, x, y, x0, y0;           
         //    uint col;
-        //    HDC hBrush, hNewBrush, hOldBrush, hPen, hOldPen;
+        //    nint hBrush, hNewBrush, hOldBrush, hPen, hOldPen;
         //    float sRows, fBrightness;
         //    LOGBRUSH lbNewBrush;
 
@@ -3866,7 +3866,7 @@ namespace KimeraCS
                             if (primaryFunc == K_PICK_VERTEX) primaryFunc = K_MOVE_VERTEX;
                             else secondaryFunc = K_MOVE_VERTEX;
 
-                            if (glIsEnabled(GLCapability.GL_LIGHTING))
+                            if (GL.IsEnabled(EnableCap.Lighting))
                                 GetAllNormalDependentPolys(EditedPModel, lstPickedVertices,
                                                            ref lstAdjacentPolys, ref lstAdjacentVerts, ref lstAdjacentAdjacentPolys);
                         }

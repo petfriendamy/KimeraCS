@@ -84,8 +84,6 @@ using System.Globalization;
 namespace KimeraCS
 {
 
-    using Defines;
-
     using static FF7Skeleton;
     using static FF7PModel;
 

@@ -2,14 +2,10 @@
 using System.Windows.Forms;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using OpenTK.Graphics.OpenGL;
 
 namespace KimeraCS
 {
-    
-    using Defines;
 
     using static FrmSkeletonEditor;
 
@@ -28,8 +24,6 @@ namespace KimeraCS
 
     using static Lighting;
 
-    using static OpenGL32;
-    using static GDI32;
     using static Utils;
     using static FileTools;
 
@@ -62,6 +56,7 @@ namespace KimeraCS
         public const int K_FRAME_ROOT_TRANSLATION = 2;
 
         // Global vars
+        public static OpenTK.GLControl.GLControl glPanel;  // Reference to OpenGL panel for SwapBuffers
         public static FieldSkeleton fSkeleton;
         public static FieldAnimation fAnimation;
 
@@ -324,8 +319,8 @@ namespace KimeraCS
                 // Clear PanelModel PictureBox
                 bLoaded = false;
                 ClearPanel();
-                glFlush();
-                SwapBuffers(panelModelDC);
+                GL.Flush();
+                glPanel?.SwapBuffers();
             }
             catch
             {
@@ -394,8 +389,8 @@ namespace KimeraCS
                     case K_P_BATTLE_MODEL:
                     case K_P_MAGIC_MODEL:
                     case K_3DS_MODEL:
-                        glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-                        glPushMatrix();
+                        GL.MatrixMode(MatrixMode.Modelview);
+                        GL.PushMatrix();
 
                         SetCameraModelViewQuat(fPModel.repositionX, fPModel.repositionY, fPModel.repositionZ,
                                                fPModel.rotationQuaternion,
@@ -410,9 +405,9 @@ namespace KimeraCS
 
                         SetLights();
 
-                        if (glIsEnabled(GLCapability.GL_LIGHTING)) ApplyCurrentVColors(ref fPModel);
+                        if (GL.IsEnabled(EnableCap.Lighting)) ApplyCurrentVColors(ref fPModel);
 
-                        glPopMatrix();
+                        GL.PopMatrix();
                         WriteGlobalPModel(ref fPModel, strFileName);
                         CreateDListsFromPModel(ref fPModel);
 

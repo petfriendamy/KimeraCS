@@ -31,8 +31,6 @@ using System.Threading.Tasks;
 namespace KimeraCS
 {
 
-    using Defines;
-
     using static FF7Skeleton;
     using static FF7BattleSkeleton;
     using static FF7BattleAnimation;
