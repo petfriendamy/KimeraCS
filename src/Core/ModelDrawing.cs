@@ -2009,22 +2009,17 @@ namespace KimeraCS
                              pbIn.ClientRectangle.Height);
             ClearPanel();
 
-            //SetCameraPModel(EditedPModel,
-            //                panXPE, panYPE, panZPE + DISTPE,
-            //                alphaPE, betaPE, gammaPE,
-            //                1, 1, 1);
-
             SetCameraPModel(EditedPModel,
                             panXPE, panYPE, panZPE + DISTPE,
                             alphaPE, betaPE, gammaPE,
-                            rszXPE, rszYPE, rszZPE);
+                            1, 1, 1);
+
+            ConcatenateCameraModelView(repXPE, repYPE, repZPE,
+                                       0, 0, 0,
+                                       rszXPE, rszYPE, rszZPE);
 
             GL.MatrixMode(MatrixMode.Modelview);
             GL.PushMatrix();
-
-            //ConcatenateCameraModelView(repXPE, repYPE, repZPE,
-            //                           rotateAlpha, rotateBeta, rotateGamma,
-            //                           rszXPE, rszYPE, rszZPE);
 
             ComputePModelBoundingBox(EditedPModel, ref p_min, ref p_max);
             float modelDiameterNormalized = (-2 * ComputeSceneRadius(p_min, p_max)) / FrmPEditor.LIGHT_STEPS;
@@ -2073,7 +2068,9 @@ namespace KimeraCS
                 case K_VCOLORS:
                     DrawPModel(ref EditedPModel, ref tex_ids, true);
                     break;
-            }            
+            }
+
+            GL.PopMatrix();
         }
 
         public static void DrawAxesPE(Control pbIn)
@@ -2286,13 +2283,13 @@ namespace KimeraCS
             Point3D tmpVert;
             Color tmpColor;
 
-            if (Model.Vcolors[Model.Polys[iPolyIdx].Verts[iVertIdx] + 
+            if (Model.Vcolors[Model.Polys[iPolyIdx].Verts[iVertIdx] +
                               Model.Groups[iGroupIdx].offsetVert].R == bR &&
                 Model.Vcolors[Model.Polys[iPolyIdx].Verts[iVertIdx] +
                               Model.Groups[iGroupIdx].offsetVert].G == bG &&
                 Model.Vcolors[Model.Polys[iPolyIdx].Verts[iVertIdx] +
                               Model.Groups[iGroupIdx].offsetVert].B == bB)
-                        iPaintVertexResult = iVertIdx;
+                        iPaintVertexResult = Model.Polys[iPolyIdx].Verts[iVertIdx];
 
             if (iPaintVertexResult == -1)
             {
@@ -2318,9 +2315,9 @@ namespace KimeraCS
 
                 if (bTextured)
                 {
-                    Model.TexCoords[Model.Groups[iGroupIdx].offsetTex + iPaintVertexResult] = 
-                        new Point2D(Model.TexCoords[iVertIdx + Model.Groups[iGroupIdx].offsetTex].x,
-                                    Model.TexCoords[iVertIdx + Model.Groups[iGroupIdx].offsetTex].y);
+                    Model.TexCoords[Model.Groups[iGroupIdx].offsetTex + iPaintVertexResult] =
+                        new Point2D(Model.TexCoords[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetTex].x,
+                                    Model.TexCoords[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetTex].y);
                 }
 
                 //    // -- Commented in KimeraVB6
