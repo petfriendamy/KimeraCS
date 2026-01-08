@@ -104,6 +104,28 @@ namespace KimeraCS
 
         private void BtnExtCharLGPSrc_Click(object sender, EventArgs e)
         {
+            DialogResult result;
+            string path;
+
+            using (var folderDialog = new FolderBrowserDialog())
+            {
+                folderDialog.Description =
+                    "Select the source path where all the CHAR.LGP files are:";
+                result = folderDialog.ShowDialog();
+                path = folderDialog.SelectedPath;
+            }
+
+            if (result == DialogResult.OK)
+            {
+                if (!string.IsNullOrEmpty(path))
+                {
+                    // Put Global folder for input unswizzled.
+                    strCharLGPPathSrc = path;
+                    txtExtractedCharLGPSrc.Text = path;
+                }
+            }
+
+            /* The Tmr function crashes so I'm removing it
             FolderBrowserDialogEX fbdCharSrcDirectory = new FolderBrowserDialogEX();
 
             // We must select the directory from where to read the files.
@@ -133,11 +155,33 @@ namespace KimeraCS
                 }
             }
 
-            fbdCharSrcDirectory.Dispose();
+            fbdCharSrcDirectory.Dispose();*/
         }
 
         private void BtnExtCharLGPDst_Click(object sender, EventArgs e)
         {
+            DialogResult result;
+            string path;
+
+            using (var folderDialog = new FolderBrowserDialog())
+            {
+                folderDialog.Description =
+                    "Select the destination path where all the CHAR.LGP animation files will be put:";
+                result = folderDialog.ShowDialog();
+                path = folderDialog.SelectedPath;
+            }
+
+            if (result == DialogResult.OK)
+            {
+                if (!string.IsNullOrEmpty(path))
+                {
+                    // Put Global folder for input unswizzled.
+                    strCharLGPPathDest = path;
+                    txtExtractedCharLGPDest.Text = path;
+                }
+            }
+
+            /* The Tmr function crashes so I'm removing it
             FolderBrowserDialogEX fbdCharDestDirectory = new FolderBrowserDialogEX();
 
             // We must select the directory from where to read the files.
@@ -167,11 +211,33 @@ namespace KimeraCS
                 }
             }
 
-            fbdCharDestDirectory.Dispose();
+            fbdCharDestDirectory.Dispose();*/
         }
 
         private void BtnExtBattleLGPSrc_Click(object sender, EventArgs e)
         {
+            DialogResult result;
+            string path;
+
+            using (var folderDialog = new FolderBrowserDialog())
+            {
+                folderDialog.Description =
+                    "Select the source path where all the BATTLE.LGP files are:";
+                result = folderDialog.ShowDialog();
+                path = folderDialog.SelectedPath;
+            }
+
+            if (result == DialogResult.OK)
+            {
+                if (!string.IsNullOrEmpty(path))
+                {
+                    // Put Global folder for input unswizzled.
+                    strBattleLGPPathSrc = path;
+                    txtExtractedBattleLGPSrc.Text = path;
+                }
+            }
+
+            /* The Tmr function crashes so I'm removing it
             FolderBrowserDialogEX fbdBattleSrcDirectory = new FolderBrowserDialogEX();
 
             // We must select the directory from where to read the files.
@@ -201,11 +267,33 @@ namespace KimeraCS
                 }
             }
 
-            fbdBattleSrcDirectory.Dispose();
+            fbdBattleSrcDirectory.Dispose();*/
         }
 
         private void BtnExtBattleLGPDst_Click(object sender, EventArgs e)
         {
+            DialogResult result;
+            string path;
+
+            using (var folderDialog = new FolderBrowserDialog())
+            {
+                folderDialog.Description =
+                    "Select the destination path where all the BATTLE.LGP animation files will be put:";
+                result = folderDialog.ShowDialog();
+                path = folderDialog.SelectedPath;
+            }
+
+            if (result == DialogResult.OK)
+            {
+                if (!string.IsNullOrEmpty(path))
+                {
+                    // Put Global folder for input unswizzled.
+                    strBattleLGPPathDest = path;
+                    txtExtractedBattleLGPDest.Text = path;
+                }
+            }
+
+            /* The Tmr function crashes so I'm removing it
             FolderBrowserDialogEX fbdBattleDestDirectory = new FolderBrowserDialogEX();
 
             // We must select the directory from where to read the files.
@@ -235,11 +323,33 @@ namespace KimeraCS
                 }
             }
 
-            fbdBattleDestDirectory.Dispose();
+            fbdBattleDestDirectory.Dispose();*/
         }
 
         private void BtnExtMagicLGPSrc_Click(object sender, EventArgs e)
         {
+            DialogResult result;
+            string path;
+
+            using (var folderDialog = new FolderBrowserDialog())
+            {
+                folderDialog.Description =
+                    "Select the source path where all the BATTLE.LGP files are:";
+                result = folderDialog.ShowDialog();
+                path = folderDialog.SelectedPath;
+            }
+
+            if (result == DialogResult.OK)
+            {
+                if (!string.IsNullOrEmpty(path))
+                {
+                    // Put Global folder for input unswizzled.
+                    strMagicLGPPathSrc = path;
+                    txtExtractedMagicLGPSrc.Text = path;
+                }
+            }
+
+            /* The Tmr function crashes so I'm removing it
             FolderBrowserDialogEX fbdMagicSrcDirectory = new FolderBrowserDialogEX();
 
             // We must select the directory from where to read the files.
@@ -269,11 +379,33 @@ namespace KimeraCS
                 }
             }
 
-            fbdMagicSrcDirectory.Dispose();
+            fbdMagicSrcDirectory.Dispose();*/
         }
 
         private void BtnExtMagicLGPDst_Click(object sender, EventArgs e)
         {
+            DialogResult result;
+            string path;
+
+            using (var folderDialog = new FolderBrowserDialog())
+            {
+                folderDialog.Description =
+                    "Select the destination path where all the MAGIC.LGP animation files will be put:";
+                result = folderDialog.ShowDialog();
+                path = folderDialog.SelectedPath;
+            }
+
+            if (result == DialogResult.OK)
+            {
+                if (!string.IsNullOrEmpty(path))
+                {
+                    // Put Global folder for input unswizzled.
+                    strMagicLGPPathDest = path;
+                    txtExtractedMagicLGPDest.Text = path;
+                }
+            }
+
+            /* The Tmr function crashes so I'm removing it
             FolderBrowserDialogEX fbdMagicDestDirectory = new FolderBrowserDialogEX();
 
             // We must select the directory from where to read the files.
@@ -303,7 +435,7 @@ namespace KimeraCS
                 }
             }
 
-            fbdMagicDestDirectory.Dispose();
+            fbdMagicDestDirectory.Dispose();*/
         }
 
         private void BtnGo_Click(object sender, EventArgs e)

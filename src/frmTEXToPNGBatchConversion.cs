@@ -50,6 +50,28 @@ namespace KimeraCS
 
         private void BtnPath_Click(object sender, EventArgs e)
         {
+            DialogResult result;
+            string path;
+
+            using (var folderDialog = new FolderBrowserDialog())
+            {
+                folderDialog.Description =
+                    "Select the source path from where to search the .TEX files:";
+                result = folderDialog.ShowDialog();
+                path = folderDialog.SelectedPath;
+            }
+
+            if (result == DialogResult.OK)
+            {
+                if (!string.IsNullOrEmpty(path))
+                {
+                    // Put Global path.
+                    strGlobalPathTEX2PNGBatch = path;
+                    txtTEX2PNGBatchPath.Text = path;
+                }
+            }
+
+            /* The Tmr function crashes so I'm removing it
             FolderBrowserDialogEX fbdTEXBatchPath = new FolderBrowserDialogEX();
 
             // We must select the directory from where to read the files.
@@ -84,7 +106,7 @@ namespace KimeraCS
                 }
             }
 
-            fbdTEXBatchPath.Dispose();
+            fbdTEXBatchPath.Dispose();*/
         }
 
         private void BtnGo_Click(object sender, EventArgs e)
