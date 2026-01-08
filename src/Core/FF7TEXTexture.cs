@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Text.RegularExpressions;
@@ -6,7 +6,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Linq;
 using System.Windows.Forms;
-using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL.Compatibility;
 
 namespace KimeraCS
 {
@@ -296,20 +296,17 @@ namespace KimeraCS
         //  Create the OpenGL Texture object
         public static void LoadTEXTexture(ref TEX inTEXTexture)
         {
-            IntPtr hTIPtr;
             byte[] textureImg = null;
 
-            OpenTK.Graphics.OpenGL.PixelFormat format = 0x0;
+            OpenTK.Graphics.OpenGL.Compatibility.PixelFormat format = 0x0;
             InternalFormat internalformat = 0x0;
 
-            var tex = new uint[] { inTEXTexture.texID };
+            int texId = GL.GenTexture();
+            inTEXTexture.texID = (uint)texId;
+            GL.BindTexture(TextureTarget.Texture2d, texId);
 
-            GL.GenTextures(1, tex);
-            inTEXTexture.texID = tex[0];  // Copy generated ID back to struct
-            GL.BindTexture(TextureTarget.Texture2D, inTEXTexture.texID);
-
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+            GL.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+            GL.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
 
             switch (inTEXTexture.bitDepth)
             {
@@ -318,38 +315,36 @@ namespace KimeraCS
                 case 4:
                 case 8:
                 case 32:
-                    format = OpenTK.Graphics.OpenGL.PixelFormat.Bgra;
+                    format = OpenTK.Graphics.OpenGL.Compatibility.PixelFormat.Bgra;
                     internalformat = InternalFormat.Rgba;
                     break;
 
                 case 16:
-                    format = OpenTK.Graphics.OpenGL.PixelFormat.Bgra;
+                    format = OpenTK.Graphics.OpenGL.Compatibility.PixelFormat.Bgra;
                     internalformat = InternalFormat.Rgb5;
                     break;
 
                 case 24:
-                    format = OpenTK.Graphics.OpenGL.PixelFormat.Bgr;
+                    format = OpenTK.Graphics.OpenGL.Compatibility.PixelFormat.Bgr;
                     internalformat = InternalFormat.Rgb;
                     break;
 
             }
 
-            GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
+            GL.PixelStorei(PixelStoreParameter.UnpackAlignment, 1);
 
             GetTEXTexturev(ref inTEXTexture, ref textureImg);
 
-            // We need to create the IntPtr of textureImg because the glTexImag2D OPENGL function
-            // glTexImage2D(glTexture2DProxyTarget.GL_TEXTURE_2D, 0, internalformat,
-            //              inTEXTexture.width, inTEXTexture.height, 0, format, glPixelDataType.GL_UNSIGNED_BYTE, textureImg);
-
-            GCHandle pinnedArray = GCHandle.Alloc(textureImg, GCHandleType.Pinned);
-            hTIPtr = pinnedArray.AddrOfPinnedObject();
-
-            GL.TexImage2D(TextureTarget.Texture2D, 0, (PixelInternalFormat)internalformat,
-                         inTEXTexture.width, inTEXTexture.height, 0, format,
-                         PixelType.UnsignedByte, hTIPtr);
-
-            pinnedArray.Free();
+            // Use unsafe block for GL.TexImage2D with pointer
+            unsafe
+            {
+                fixed (byte* ptr = textureImg)
+                {
+                    GL.TexImage2D(TextureTarget.Texture2d, 0, internalformat,
+                                 inTEXTexture.width, inTEXTexture.height, 0, format,
+                                 PixelType.UnsignedByte, ptr);
+                }
+            }
         }
 
 

@@ -1,10 +1,10 @@
-ï»¿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
 
-using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
 
 namespace KimeraCS
@@ -359,12 +359,12 @@ namespace KimeraCS
             GL.MatrixMode(MatrixMode.Modelview);
             GL.PushMatrix();
 
-            GL.Translate(fFrame.rootTranslationX, 0, 0);
-            GL.Translate(0, -fFrame.rootTranslationY, 0);
-            GL.Translate(0, 0, fFrame.rootTranslationZ);
+            GL.Translated(fFrame.rootTranslationX, 0, 0);
+            GL.Translated(0, -fFrame.rootTranslationY, 0);
+            GL.Translated(0, 0, fFrame.rootTranslationZ);
 
             BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma, ref rot_mat);
-            GL.MultMatrix(rot_mat);
+            GL.MultMatrixd(rot_mat);
 
             if (b_index > -1)
             {
@@ -381,7 +381,7 @@ namespace KimeraCS
         }
 
         /// <summary>
-        /// MÃ¶llerâ€“Trumbore ray-triangle intersection algorithm.
+        /// Möller–Trumbore ray-triangle intersection algorithm.
         /// </summary>
         private static bool RayTriangleIntersect(Vector3 rayOrigin, Vector3 rayDir,
                                                   Vector3 v0, Vector3 v1, Vector3 v2,
@@ -850,7 +850,7 @@ namespace KimeraCS
                                        fBone.fRSDResources[ri].Model.rotationQuaternion,
                                        fBone.fRSDResources[ri].Model.resizeX, fBone.fRSDResources[ri].Model.resizeY, fBone.fRSDResources[ri].Model.resizeZ);
 
-                GL.Scale(fBone.resizeX, fBone.resizeY, fBone.resizeZ);
+                GL.Scaled(fBone.resizeX, fBone.resizeY, fBone.resizeZ);
 
                 tmpRSDResource = fBone.fRSDResources[ri];
                 ApplyPChanges(ref tmpRSDResource.Model, false);
@@ -897,15 +897,15 @@ namespace KimeraCS
                 }
                 GL.PushMatrix();
 
-                GL.Rotate(fFrame.rotations[bi].beta, 0, 1, 0);
-                GL.Rotate(fFrame.rotations[bi].alpha, 1, 0, 0);
-                GL.Rotate(fFrame.rotations[bi].gamma, 0, 0, 1);
+                GL.Rotated(fFrame.rotations[bi].beta, 0, 1, 0);
+                GL.Rotated(fFrame.rotations[bi].alpha, 1, 0, 0);
+                GL.Rotated(fFrame.rotations[bi].gamma, 0, 0, 1);
 
                 tmpfBone = fSkeleton.bones[bi];
                 ApplyFieldBoneChanges(ref tmpfBone, merge);
                 fSkeleton.bones[bi] = tmpfBone;
 
-                GL.Translate(0, 0, -fSkeleton.bones[bi].len);
+                GL.Translated(0, 0, -fSkeleton.bones[bi].len);
 
                 jsp++;
                 joint_stack[jsp] = fSkeleton.bones[bi].joint_i;

@@ -20,11 +20,10 @@ namespace KimeraCS.Rendering
             GL.AttachShader(Handle, fragmentShader);
             GL.LinkProgram(Handle);
 
-            int success;
-            GL.GetProgram(Handle, GetProgramParameterName.LinkStatus, out success);
+            int success = GL.GetProgrami(Handle, ProgramProperty.LinkStatus);
             if (success == 0)
             {
-                string infoLog = GL.GetProgramInfoLog(Handle);
+                GL.GetProgramInfoLog(Handle, out string infoLog);
                 throw new Exception($"Shader program linking failed: {infoLog}");
             }
 
@@ -47,11 +46,10 @@ namespace KimeraCS.Rendering
             GL.ShaderSource(shader, source);
             GL.CompileShader(shader);
 
-            int success;
-            GL.GetShader(shader, ShaderParameter.CompileStatus, out success);
+            int success = GL.GetShaderi(shader, ShaderParameterName.CompileStatus);
             if (success == 0)
             {
-                string infoLog = GL.GetShaderInfoLog(shader);
+                GL.GetShaderInfoLog(shader, out string infoLog);
                 throw new Exception($"{type} compilation failed: {infoLog}");
             }
 
@@ -70,42 +68,58 @@ namespace KimeraCS.Rendering
 
         public void SetBool(string name, bool value)
         {
-            GL.Uniform1(GetUniformLocation(name), value ? 1 : 0);
+            GL.Uniform1i(GetUniformLocation(name), value ? 1 : 0);
         }
 
         public void SetInt(string name, int value)
         {
-            GL.Uniform1(GetUniformLocation(name), value);
+            GL.Uniform1i(GetUniformLocation(name), value);
         }
 
         public void SetFloat(string name, float value)
         {
-            GL.Uniform1(GetUniformLocation(name), value);
+            GL.Uniform1f(GetUniformLocation(name), value);
         }
 
         public void SetVector2(string name, Vector2 value)
         {
-            GL.Uniform2(GetUniformLocation(name), value.X, value.Y);
+            GL.Uniform2f(GetUniformLocation(name), value.X, value.Y);
         }
 
         public void SetVector3(string name, Vector3 value)
         {
-            GL.Uniform3(GetUniformLocation(name), value.X, value.Y, value.Z);
+            GL.Uniform3f(GetUniformLocation(name), value.X, value.Y, value.Z);
         }
 
         public void SetVector4(string name, Vector4 value)
         {
-            GL.Uniform4(GetUniformLocation(name), value.X, value.Y, value.Z, value.W);
+            GL.Uniform4f(GetUniformLocation(name), value.X, value.Y, value.Z, value.W);
         }
 
         public void SetMatrix4(string name, Matrix4 value)
         {
-            GL.UniformMatrix4(GetUniformLocation(name), false, ref value);
+            GL.UniformMatrix4f(GetUniformLocation(name), 1, false, ref value);
         }
 
         public void SetMatrix4(string name, ref Matrix4 value)
         {
-            GL.UniformMatrix4(GetUniformLocation(name), false, ref value);
+            GL.UniformMatrix4f(GetUniformLocation(name), 1, false, ref value);
+        }
+
+        public void SetVector3Array(string baseName, Vector3[] values)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                GL.Uniform3f(GetUniformLocation($"{baseName}[{i}]"), values[i].X, values[i].Y, values[i].Z);
+            }
+        }
+
+        public void SetBoolArray(string baseName, bool[] values)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                GL.Uniform1i(GetUniformLocation($"{baseName}[{i}]"), values[i] ? 1 : 0);
+            }
         }
 
         protected virtual void Dispose(bool disposing)

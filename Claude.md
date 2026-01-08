@@ -4,8 +4,24 @@ A Windows Forms application for viewing and editing 3D models from Final Fantasy
 
 ## Tech Stack
 - .NET 9.0 Windows Forms
-- OpenTK 4.8.2 (OpenGL 3.3+ with GLSL shaders)
+- OpenTK 5.0.0-pre.15 (OpenGL 3.3+ with GLSL shaders)
 - ~45,600 lines of C# code
+
+### OpenGL Namespaces
+The codebase uses two OpenTK namespaces:
+- **`OpenTK.Graphics.OpenGL`** - Modern OpenGL 3.3+ (used by GLRenderer, Mesh, ShaderProgram)
+- **`OpenTK.Graphics.OpenGL.Compatibility`** - Legacy/immediate mode GL (used by ModelDrawing, Utils, Lighting, FF7*.cs)
+
+**Important:** Legacy GL functions in Compatibility namespace require suffixes:
+- `GL.Translate()` → `GL.Translated()`
+- `GL.Scale()` → `GL.Scaled()`
+- `GL.Rotate()` → `GL.Rotated()`
+- `GL.Color3()` → `GL.Color3f()`
+- `GL.Color4()` → `GL.Color4f()`
+- `GL.Vertex3()` → `GL.Vertex3f()`
+- `GL.Normal3()` → `GL.Normal3f()`
+- `GL.TexCoord2()` → `GL.TexCoord2f()`
+- `GL.MultMatrix()` → `GL.MultMatrixd()`
 
 ## Build Commands
 ```bash
@@ -20,8 +36,10 @@ dotnet run --project src/KimeraCS.csproj
 ```
 src/
 ├── Core/                    # Core utilities, ModelDrawing (vertex/polygon ops), BlendModes
+│   ├── MatrixStack.cs       # CPU-side matrix stack (replaces GL matrix stack)
+│   └── VisualizationHelpers.cs  # Modern mesh builders for debug visuals
 ├── Rendering/               # Modern OpenGL pipeline (GLRenderer, Mesh, ShaderProgram)
-├── Shaders/                 # GLSL shaders (model.vert/frag, line.vert/frag)
+├── Shaders/                 # GLSL shaders (model, line, point .vert/.frag)
 ├── Properties/              # Settings and resources
 ├── resources/               # UI assets (icons, cursors)
 ├── frmSkeletonEditor.cs     # Main window - skeleton/animation viewing
@@ -84,9 +102,13 @@ src/
 |-------|------|---------|
 | `GLRenderer` | Rendering/GLRenderer.cs | Modern OpenGL renderer with mesh caching |
 | `Mesh`/`GroupMesh`/`PModelMesh` | Rendering/Mesh.cs | GPU mesh abstraction (VAO/VBO/EBO) |
+| `LineMesh`/`PointMesh` | Rendering/Mesh.cs | Line and point rendering for debug visuals |
 | `ShaderProgram` | Rendering/ShaderProgram.cs | Shader compilation and uniforms |
+| `MatrixStack`/`MatrixManager` | Core/MatrixStack.cs | CPU-side matrix stack (replaces GL.PushMatrix/PopMatrix) |
+| `VisualizationHelpers` | Core/VisualizationHelpers.cs | Creates meshes for normals, bounding boxes, axes, wireframes |
+| `SkeletonRenderer` | Core/SkeletonRenderer.cs | Modern skeleton bone rendering (computes transforms on CPU) |
 | `ModelDrawing` | Core/ModelDrawing.cs | Vertex/polygon operations (paint, select, pick), legacy GL compatibility |
-| `Lighting` | Lighting.cs | 4 configurable lights |
+| `Lighting` | Lighting.cs | 4 configurable lights; `SetLightsModern()` for shaders, `SetLights()` for legacy |
 
 ### UI Forms
 | Form | Purpose |
@@ -183,3 +205,99 @@ Select item → UndoRedo snapshot → Modify → Refresh view → (Undo restores
 ```
 GLRenderer.DrawPModelModern() → Get/create cached mesh → For each group: set blend, bind texture, draw
 ```
+
+## OpenTK 5.x API Notes
+
+### Enum Renames
+| Old (OpenTK 4.x) | New (OpenTK 5.x) |
+|------------------|------------------|
+| `MaterialFace` | `TriangleFace` |
+| `CullFaceMode` | `TriangleFace` |
+| `EnableCap.Texture2D` | `EnableCap.Texture2d` |
+| `TextureTarget.Texture2D` | `TextureTarget.Texture2d` |
+| `BufferUsageHint` | `BufferUsage` |
+
+### Modern GL API Changes (OpenTK.Graphics.OpenGL)
+| Old | New |
+|-----|-----|
+| `GL.GetProgram(handle, param, out val)` | `val = GL.GetProgrami(handle, param)` |
+| `GL.GetShader(handle, param, out val)` | `val = GL.GetShaderi(handle, param)` |
+| `GL.Uniform1(loc, int)` | `GL.Uniform1i(loc, int)` |
+| `GL.Uniform1(loc, float)` | `GL.Uniform1f(loc, float)` |
+| `GL.UniformMatrix4(loc, transpose, ref mat)` | `GL.UniformMatrix4f(loc, count, transpose, ref mat)` |
+| `GL.GenTextures(1, array)` | `texId = GL.GenTexture()` |
+
+### Texture ID Types
+OpenTK 5.x expects `int` for texture IDs. If storing as `uint`, cast when calling GL functions:
+```csharp
+GL.BindTexture(TextureTarget.Texture2d, (int)texId);
+GL.IsTexture((int)texId);
+```
+
+### PixelFormat Ambiguity
+When using Compatibility namespace with `System.Drawing.Imaging`, fully qualify OpenGL's PixelFormat:
+```csharp
+OpenTK.Graphics.OpenGL.Compatibility.PixelFormat.Bgra
+```
+
+## Modern vs Legacy Rendering
+
+The codebase supports both modern (shader-based) and legacy (fixed-function) rendering. The path is selected at runtime:
+
+```csharp
+if (GLRenderer.UseModernRendering && GLRenderer.IsReady)
+{
+    // Modern path: shaders, VAO/VBO
+    SetLightsModern();
+    SkeletonRenderer.RenderFieldSkeletonBones(...);
+}
+else
+{
+    // Legacy path: immediate mode GL
+    SetLights();
+    DrawFieldSkeletonBones(...);
+}
+```
+
+### Multi-Light System (Modern)
+The shader supports 4 lights (indices 0-3):
+- **0 (Right)**: Positioned at +X, 50% intensity
+- **1 (Left)**: Positioned at -X, 50% intensity
+- **2 (Front)**: Positioned at +Z, 100% intensity (default)
+- **3 (Rear)**: Positioned at -Z, 75% intensity
+
+```csharp
+GLRenderer.LightPositions[index] = new Vector3(x, y, z);
+GLRenderer.LightColors[index] = new Vector3(r, g, b);
+GLRenderer.LightEnabled[index] = true/false;
+```
+
+### Matrix Syncing (Hybrid Rendering)
+When calling modern rendering from within legacy matrix contexts, you MUST sync the legacy GL matrices to GLRenderer:
+
+```csharp
+// Get legacy matrices
+double[] projMatrix = new double[16];
+GL.GetDouble(GetPName.ProjectionMatrix, projMatrix);
+double[] mvMatrix = new double[16];
+GL.GetDouble(GetPName.ModelviewMatrix, mvMatrix);
+
+// Save and set GLRenderer matrices
+var savedProjection = GLRenderer.ProjectionMatrix;
+var savedView = GLRenderer.ViewMatrix;
+var savedModel = GLRenderer.ModelMatrix;
+
+GLRenderer.ProjectionMatrix = ToMatrix4(projMatrix);
+GLRenderer.ViewMatrix = Matrix4.Identity;
+GLRenderer.ModelMatrix = ToMatrix4(mvMatrix);
+
+// Call modern rendering
+GLRenderer.DrawLinesModern(mesh);
+
+// Restore matrices
+GLRenderer.ProjectionMatrix = savedProjection;
+GLRenderer.ViewMatrix = savedView;
+GLRenderer.ModelMatrix = savedModel;
+```
+
+**Functions that require this pattern:** `DrawBox`, `ShowNormals`, `SkeletonRenderer.RenderFieldSkeletonBones`, `SkeletonRenderer.RenderBattleSkeletonBones`

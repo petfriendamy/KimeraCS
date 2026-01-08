@@ -5,7 +5,7 @@ using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL.Compatibility;
 
 namespace KimeraCS
 {
@@ -165,7 +165,7 @@ namespace KimeraCS
 
             SetBlendMode(BlendModes.None);
 
-            GL.CullFace(CullFaceMode.Front);
+            GL.CullFace(TriangleFace.Front);
             GL.Enable(EnableCap.CullFace);
 
             GL.Enable(EnableCap.AlphaTest);

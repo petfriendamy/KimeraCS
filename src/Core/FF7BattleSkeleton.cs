@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
-using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
 
 namespace KimeraCS
@@ -591,7 +591,7 @@ namespace KimeraCS
         }
 
         /// <summary>
-        /// MÃ¶llerâ€“Trumbore ray-triangle intersection algorithm.
+        /// Möller–Trumbore ray-triangle intersection algorithm.
         /// </summary>
         private static bool RayTriangleIntersect(Vector3 rayOrigin, Vector3 rayDir,
                                                   Vector3 v0, Vector3 v1, Vector3 v2,
@@ -1019,7 +1019,7 @@ namespace KimeraCS
                                            bBone.Models[mi].rotationQuaternion,
                                            bBone.Models[mi].resizeX, bBone.Models[mi].resizeY, bBone.Models[mi].resizeZ);
 
-                    GL.Scale(bBone.resizeX, bBone.resizeY, bBone.resizeZ);
+                    GL.Scaled(bBone.resizeX, bBone.resizeY, bBone.resizeZ);
 
                     tmpModel = bBone.Models[mi];
                     ApplyPChanges(ref tmpModel, false);
@@ -1047,7 +1047,7 @@ namespace KimeraCS
                                wpModel.rotateAlpha, wpModel.rotateBeta, wpModel.rotateGamma,
                                wpModel.resizeX, wpModel.resizeY, wpModel.resizeZ);
 
-            GL.Scale(wpModel.resizeX, wpModel.resizeY, wpModel.resizeZ);
+            GL.Scaled(wpModel.resizeX, wpModel.resizeY, wpModel.resizeZ);
 
             ApplyPChanges(ref wpModel, true);
 
@@ -1068,10 +1068,10 @@ namespace KimeraCS
             GL.MatrixMode(MatrixMode.Modelview);
             GL.PushMatrix();
             // glLoadIdentity();
-            GL.Translate(bFrame.startX, bFrame.startY, bFrame.startZ);
+            GL.Translated(bFrame.startX, bFrame.startY, bFrame.startZ);
 
             BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma, ref rot_mat);
-            GL.MultMatrix(rot_mat);
+            GL.MultMatrixd(rot_mat);
 
             for (bi = 0; bi < bSkeleton.nBones; bi++)
             {
@@ -1082,15 +1082,15 @@ namespace KimeraCS
                 }
                 GL.PushMatrix();
 
-                //GL.Rotate(bFrame.bones[bi + 1].beta, 0, 1, 0);
-                //GL.Rotate(bFrame.bones[bi + 1].alpha, 1, 0, 0);
-                //GL.Rotate(bFrame.bones[bi + 1].gamma, 0, 0, 1);
+                //GL.Rotated(bFrame.bones[bi + 1].beta, 0, 1, 0);
+                //GL.Rotated(bFrame.bones[bi + 1].alpha, 1, 0, 0);
+                //GL.Rotated(bFrame.bones[bi + 1].gamma, 0, 0, 1);
 
                 BuildRotationMatrixWithQuaternions(bFrame.bones[bi + (bSkeleton.nBones > 1 ? 1 : 0)].alpha,
                                                    bFrame.bones[bi + (bSkeleton.nBones > 1 ? 1 : 0)].beta,
                                                    bFrame.bones[bi + (bSkeleton.nBones > 1 ? 1 : 0)].gamma,
                                                    ref rot_mat);
-                GL.MultMatrix(rot_mat);
+                GL.MultMatrixd(rot_mat);
 
                 if (bSkeleton.bones[bi].hasModel == 1)
                 {
@@ -1099,7 +1099,7 @@ namespace KimeraCS
                     bSkeleton.bones[bi] = tmpbBone;
                 }
 
-                GL.Translate(0, 0, bSkeleton.bones[bi].len);
+                GL.Translated(0, 0, bSkeleton.bones[bi].len);
 
                 jsp++;
                 joint_stack[jsp] = bi;
@@ -1119,8 +1119,8 @@ namespace KimeraCS
                 GL.MatrixMode(MatrixMode.Modelview);
                 GL.PushMatrix();
                 //glLoadIdentity();
-                GL.Translate(bwpFrame.startX, bwpFrame.startY, bwpFrame.startZ);
-                GL.MultMatrix(rot_mat);
+                GL.Translated(bwpFrame.startX, bwpFrame.startY, bwpFrame.startZ);
+                GL.MultMatrixd(rot_mat);
 
                 BuildRotationMatrixWithQuaternions(bwpFrame.bones[0].alpha, bwpFrame.bones[0].beta, bwpFrame.bones[0].gamma, ref rot_mat);
 

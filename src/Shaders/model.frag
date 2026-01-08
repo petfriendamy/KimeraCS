@@ -9,9 +9,13 @@ uniform sampler2D texture0;
 uniform bool useTexture;
 uniform bool enableLighting;
 
-// Lighting uniforms
-uniform vec3 lightPos;
-uniform vec3 lightColor;
+// Multi-light support (4 lights: Right, Left, Front, Rear)
+#define MAX_LIGHTS 4
+uniform vec3 lightPos[MAX_LIGHTS];
+uniform vec3 lightColor[MAX_LIGHTS];
+uniform bool lightEnabled[MAX_LIGHTS];
+
+// View position for specular/rim
 uniform vec3 viewPos;
 uniform float ambientStrength;
 
@@ -41,25 +45,34 @@ void main()
     if (enableLighting)
     {
         vec3 norm = normalize(Normal);
+        vec3 viewDir = normalize(viewPos - FragPos);
 
-        // Ambient - stronger base lighting
-        vec3 ambient = ambientStrength * lightColor;
+        // Ambient base
+        vec3 ambient = ambientStrength * vec3(1.0);
+        vec3 totalDiffuse = vec3(0.0);
 
-        // Diffuse with half-lambert for softer shadows
-        // Half-lambert wraps lighting around the model more
-        vec3 lightDir = normalize(lightPos - FragPos);
-        float NdotL = dot(norm, lightDir);
-        float halfLambert = NdotL * 0.5 + 0.5; // Remap from [-1,1] to [0,1]
-        halfLambert = halfLambert * halfLambert; // Square for falloff
-        vec3 diffuse = halfLambert * lightColor;
+        // Accumulate lighting from all enabled lights
+        for (int i = 0; i < MAX_LIGHTS; i++)
+        {
+            if (lightEnabled[i])
+            {
+                vec3 lightDir = normalize(lightPos[i] - FragPos);
+                float NdotL = dot(norm, lightDir);
+
+                // Half-lambert for softer shadows
+                float halfLambert = NdotL * 0.5 + 0.5;
+                halfLambert = halfLambert * halfLambert;
+
+                totalDiffuse += halfLambert * lightColor[i];
+            }
+        }
 
         // Simple rim lighting for better visibility
-        vec3 viewDir = normalize(viewPos - FragPos);
         float rim = 1.0 - max(dot(viewDir, norm), 0.0);
         rim = smoothstep(0.6, 1.0, rim);
-        vec3 rimLight = rim * 0.2 * lightColor;
+        vec3 rimLight = rim * 0.15 * vec3(1.0);
 
-        result = (ambient + diffuse + rimLight) * baseColor.rgb;
+        result = (ambient + totalDiffuse + rimLight) * baseColor.rgb;
     }
     else
     {

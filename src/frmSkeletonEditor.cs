@@ -4,7 +4,7 @@ using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL.Compatibility;
 
 
 namespace KimeraCS
@@ -162,7 +162,7 @@ namespace KimeraCS
 
             SetBlendMode(BlendModes.None);
 
-            GL.CullFace(CullFaceMode.Front);
+            GL.CullFace(TriangleFace.Front);
             GL.Enable(EnableCap.CullFace);
 
             GL.Enable(EnableCap.AlphaTest);
@@ -1087,7 +1087,7 @@ namespace KimeraCS
             GL.Enable(EnableCap.AlphaTest);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             GL.AlphaFunc(AlphaFunction.Greater, 0);
-            GL.CullFace(CullFaceMode.Front);
+            GL.CullFace(TriangleFace.Front);
             GL.Enable(EnableCap.CullFace);
         }
 

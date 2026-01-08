@@ -72,7 +72,7 @@ namespace KimeraCS.Rendering
             {
                 fixed (Vertex* ptr = vertices)
                 {
-                    GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * Vertex.SizeInBytes, (nint)ptr, BufferUsageHint.StaticDraw);
+                    GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * Vertex.SizeInBytes, (nint)ptr, BufferUsage.StaticDraw);
                 }
             }
 
@@ -81,7 +81,7 @@ namespace KimeraCS.Rendering
             {
                 fixed (uint* ptr = indices)
                 {
-                    GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), (nint)ptr, BufferUsageHint.StaticDraw);
+                    GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), (nint)ptr, BufferUsage.StaticDraw);
                 }
             }
 
@@ -355,7 +355,7 @@ namespace KimeraCS.Rendering
             {
                 fixed (LineVertex* ptr = vertices)
                 {
-                    GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * LineVertex.SizeInBytes, (nint)ptr, BufferUsageHint.DynamicDraw);
+                    GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * LineVertex.SizeInBytes, (nint)ptr, BufferUsage.DynamicDraw);
                 }
             }
 
@@ -409,6 +409,86 @@ namespace KimeraCS.Rendering
         }
 
         ~LineMesh()
+        {
+            Dispose(false);
+        }
+    }
+
+    /// <summary>
+    /// Mesh class for rendering points (skeleton joints, vertices, etc.)
+    /// </summary>
+    public class PointMesh : IDisposable
+    {
+        public int VAO { get; private set; }
+        public int VBO { get; private set; }
+        public int VertexCount { get; private set; }
+        public float PointSize { get; set; } = 5.0f;
+        private bool _disposed;
+
+        public void Upload(LineVertex[] vertices)
+        {
+            VertexCount = vertices.Length;
+
+            if (VAO == 0)
+            {
+                VAO = GL.GenVertexArray();
+                VBO = GL.GenBuffer();
+            }
+
+            GL.BindVertexArray(VAO);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, VBO);
+            unsafe
+            {
+                fixed (LineVertex* ptr = vertices)
+                {
+                    GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * LineVertex.SizeInBytes, (nint)ptr, BufferUsage.DynamicDraw);
+                }
+            }
+
+            // Position attribute (location = 0)
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, LineVertex.SizeInBytes, 0);
+
+            // Color attribute (location = 1)
+            GL.EnableVertexAttribArray(1);
+            GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, LineVertex.SizeInBytes, 12);
+
+            GL.BindVertexArray(0);
+        }
+
+        public void DrawPoints()
+        {
+            GL.BindVertexArray(VAO);
+            GL.DrawArrays(PrimitiveType.Points, 0, VertexCount);
+            GL.BindVertexArray(0);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (VAO != 0)
+                {
+                    GL.DeleteVertexArray(VAO);
+                    VAO = 0;
+                }
+                if (VBO != 0)
+                {
+                    GL.DeleteBuffer(VBO);
+                    VBO = 0;
+                }
+                _disposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~PointMesh()
         {
             Dispose(false);
         }

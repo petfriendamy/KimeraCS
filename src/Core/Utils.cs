@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Windows.Forms;
-using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
 
 namespace KimeraCS
@@ -561,12 +561,12 @@ namespace KimeraCS
 
             GL.MatrixMode(MatrixMode.Modelview);
             //GL.LoadIdentity();
-            GL.Translate(cX, cY, cZ);
+            GL.Translated(cX, cY, cZ);
 
             BuildRotationMatrixWithQuaternionsXYZ(alpha, beta, gamma, ref rot_mat);
 
-            GL.MultMatrix(rot_mat);
-            GL.Scale(rszX, rszY, rszZ);
+            GL.MultMatrixd(rot_mat);
+            GL.Scaled(rszX, rszY, rszZ);
         }
 
         public static void ConcatenateCameraModelViewQuat(float cX, float cY, float cZ,
@@ -577,12 +577,12 @@ namespace KimeraCS
 
             GL.MatrixMode(MatrixMode.Modelview);
             GL.LoadIdentity();
-            GL.Translate(cX, cY, cZ);
+            GL.Translated(cX, cY, cZ);
 
             BuildMatrixFromQuaternion(quat, ref rot_mat);
 
-            GL.MultMatrix(rot_mat);
-            GL.Scale(rszX, rszY, rszZ);
+            GL.MultMatrixd(rot_mat);
+            GL.Scaled(rszX, rszY, rszZ);
         }
 
         public static void SetCameraModelView(float cX, float cY, float cZ, 
@@ -594,13 +594,13 @@ namespace KimeraCS
             GL.MatrixMode(MatrixMode.Modelview);
             GL.LoadIdentity();
 
-            GL.Translate(cX, cY, cZ);
+            GL.Translated(cX, cY, cZ);
 
             BuildRotationMatrixWithQuaternionsXYZ(alpha, beta, gamma, ref rot_mat);
 
-            GL.MultMatrix(rot_mat);
+            GL.MultMatrixd(rot_mat);
 
-            GL.Scale(rszX, rszY, rszZ);
+            GL.Scaled(rszX, rszY, rszZ);
         }
 
         public static void SetCameraModelViewQuat(float cX, float cY, float cZ,
@@ -612,13 +612,13 @@ namespace KimeraCS
             GL.MatrixMode(MatrixMode.Modelview);
             GL.LoadIdentity();
 
-            GL.Translate(cX, cY, cZ);
+            GL.Translated(cX, cY, cZ);
 
             BuildMatrixFromQuaternion(quat, ref rot_mat);
 
-            GL.MultMatrix(rot_mat);
+            GL.MultMatrixd(rot_mat);
 
-            GL.Scale(rszX, rszY, rszZ);
+            GL.Scaled(rszX, rszY, rszZ);
         }
 
         public static void SetCameraPModel(PModel Model, float cX, float cY, float cZ,
@@ -1996,16 +1996,16 @@ namespace KimeraCS
         /// </summary>
         public static void SetDefaultOGLRenderState()
         {
-            GL.PolygonMode(MaterialFace.FrontAndBack, OpenTK.Graphics.OpenGL.PolygonMode.Fill);
-            GL.CullFace(CullFaceMode.Front);
+            GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
+            GL.CullFace(TriangleFace.Front);
             GL.Enable(EnableCap.CullFace);
 
             GL.DepthFunc(DepthFunction.Lequal);
             GL.Enable(EnableCap.DepthTest);
             GL.DepthMask(true);
 
-            GL.TexParameter(TextureTarget.Texture2D, OpenTK.Graphics.OpenGL.TextureParameterName.TextureMinFilter, (int)OpenTK.Graphics.OpenGL.TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, OpenTK.Graphics.OpenGL.TextureParameterName.TextureMagFilter, (int)OpenTK.Graphics.OpenGL.TextureMagFilter.Linear);
+            GL.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+            GL.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
 
             SetBlendMode(BlendModes.Disabled);
         }
@@ -2016,7 +2016,8 @@ namespace KimeraCS
         public static void gluPerspective(double fov, double aspect, double zNear, double zFar)
         {
             Matrix4 perspectiveMatrix = CreatePerspectiveMatrix((float)fov, (float)aspect, (float)zNear, (float)zFar);
-            GL.MultMatrix(ref perspectiveMatrix);
+            double[] matArray = Matrix4ToDoubleArray(perspectiveMatrix);
+            GL.MultMatrixd(matArray);
         }
 
         /// <summary>
@@ -2025,7 +2026,8 @@ namespace KimeraCS
         public static void gluOrtho2D(double left, double right, double bottom, double top)
         {
             Matrix4 orthoMatrix = Matrix4.CreateOrthographicOffCenter((float)left, (float)right, (float)bottom, (float)top, -1, 1);
-            GL.MultMatrix(ref orthoMatrix);
+            double[] matArray = Matrix4ToDoubleArray(orthoMatrix);
+            GL.MultMatrixd(matArray);
         }
 
         /// <summary>
@@ -2144,17 +2146,23 @@ namespace KimeraCS
             GL.PointSize(100.0f);
 
             GL.Begin(PrimitiveType.Points);
-            GL.Color4(c.R / 255.0f, c.G / 255.0f, c.B / 255.0f, 1.0f);
-            GL.ColorMaterial(MaterialFace.FrontAndBack, ColorMaterialParameter.AmbientAndDiffuse);
+            GL.Color4f(c.R / 255.0f, c.G / 255.0f, c.B / 255.0f, 1.0f);
+            GL.ColorMaterial(TriangleFace.FrontAndBack, ColorMaterialParameter.AmbientAndDiffuse);
 
-            GL.Normal3(n.x, n.y, n.z);
-            GL.Vertex3(p.x, p.y, p.z);
+            GL.Normal3f(n.x, n.y, n.z);
+            GL.Vertex3f(p.x, p.y, p.z);
             GL.End();
 
             GL.Flush();
             GL.ReadBuffer(ReadBufferMode.Back);
 
-            GL.ReadPixels(1, 1, 1, 1, OpenTK.Graphics.OpenGL.PixelFormat.Rgb, OpenTK.Graphics.OpenGL.PixelType.UnsignedByte, pcolor);
+            unsafe
+            {
+                fixed (byte* ptr = pcolor)
+                {
+                    GL.ReadPixels(1, 1, 1, 1, OpenTK.Graphics.OpenGL.Compatibility.PixelFormat.Rgb, PixelType.UnsignedByte, ptr);
+                }
+            }
 
             Color result = Color.FromArgb(255, pcolor[0] * 2, pcolor[1] * 2, pcolor[2] * 2);
 

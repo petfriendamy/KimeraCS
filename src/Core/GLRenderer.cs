@@ -17,6 +17,7 @@ namespace KimeraCS.Rendering
     {
         public ShaderProgram ModelShader { get; set; }
         public ShaderProgram LineShader { get; set; }
+        public ShaderProgram PointShader { get; set; }
         public Dictionary<string, PModelMesh> MeshCacheByName { get; } = new Dictionary<string, PModelMesh>();
         public bool Initialized { get; set; }
 
@@ -34,8 +35,10 @@ namespace KimeraCS.Rendering
             ClearMeshCache();
             ModelShader?.Dispose();
             LineShader?.Dispose();
+            PointShader?.Dispose();
             ModelShader = null;
             LineShader = null;
+            PointShader = null;
             Initialized = false;
         }
     }
@@ -58,11 +61,37 @@ namespace KimeraCS.Rendering
         public static Matrix4 ViewMatrix { get; set; } = Matrix4.Identity;
         public static Matrix4 ModelMatrix { get; set; } = Matrix4.Identity;
 
-        // Lighting
-        public static Vector3 LightPosition { get; set; } = new Vector3(0, 100, 100);
-        public static Vector3 LightColor { get; set; } = new Vector3(1, 1, 1);
+        // Lighting - 4 lights (0=Right, 1=Left, 2=Front, 3=Rear)
+        public const int MAX_LIGHTS = 4;
+        public static Vector3[] LightPositions { get; } = new Vector3[MAX_LIGHTS]
+        {
+            new Vector3(100, 0, 0),   // Right
+            new Vector3(-100, 0, 0),  // Left
+            new Vector3(0, 0, 100),   // Front
+            new Vector3(0, 0, -100)   // Rear
+        };
+        public static Vector3[] LightColors { get; } = new Vector3[MAX_LIGHTS]
+        {
+            new Vector3(0.5f, 0.5f, 0.5f),  // Right - dim
+            new Vector3(0.5f, 0.5f, 0.5f),  // Left - dim
+            new Vector3(1f, 1f, 1f),         // Front - full
+            new Vector3(0.75f, 0.75f, 0.75f) // Rear - 75%
+        };
+        public static bool[] LightEnabled { get; } = new bool[MAX_LIGHTS] { false, false, true, false };
         public static float AmbientStrength { get; set; } = 0.6f;
         public static bool LightingEnabled { get; set; } = false;
+
+        // Legacy single-light properties (for backwards compatibility)
+        public static Vector3 LightPosition
+        {
+            get => LightPositions[2]; // Front light
+            set => LightPositions[2] = value;
+        }
+        public static Vector3 LightColor
+        {
+            get => LightColors[2];
+            set => LightColors[2] = value;
+        }
 
         // Camera position (for specular lighting)
         public static Vector3 ViewPosition { get; set; } = new Vector3(0, 0, 100);
@@ -122,6 +151,11 @@ namespace KimeraCS.Rendering
                 string lineVert = File.ReadAllText(Path.Combine(shadersPath, "line.vert"));
                 string lineFrag = File.ReadAllText(Path.Combine(shadersPath, "line.frag"));
                 ctx.LineShader = new ShaderProgram(lineVert, lineFrag);
+
+                // Load point shader
+                string pointVert = File.ReadAllText(Path.Combine(shadersPath, "point.vert"));
+                string pointFrag = File.ReadAllText(Path.Combine(shadersPath, "point.frag"));
+                ctx.PointShader = new ShaderProgram(pointVert, pointFrag);
 
                 ctx.Initialized = true;
                 _contexts[_currentContextId] = ctx;
@@ -265,8 +299,9 @@ namespace KimeraCS.Rendering
             ctx.ModelShader.SetMatrix4("projection", ProjectionMatrix);
             ctx.ModelShader.SetMatrix4("view", ViewMatrix);
             ctx.ModelShader.SetBool("enableLighting", LightingEnabled);
-            ctx.ModelShader.SetVector3("lightPos", LightPosition);
-            ctx.ModelShader.SetVector3("lightColor", LightColor);
+            ctx.ModelShader.SetVector3Array("lightPos", LightPositions);
+            ctx.ModelShader.SetVector3Array("lightColor", LightColors);
+            ctx.ModelShader.SetBoolArray("lightEnabled", LightEnabled);
             ctx.ModelShader.SetVector3("viewPos", ViewPosition);
             ctx.ModelShader.SetFloat("ambientStrength", AmbientStrength);
             ctx.ModelShader.SetInt("texture0", 0);
@@ -307,7 +342,7 @@ namespace KimeraCS.Rendering
                     if (texId > 0 && GL.IsTexture((int)texId))
                     {
                         GL.ActiveTexture(TextureUnit.Texture0);
-                        GL.BindTexture(TextureTarget.Texture2D, (int)texId);
+                        GL.BindTexture(TextureTarget.Texture2d, (int)texId);
                         ctx.ModelShader.SetBool("useTexture", true);
                     }
                     else
@@ -371,6 +406,27 @@ namespace KimeraCS.Rendering
             ctx.LineShader.SetMatrix4("model", ModelMatrix);
 
             lineMesh.DrawLines();
+
+            GL.UseProgram(0);
+        }
+
+        /// <summary>
+        /// Draw points using modern OpenGL (e.g., skeleton joints, vertices).
+        /// </summary>
+        public static void DrawPointsModern(PointMesh pointMesh, float pointSize = 5.0f)
+        {
+            var ctx = CurrentContext;
+            if (ctx == null || !ctx.Initialized || pointMesh == null) return;
+
+            ctx.PointShader.Use();
+            ctx.PointShader.SetMatrix4("projection", ProjectionMatrix);
+            ctx.PointShader.SetMatrix4("view", ViewMatrix);
+            ctx.PointShader.SetMatrix4("model", ModelMatrix);
+            ctx.PointShader.SetFloat("pointSize", pointSize);
+
+            GL.Enable(EnableCap.ProgramPointSize);
+            pointMesh.DrawPoints();
+            GL.Disable(EnableCap.ProgramPointSize);
 
             GL.UseProgram(0);
         }
