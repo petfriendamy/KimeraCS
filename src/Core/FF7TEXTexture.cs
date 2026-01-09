@@ -335,16 +335,9 @@ namespace KimeraCS
 
             GetTEXTexturev(ref inTEXTexture, ref textureImg);
 
-            // Use unsafe block for GL.TexImage2D with pointer
-            unsafe
-            {
-                fixed (byte* ptr = textureImg)
-                {
-                    GL.TexImage2D(TextureTarget.Texture2d, 0, internalformat,
-                                 inTEXTexture.width, inTEXTexture.height, 0, format,
-                                 PixelType.UnsignedByte, ptr);
-                }
-            }
+            GL.TexImage2D(TextureTarget.Texture2d, 0, internalformat,
+                inTEXTexture.width, inTEXTexture.height, 0, format,
+                PixelType.UnsignedByte, textureImg);
         }
 
 

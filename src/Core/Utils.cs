@@ -2156,13 +2156,7 @@ namespace KimeraCS
             GL.Flush();
             GL.ReadBuffer(ReadBufferMode.Back);
 
-            unsafe
-            {
-                fixed (byte* ptr = pcolor)
-                {
-                    GL.ReadPixels(1, 1, 1, 1, OpenTK.Graphics.OpenGL.Compatibility.PixelFormat.Rgb, PixelType.UnsignedByte, ptr);
-                }
-            }
+            GL.ReadPixels(1, 1, 1, 1, OpenTK.Graphics.OpenGL.Compatibility.PixelFormat.Rgb, PixelType.UnsignedByte, pcolor);
 
             Color result = Color.FromArgb(255, pcolor[0] * 2, pcolor[1] * 2, pcolor[2] * 2);
 

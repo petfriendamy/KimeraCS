@@ -5,7 +5,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <Version>0.0.0</Version>
     <Copyright>LaZar00 2022-2023, Julian Xhokaxhiu 2024</Copyright>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>

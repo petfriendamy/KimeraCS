@@ -68,23 +68,11 @@ namespace KimeraCS.Rendering
             GL.BindVertexArray(VAO);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, VBO);
-            unsafe
-            {
-                fixed (Vertex* ptr = vertices)
-                {
-                    GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * Vertex.SizeInBytes, (nint)ptr, BufferUsage.StaticDraw);
-                }
-            }
-
+            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * Vertex.SizeInBytes, vertices, BufferUsage.StaticDraw);
+            
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, EBO);
-            unsafe
-            {
-                fixed (uint* ptr = indices)
-                {
-                    GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), (nint)ptr, BufferUsage.StaticDraw);
-                }
-            }
-
+            GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsage.StaticDraw);
+            
             // Position attribute (location = 0)
             GL.EnableVertexAttribArray(0);
             GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, Vertex.SizeInBytes, 0);
@@ -351,14 +339,8 @@ namespace KimeraCS.Rendering
             GL.BindVertexArray(VAO);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, VBO);
-            unsafe
-            {
-                fixed (LineVertex* ptr = vertices)
-                {
-                    GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * LineVertex.SizeInBytes, (nint)ptr, BufferUsage.DynamicDraw);
-                }
-            }
-
+            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * LineVertex.SizeInBytes, vertices, BufferUsage.DynamicDraw);
+            
             // Position attribute (location = 0)
             GL.EnableVertexAttribArray(0);
             GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, LineVertex.SizeInBytes, 0);
@@ -438,14 +420,8 @@ namespace KimeraCS.Rendering
             GL.BindVertexArray(VAO);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, VBO);
-            unsafe
-            {
-                fixed (LineVertex* ptr = vertices)
-                {
-                    GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * LineVertex.SizeInBytes, (nint)ptr, BufferUsage.DynamicDraw);
-                }
-            }
-
+            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * LineVertex.SizeInBytes, vertices, BufferUsage.DynamicDraw);
+            
             // Position attribute (location = 0)
             GL.EnableVertexAttribArray(0);
             GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, LineVertex.SizeInBytes, 0);
