@@ -15,7 +15,7 @@ uniform vec3 lightPos[MAX_LIGHTS];
 uniform vec3 lightColor[MAX_LIGHTS];
 uniform bool lightEnabled[MAX_LIGHTS];
 
-// View position for specular/rim
+// View position (reserved for future use)
 uniform vec3 viewPos;
 uniform float ambientStrength;
 
@@ -26,10 +26,21 @@ uniform float alphaRef;
 // Base alpha multiplier (set based on blend mode)
 uniform float baseAlpha;
 
+// Override color for wireframe mode
+uniform bool useOverrideColor;
+uniform vec3 overrideColor;
+
 out vec4 FragColor;
 
 void main()
 {
+    // Override color mode (for wireframe rendering)
+    if (useOverrideColor)
+    {
+        FragColor = vec4(overrideColor, 1.0);
+        return;
+    }
+
     // Sample texture or use white if no texture
     vec4 texColor = useTexture ? texture(texture0, TexCoord) : vec4(1.0);
 
@@ -45,7 +56,6 @@ void main()
     if (enableLighting)
     {
         vec3 norm = normalize(Normal);
-        vec3 viewDir = normalize(viewPos - FragPos);
 
         // Ambient base
         vec3 ambient = ambientStrength * vec3(1.0);
@@ -59,26 +69,19 @@ void main()
                 vec3 lightDir = normalize(lightPos[i] - FragPos);
                 float NdotL = dot(norm, lightDir);
 
-                // Half-lambert for softer shadows
-                float halfLambert = NdotL * 0.5 + 0.5;
-                halfLambert = halfLambert * halfLambert;
+                // Standard Lambertian diffuse (matches legacy renderer)
+                float diffuse = max(NdotL, 0.0);
 
-                totalDiffuse += halfLambert * lightColor[i];
+                totalDiffuse += diffuse * lightColor[i];
             }
         }
 
-        // Simple rim lighting for better visibility
-        float rim = 1.0 - max(dot(viewDir, norm), 0.0);
-        rim = smoothstep(0.6, 1.0, rim);
-        vec3 rimLight = rim * 0.15 * vec3(1.0);
-
-        result = (ambient + totalDiffuse + rimLight) * baseColor.rgb;
+        result = (ambient + totalDiffuse) * baseColor.rgb;
     }
     else
     {
-        // When lighting is disabled, boost brightness slightly
-        // to compensate for dark vertex colors common in FF7 models
-        result = baseColor.rgb * 1.2;
+        // No lighting - use raw color (matches legacy renderer)
+        result = baseColor.rgb;
     }
 
     // Clamp to valid range

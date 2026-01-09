@@ -218,6 +218,66 @@ namespace KimeraCS
             GLRenderer.ModelMatrix = savedModel;
         }
 
+        public static void DrawPModelWireframe(ref PModel Model, bool HideHiddenGroupsQ)
+        {
+            // Get current legacy matrices - these contain the full camera + bone transforms
+            double[] projMatrix = new double[16];
+            GL.GetDouble(GetPName.ProjectionMatrix, projMatrix);
+            var legacyProjection = ToMatrix4(projMatrix);
+
+            double[] mvMatrix = new double[16];
+            GL.GetDouble(GetPName.ModelviewMatrix, mvMatrix);
+            var legacyModelView = ToMatrix4(mvMatrix);
+
+            // Save original matrices
+            var savedProjection = GLRenderer.ProjectionMatrix;
+            var savedView = GLRenderer.ViewMatrix;
+            var savedModel = GLRenderer.ModelMatrix;
+
+            // Use the legacy matrices directly for full compatibility
+            GLRenderer.ProjectionMatrix = legacyProjection;
+            GLRenderer.ViewMatrix = Matrix4.Identity;
+            GLRenderer.ModelMatrix = legacyModelView;
+
+            // Draw wireframe with black color
+            GLRenderer.DrawPModelWireframe(ref Model, new OpenTK.Mathematics.Vector3(0, 0, 0), HideHiddenGroupsQ);
+
+            // Restore original matrices
+            GLRenderer.ProjectionMatrix = savedProjection;
+            GLRenderer.ViewMatrix = savedView;
+            GLRenderer.ModelMatrix = savedModel;
+        }
+
+        public static void DrawPModelPolygonColors(ref PModel Model, bool HideHiddenGroupsQ)
+        {
+            // Get current legacy matrices - these contain the full camera + bone transforms
+            double[] projMatrix = new double[16];
+            GL.GetDouble(GetPName.ProjectionMatrix, projMatrix);
+            var legacyProjection = ToMatrix4(projMatrix);
+
+            double[] mvMatrix = new double[16];
+            GL.GetDouble(GetPName.ModelviewMatrix, mvMatrix);
+            var legacyModelView = ToMatrix4(mvMatrix);
+
+            // Save original matrices
+            var savedProjection = GLRenderer.ProjectionMatrix;
+            var savedView = GLRenderer.ViewMatrix;
+            var savedModel = GLRenderer.ModelMatrix;
+
+            // Use the legacy matrices directly for full compatibility
+            GLRenderer.ProjectionMatrix = legacyProjection;
+            GLRenderer.ViewMatrix = Matrix4.Identity;
+            GLRenderer.ModelMatrix = legacyModelView;
+
+            // Draw with polygon colors
+            GLRenderer.DrawPModelPolygonColors(ref Model, HideHiddenGroupsQ);
+
+            // Restore original matrices
+            GLRenderer.ProjectionMatrix = savedProjection;
+            GLRenderer.ViewMatrix = savedView;
+            GLRenderer.ModelMatrix = savedModel;
+        }
+
         public static void DrawGroupDList(ref PGroup Group)
         {
             GL.CallList(Group.DListNum);
@@ -1761,16 +1821,16 @@ namespace KimeraCS
             switch (drawMode)
             {
                 case K_MESH:
-                    DrawPModelMesh(EditedPModel);
+                    DrawPModelWireframe(ref EditedPModel, true);
                     break;
 
                 case K_PCOLORS:
                     GL.Enable(EnableCap.PolygonOffsetFill);
                     GL.PolygonOffset(1, 1);
-                    DrawPModelPolys(EditedPModel);
+                    DrawPModelPolygonColors(ref EditedPModel, true);
                     GL.Disable(EnableCap.PolygonOffsetFill);
 
-                    DrawPModelMesh(EditedPModel);
+                    DrawPModelWireframe(ref EditedPModel, true);
                     break;
 
                 case K_VCOLORS:

@@ -19,6 +19,7 @@ namespace KimeraCS.Rendering
         public ShaderProgram LineShader { get; set; }
         public ShaderProgram PointShader { get; set; }
         public Dictionary<string, PModelMesh> MeshCacheByName { get; } = new Dictionary<string, PModelMesh>();
+        public Dictionary<string, PModelMesh> PColorMeshCacheByName { get; } = new Dictionary<string, PModelMesh>();
         public bool Initialized { get; set; }
 
         public void ClearMeshCache()
@@ -28,6 +29,12 @@ namespace KimeraCS.Rendering
                 mesh.Dispose();
             }
             MeshCacheByName.Clear();
+
+            foreach (var mesh in PColorMeshCacheByName.Values)
+            {
+                mesh.Dispose();
+            }
+            PColorMeshCacheByName.Clear();
         }
 
         public void Dispose()
@@ -200,6 +207,28 @@ namespace KimeraCS.Rendering
         }
 
         /// <summary>
+        /// Get or create a polygon-color mesh for the given PModel in the current context.
+        /// Uses polygon colors instead of vertex colors.
+        /// </summary>
+        public static PModelMesh GetOrCreatePColorMesh(ref PModel model)
+        {
+            var ctx = CurrentContext;
+            if (ctx == null) return null;
+
+            string cacheKey = !string.IsNullOrEmpty(model.fileName)
+                ? model.fileName
+                : model.GetHashCode().ToString();
+
+            if (!ctx.PColorMeshCacheByName.TryGetValue(cacheKey, out PModelMesh mesh))
+            {
+                mesh = PModelMesh.FromPModel(model, usePolygonColors: true);
+                ctx.PColorMeshCacheByName[cacheKey] = mesh;
+            }
+
+            return mesh;
+        }
+
+        /// <summary>
         /// Invalidate cached mesh for a model in the current context.
         /// </summary>
         public static void InvalidateMesh(ref PModel model)
@@ -215,6 +244,12 @@ namespace KimeraCS.Rendering
             {
                 mesh.Dispose();
                 ctx.MeshCacheByName.Remove(cacheKey);
+            }
+
+            if (ctx.PColorMeshCacheByName.TryGetValue(cacheKey, out PModelMesh pcolorMesh))
+            {
+                pcolorMesh.Dispose();
+                ctx.PColorMeshCacheByName.Remove(cacheKey);
             }
         }
 
@@ -234,6 +269,12 @@ namespace KimeraCS.Rendering
                 {
                     mesh.Dispose();
                     ctx.MeshCacheByName.Remove(cacheKey);
+                }
+
+                if (ctx.PColorMeshCacheByName.TryGetValue(cacheKey, out PModelMesh pcolorMesh))
+                {
+                    pcolorMesh.Dispose();
+                    ctx.PColorMeshCacheByName.Remove(cacheKey);
                 }
             }
         }
@@ -351,6 +392,110 @@ namespace KimeraCS.Rendering
                 {
                     ctx.ModelShader.SetBool("useTexture", false);
                 }
+
+                group.Draw();
+            }
+
+            GL.UseProgram(0);
+        }
+
+        /// <summary>
+        /// Draw a PModel as wireframe using modern OpenGL.
+        /// Uses polygon mode LINE with a solid override color.
+        /// </summary>
+        public static void DrawPModelWireframe(ref PModel model, Vector3 wireframeColor, bool hideHidden)
+        {
+            var ctx = CurrentContext;
+            if (ctx == null || !ctx.Initialized) return;
+
+            var mesh = GetOrCreateMesh(ref model);
+            if (mesh?.Groups == null) return;
+
+            // Enable depth testing
+            GL.Enable(EnableCap.DepthTest);
+            GL.DepthFunc(DepthFunction.Lequal);
+            GL.DepthMask(true);
+
+            // Set polygon mode to wireframe
+            GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
+
+            // Disable blending for solid wireframe
+            GL.Disable(EnableCap.Blend);
+
+            ctx.ModelShader.Use();
+            ctx.ModelShader.SetMatrix4("projection", ProjectionMatrix);
+            ctx.ModelShader.SetMatrix4("view", ViewMatrix);
+
+            // Enable override color mode
+            ctx.ModelShader.SetBool("useOverrideColor", true);
+            ctx.ModelShader.SetVector3("overrideColor", wireframeColor);
+
+            for (int g = 0; g < mesh.Groups.Length; g++)
+            {
+                var group = mesh.Groups[g];
+                if (group == null) continue;
+                if (group.Hidden && hideHidden) continue;
+
+                Matrix4 groupModel = ModelMatrix * group.GroupTransform;
+                ctx.ModelShader.SetMatrix4("model", groupModel);
+
+                group.Draw();
+            }
+
+            // Reset override color mode
+            ctx.ModelShader.SetBool("useOverrideColor", false);
+
+            // Reset polygon mode to fill
+            GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
+
+            GL.UseProgram(0);
+        }
+
+        /// <summary>
+        /// Draw a PModel using polygon colors (one color per polygon, flat shading).
+        /// Does not use textures.
+        /// </summary>
+        public static void DrawPModelPolygonColors(ref PModel model, bool hideHidden)
+        {
+            var ctx = CurrentContext;
+            if (ctx == null || !ctx.Initialized) return;
+
+            var mesh = GetOrCreatePColorMesh(ref model);
+            if (mesh?.Groups == null) return;
+
+            // Enable depth testing
+            GL.Enable(EnableCap.DepthTest);
+            GL.DepthFunc(DepthFunction.Lequal);
+            GL.DepthMask(true);
+
+            ctx.ModelShader.Use();
+            ctx.ModelShader.SetMatrix4("projection", ProjectionMatrix);
+            ctx.ModelShader.SetMatrix4("view", ViewMatrix);
+            ctx.ModelShader.SetBool("enableLighting", LightingEnabled);
+            ctx.ModelShader.SetVector3Array("lightPos", LightPositions);
+            ctx.ModelShader.SetVector3Array("lightColor", LightColors);
+            ctx.ModelShader.SetBoolArray("lightEnabled", LightEnabled);
+            ctx.ModelShader.SetVector3("viewPos", ViewPosition);
+            ctx.ModelShader.SetFloat("ambientStrength", AmbientStrength);
+            ctx.ModelShader.SetInt("texture0", 0);
+            ctx.ModelShader.SetBool("useOverrideColor", false);
+
+            // Polygon colors don't use textures
+            ctx.ModelShader.SetBool("useTexture", false);
+            ctx.ModelShader.SetBool("enableAlphaTest", false);
+            ctx.ModelShader.SetFloat("baseAlpha", 1.0f);
+
+            // Disable blending for solid polygon colors (matches legacy behavior)
+            GL.Disable(EnableCap.Blend);
+
+            for (int g = 0; g < mesh.Groups.Length; g++)
+            {
+                var group = mesh.Groups[g];
+                if (group == null) continue;
+                if (group.Hidden && hideHidden) continue;
+
+                Matrix4 groupModel = ModelMatrix * group.GroupTransform;
+                ctx.ModelShader.SetMatrix4("model", groupModel);
 
                 group.Draw();
             }

@@ -35,10 +35,13 @@ dotnet run --project src/KimeraCS.csproj
 ## Project Structure
 ```
 src/
-├── Core/                    # Core utilities, ModelDrawing (vertex/polygon ops), BlendModes
+├── Core/                    # Core utilities and modern rendering
+│   ├── GLRenderer.cs        # Modern OpenGL renderer with mesh caching
+│   ├── Mesh.cs              # GPU mesh classes (PModelMesh, GroupMesh, LineMesh, etc.)
+│   ├── ShaderProgram.cs     # Shader compilation and uniforms
+│   ├── ModelDrawing.cs      # Vertex/polygon operations, GLRenderer wrappers
 │   ├── MatrixStack.cs       # CPU-side matrix stack (replaces GL matrix stack)
 │   └── VisualizationHelpers.cs  # Modern mesh builders for debug visuals
-├── Rendering/               # Modern OpenGL pipeline (GLRenderer, Mesh, ShaderProgram)
 ├── Shaders/                 # GLSL shaders (model, line, point .vert/.frag)
 ├── Properties/              # Settings and resources
 ├── resources/               # UI assets (icons, cursors)
@@ -53,7 +56,7 @@ src/
 |-----------|---------|
 | `KimeraCS` | Main UI forms and FF7 format handlers |
 | `KimeraCS.Core` | Utilities and enums |
-| `KimeraCS.Rendering` | Modern OpenGL rendering (GLRenderer, Mesh classes) |
+| `KimeraCS.Rendering` | Modern OpenGL rendering (GLRenderer, Mesh, ShaderProgram) - located in Core/ folder |
 
 ## FF7 File Formats
 
@@ -100,14 +103,14 @@ src/
 ### Rendering
 | Class | File | Purpose |
 |-------|------|---------|
-| `GLRenderer` | Rendering/GLRenderer.cs | Modern OpenGL renderer with mesh caching |
-| `Mesh`/`GroupMesh`/`PModelMesh` | Rendering/Mesh.cs | GPU mesh abstraction (VAO/VBO/EBO) |
-| `LineMesh`/`PointMesh` | Rendering/Mesh.cs | Line and point rendering for debug visuals |
-| `ShaderProgram` | Rendering/ShaderProgram.cs | Shader compilation and uniforms |
+| `GLRenderer` | Core/GLRenderer.cs | Modern OpenGL renderer with mesh caching (vertex colors + polygon colors) |
+| `Mesh`/`GroupMesh`/`PModelMesh` | Core/Mesh.cs | GPU mesh abstraction (VAO/VBO/EBO) |
+| `LineMesh`/`PointMesh` | Core/Mesh.cs | Line and point rendering for debug visuals |
+| `ShaderProgram` | Core/ShaderProgram.cs | Shader compilation and uniforms |
 | `MatrixStack`/`MatrixManager` | Core/MatrixStack.cs | CPU-side matrix stack (replaces GL.PushMatrix/PopMatrix) |
 | `VisualizationHelpers` | Core/VisualizationHelpers.cs | Creates meshes for normals, bounding boxes, axes, wireframes |
 | `SkeletonRenderer` | Core/SkeletonRenderer.cs | Modern skeleton bone rendering (computes transforms on CPU) |
-| `ModelDrawing` | Core/ModelDrawing.cs | Vertex/polygon operations (paint, select, pick), legacy GL compatibility |
+| `ModelDrawing` | Core/ModelDrawing.cs | Vertex/polygon operations, matrix syncing wrappers for GLRenderer |
 | `Lighting` | Lighting.cs | 4 configurable lights; `SetLightsModern()` for shaders, `SetLights()` for legacy |
 
 ### UI Forms
@@ -142,13 +145,22 @@ Key settings:
 
 ## P Editor Display Modes
 
-The polygon editor (`frmPEditor`) has three display modes controlled by `drawMode`:
+The polygon editor (`frmPEditor`) has three display modes controlled by `drawMode`. All modes use the modern GLRenderer:
 
-| Mode | Value | Renderer | Description |
-|------|-------|----------|-------------|
-| K_MESH | 0 | Legacy GL | Wireframe mesh only |
-| K_PCOLORS | 1 | Legacy GL | Polygon colors + wireframe overlay |
-| K_VCOLORS | 2 | GLRenderer | Vertex colors with textures (modern shaders) |
+| Mode | Value | Description |
+|------|-------|-------------|
+| K_MESH | 0 | Wireframe mesh only (black lines) |
+| K_PCOLORS | 1 | Polygon colors + wireframe overlay |
+| K_VCOLORS | 2 | Vertex colors with textures |
+
+### GLRenderer Drawing Functions
+| Function | Purpose |
+|----------|---------|
+| `DrawPModelModern` | Renders with vertex colors and textures |
+| `DrawPModelWireframe` | Renders wireframe with solid override color |
+| `DrawPModelPolygonColors` | Renders with polygon colors (flat shading, no textures) |
+
+The polygon color mesh uses a separate cache (`PColorMeshCacheByName`) since it builds vertices differently (duplicates vertices per-polygon with the polygon's color).
 
 ### Matrix Setup Functions (Utils.cs)
 
@@ -178,6 +190,10 @@ PModel (data) → PModelMesh (GPU)
     └─ GroupMesh[] (per-group VAO/VBO/EBO)
         ├─ Position, Normal, UV, Color buffers
         └─ TextureID, BlendMode, AlphaRef metadata
+
+PModelMesh.FromPModel(model, usePolygonColors):
+  - usePolygonColors=false: Vertex colors from Model.Vcolors[]
+  - usePolygonColors=true:  Polygon colors from Model.Pcolors[] (same color for all 3 verts)
 ```
 
 ## Key Patterns
@@ -240,24 +256,22 @@ When using Compatibility namespace with `System.Drawing.Imaging`, fully qualify 
 OpenTK.Graphics.OpenGL.Compatibility.PixelFormat.Bgra
 ```
 
-## Modern vs Legacy Rendering
+## Rendering
 
-The codebase supports both modern (shader-based) and legacy (fixed-function) rendering. The path is selected at runtime:
+### Model Shader (model.frag)
+The fragment shader uses standard Lambertian diffuse lighting to match legacy OpenGL fixed-function behavior:
+- **Lighting enabled**: `ambient + diffuse` where diffuse = `max(dot(normal, lightDir), 0.0)`
+- **Lighting disabled**: Raw vertex/polygon color (no brightness boost)
+- **Override color mode**: For wireframe rendering, bypasses all color/texture calculations
 
-```csharp
-if (GLRenderer.UseModernRendering && GLRenderer.IsReady)
-{
-    // Modern path: shaders, VAO/VBO
-    SetLightsModern();
-    SkeletonRenderer.RenderFieldSkeletonBones(...);
-}
-else
-{
-    // Legacy path: immediate mode GL
-    SetLights();
-    DrawFieldSkeletonBones(...);
-}
-```
+Key uniforms:
+| Uniform | Type | Purpose |
+|---------|------|---------|
+| `useTexture` | bool | Sample texture or use white |
+| `enableLighting` | bool | Apply lighting calculations |
+| `useOverrideColor` | bool | Use solid color (wireframe mode) |
+| `overrideColor` | vec3 | Color when override is enabled |
+| `baseAlpha` | float | Alpha multiplier for blend modes |
 
 ### Multi-Light System (Modern)
 The shader supports 4 lights (indices 0-3):

@@ -139,7 +139,7 @@ namespace KimeraCS.Rendering
         public GroupMesh[] Groups { get; private set; }
         private bool _disposed;
 
-        public static PModelMesh FromPModel(PModel model)
+        public static PModelMesh FromPModel(PModel model, bool usePolygonColors = false)
         {
             var mesh = new PModelMesh();
             mesh.Groups = new GroupMesh[model.Header.numGroups];
@@ -155,6 +155,14 @@ namespace KimeraCS.Rendering
 
                 for (int p = group.offsetPoly; p < group.offsetPoly + group.numPoly; p++)
                 {
+                    // For polygon colors, get the color once per polygon (same for all 3 vertices)
+                    Vector4 polyColor = new Vector4(1f, 1f, 1f, 1f);
+                    if (usePolygonColors && model.Pcolors != null && p < model.Pcolors.Length)
+                    {
+                        Color c = model.Pcolors[p];
+                        polyColor = new Vector4(c.R / 255f, c.G / 255f, c.B / 255f, c.A / 255f);
+                    }
+
                     for (int v = 0; v < 3; v++)
                     {
                         int vertIdx = model.Polys[p].Verts[v] + group.offsetVert;
@@ -193,14 +201,23 @@ namespace KimeraCS.Rendering
                             }
                         }
 
-                        // Vertex color
-                        // NOTE: Legacy code does NOT use the alpha from vertex colors - it uses 0.5f or 1.0f
-                        // based on blend_mode. We use 1.0f here; blending is handled by the blend mode.
-                        Vector4 color = new Vector4(1f, 1f, 1f, 1f);
-                        if (model.Vcolors != null && vertIdx < model.Vcolors.Length)
+                        // Color: use polygon color or vertex color based on mode
+                        Vector4 color;
+                        if (usePolygonColors)
                         {
-                            Color c = model.Vcolors[vertIdx];
-                            color = new Vector4(c.R / 255f, c.G / 255f, c.B / 255f, 1f);
+                            color = polyColor;
+                        }
+                        else
+                        {
+                            // Vertex color
+                            // NOTE: Legacy code does NOT use the alpha from vertex colors - it uses 0.5f or 1.0f
+                            // based on blend_mode. We use 1.0f here; blending is handled by the blend mode.
+                            color = new Vector4(1f, 1f, 1f, 1f);
+                            if (model.Vcolors != null && vertIdx < model.Vcolors.Length)
+                            {
+                                Color c = model.Vcolors[vertIdx];
+                                color = new Vector4(c.R / 255f, c.G / 255f, c.B / 255f, 1f);
+                            }
                         }
 
                         vertices.Add(new Vertex
