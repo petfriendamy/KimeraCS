@@ -240,11 +240,7 @@ namespace KimeraCS
                         SetCameraAroundModel(ref p_min, ref p_max, 0, 0, -2 * ComputeSceneRadius(p_min, p_max),
                                              0, 0, 0, 1, 1, 1);
 
-                        // Use modern or legacy lighting
-                        if (GLRenderer.UseModernRendering && GLRenderer.IsReady)
-                            SetLightsModern();
-                        else
-                            SetLights();
+                        SetLights();
 
                         if (MessageBox.Show("Merge multi PModels bones in a single file?", "Confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes)
                             compileMultiPBones = true;
@@ -267,11 +263,7 @@ namespace KimeraCS
                         SetCameraAroundModel(ref p_min, ref p_max, 0, 0, -2 * ComputeSceneRadius(p_min, p_max),
                                              0, 0, 0, 1, 1, 1);
 
-                        // Use modern or legacy lighting
-                        if (GLRenderer.UseModernRendering && GLRenderer.IsReady)
-                            SetLightsModern();
-                        else
-                            SetLights();
+                        SetLights();
 
                         tmpwpFrame = new BattleFrame();
                         if (bSkeleton.nsWeaponsAnims > 0) tmpwpFrame = bAnimationsPack.WeaponAnimations[0].frames[0];
@@ -412,11 +404,7 @@ namespace KimeraCS
                                              0, 0, -2 * ComputeSceneRadius(p_min, p_max),
                                              0, 0, 0, 1, 1, 1);
 
-                        // Use modern or legacy lighting
-                        if (GLRenderer.UseModernRendering && GLRenderer.IsReady)
-                            SetLightsModern();
-                        else
-                            SetLights();
+                        SetLights();
 
                         if (GL.IsEnabled(EnableCap.Lighting)) ApplyCurrentVColors(ref fPModel);
 

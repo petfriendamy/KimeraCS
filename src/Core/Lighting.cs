@@ -28,7 +28,7 @@ namespace KimeraCS
         /// Modern lighting setup - sets GLRenderer light properties instead of legacy GL.Light calls.
         /// Call this for modern shader-based rendering.
         /// </summary>
-        public static void SetLightsModern()
+        public static void SetLights()
         {
             Point3D p_min = new Point3D();
             Point3D p_max = new Point3D();
@@ -99,68 +99,6 @@ namespace KimeraCS
                 GLRenderer.LightPositions[LIGHT_REAR] = new Vector3(light_x, light_y, -light_z);
                 GLRenderer.LightColors[LIGHT_REAR] = new Vector3(0.75f, 0.75f, 0.75f);
             }
-        }
-
-        /// <summary>
-        /// Legacy lighting setup - uses GL.Light for fixed-function pipeline.
-        /// </summary>
-        public static void SetLights()
-        {
-            float light_x, light_y, light_z;
-
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
-
-            float scene_diameter;
-
-            if (!bchkFrontLight && !bchkRearLight &&
-                !bchkRightLight && !bchkLeftLight)
-            {
-                GL.Disable(EnableCap.Lighting);
-                return;
-            }
-
-            switch (modelType)
-            {
-                case K_P_FIELD_MODEL:
-                case K_P_BATTLE_MODEL:
-                case K_P_MAGIC_MODEL:
-                case K_3DS_MODEL:
-                    ComputePModelBoundingBox(fPModel, ref p_min, ref p_max);
-                    break;
-
-                case K_HRC_SKELETON:
-                    ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[iCurrentFrameScroll], ref p_min, ref p_max);
-                    break;
-
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
-                    ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll],
-                                             ref p_min, ref p_max);
-                    break;
-            }
-
-            scene_diameter = (float)(-2 * ComputeSceneRadius(p_min, p_max));
-
-            light_x = scene_diameter / LIGHT_STEPS * fLightPosXScroll;
-            light_y = scene_diameter / LIGHT_STEPS * fLightPosYScroll;
-            light_z = scene_diameter / LIGHT_STEPS * fLightPosZScroll;
-
-            if (bchkRightLight) SetLighting(LightName.Light0, light_z, light_y, light_x, 0.5f, 0.5f, 0.5f, infinityFarQ);
-            else
-                GL.Disable(EnableCap.Light0);
-
-            if (bchkLeftLight) SetLighting(LightName.Light1, -light_z, light_y, light_x, 0.5f, 0.5f, 0.5f, infinityFarQ);
-            else
-                GL.Disable(EnableCap.Light1);
-
-            if (bchkFrontLight) SetLighting(LightName.Light2, light_x, light_y, light_z, 1f, 1f, 1f, infinityFarQ);
-            else
-                GL.Disable(EnableCap.Light2);
-
-            if (bchkRearLight) SetLighting(LightName.Light3, light_x, light_y, -light_z, 0.75f, 0.75f, 0.75f, infinityFarQ);
-            else
-                GL.Disable(EnableCap.Light3);
         }
 
         public static void SetLighting(OpenTK.Graphics.OpenGL.Compatibility.LightName lightNumber, float x, float y, float z, float red, float green, float blue, bool infinityFarQ)

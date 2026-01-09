@@ -53,9 +53,6 @@ namespace KimeraCS.Rendering
         private static Dictionary<string, ContextResources> _contexts = new Dictionary<string, ContextResources>();
         private static string _currentContextId = null;
 
-        // Rendering state
-        public static bool UseModernRendering { get; set; } = true;
-
         // Matrices (shared - set before rendering in each context)
         public static Matrix4 ProjectionMatrix { get; set; } = Matrix4.Identity;
         public static Matrix4 ViewMatrix { get; set; } = Matrix4.Identity;

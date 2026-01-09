@@ -180,258 +180,42 @@ namespace KimeraCS
 
         public static void DrawPModel(ref PModel Model, ref uint[] tex_ids, bool HideHiddenGroupsQ)
         {
-            // Modern OpenGL rendering path
-            if (GLRenderer.UseModernRendering && GLRenderer.IsReady)
+            // Get current legacy matrices - these contain the full camera + bone transforms
+            double[] projMatrix = new double[16];
+            GL.GetDouble(GetPName.ProjectionMatrix,projMatrix);
+            var legacyProjection = ToMatrix4(projMatrix);
+
+            double[] mvMatrix = new double[16];
+            GL.GetDouble(GetPName.ModelviewMatrix,mvMatrix);
+            var legacyModelView = ToMatrix4(mvMatrix);
+
+            // Save original matrices
+            var savedProjection = GLRenderer.ProjectionMatrix;
+            var savedView = GLRenderer.ViewMatrix;
+            var savedModel = GLRenderer.ModelMatrix;
+
+            // Use the legacy matrices directly for full compatibility
+            // This ensures bone transforms and camera setup match exactly
+            GLRenderer.ProjectionMatrix = legacyProjection;
+            GLRenderer.ViewMatrix = Matrix4.Identity;
+            GLRenderer.ModelMatrix = legacyModelView;
+
+            GLRenderer.DrawPModelModern(ref Model, tex_ids, HideHiddenGroupsQ);
+
+            // Show normals if enabled (must be done after model drawing)
+            if (bShowVertexNormals || bShowFaceNormals)
             {
-                // Get current legacy matrices - these contain the full camera + bone transforms
-                double[] projMatrix = new double[16];
-                GL.GetDouble(GetPName.ProjectionMatrix,projMatrix);
-                var legacyProjection = ToMatrix4(projMatrix);
-
-                double[] mvMatrix = new double[16];
-                GL.GetDouble(GetPName.ModelviewMatrix,mvMatrix);
-                var legacyModelView = ToMatrix4(mvMatrix);
-
-                // Save original matrices
-                var savedProjection = GLRenderer.ProjectionMatrix;
-                var savedView = GLRenderer.ViewMatrix;
-                var savedModel = GLRenderer.ModelMatrix;
-
-                // Use the legacy matrices directly for full compatibility
-                // This ensures bone transforms and camera setup match exactly
-                GLRenderer.ProjectionMatrix = legacyProjection;
-                GLRenderer.ViewMatrix = OpenTK.Mathematics.Matrix4.Identity;
-                GLRenderer.ModelMatrix = legacyModelView;
-
-                GLRenderer.DrawPModelModern(ref Model, tex_ids, HideHiddenGroupsQ);
-
-                // Show normals if enabled (must be done after model drawing)
-                if (bShowVertexNormals || bShowFaceNormals)
+                for (int g = 0; g < Model.Header.numGroups; g++)
                 {
-                    for (int g = 0; g < Model.Header.numGroups; g++)
-                    {
-                        ShowNormals(Model.Groups[g], Model.Polys, Model.Verts,
-                                    Model.Normals, Model.NormalIndex);
-                    }
+                    ShowNormals(Model.Groups[g], Model.Polys, Model.Verts,
+                                Model.Normals, Model.NormalIndex);
                 }
-
-                // Restore original matrices
-                GLRenderer.ProjectionMatrix = savedProjection;
-                GLRenderer.ViewMatrix = savedView;
-                GLRenderer.ModelMatrix = savedModel;
-                return;
             }
 
-            // Legacy immediate mode rendering below
-            int iGroupIdx;
-            //bool set_v_textured, v_textured, set_v_linearfilter, v_linearfilter, texEnabled;
-            //texEnabled = glIsEnabled(GLCapability.GL_TEXTURE_2D);
-
-            GL.Enable(EnableCap.ColorMaterial);
-
-            for (iGroupIdx = 0; iGroupIdx < Model.Header.numGroups; iGroupIdx++)
-            {
-                //  Set the render states acording to the hundrets information
-                //  V_WIREFRAME
-                if ((Model.Hundrets[iGroupIdx].field_C & 0x1) != 0)
-                {
-                    if ((Model.Hundrets[iGroupIdx].field_8 & 0x1) != 0)
-                        GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
-                    else
-                        GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
-                }
-
-                //  V_LINEAR (Linear filter)
-                if ((Model.Hundrets[iGroupIdx].field_C & 0x4) != 0)
-                {
-                    if ((Model.Hundrets[iGroupIdx].field_8 & 0x4) != 0)
-                    {
-                        GL.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter,
-                                        (int)TextureMagFilter.Linear);
-                        GL.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter,
-                                        (int)TextureMagFilter.Linear);
-                    }
-                    else
-                    {
-                        GL.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter,
-                                        (int)TextureMagFilter.Nearest);
-                        GL.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter,
-                                        (int)TextureMagFilter.Nearest);
-                    }
-                }
-
-                ////  V_CULLFACE
-                if ((Model.Hundrets[iGroupIdx].field_C & 0x2000) != 0)
-                {
-                    GL.Enable(EnableCap.CullFace);
-
-                    if ((Model.Hundrets[iGroupIdx].field_8 & 0x2000) != 0)                       
-                        GL.CullFace(TriangleFace.Front);
-                    else
-                        GL.CullFace(TriangleFace.Back);
-
-                }
-
-
-                ////  V_NOCULL
-                if (!((Model.Hundrets[iGroupIdx].field_C & 0x4000) == 0))
-                {
-                    if (!((Model.Hundrets[iGroupIdx].field_8 & 0x4000) == 0))
-                    {
-                        GL.Disable(EnableCap.CullFace);
-                    }
-                    else
-                    {
-                        GL.Enable(EnableCap.CullFace);
-                        GL.CullFace(TriangleFace.Front);
-                    }
-                }
-
-
-                //// V_DEPTH_TEST
-                if ((Model.Hundrets[iGroupIdx].field_C & 0x8000) != 0)
-                {
-                    if ((Model.Hundrets[iGroupIdx].field_8 & 0x8000) != 0)
-                    {
-                        GL.Enable(EnableCap.DepthTest);
-                    }
-                    else
-                    {
-                        GL.Disable(EnableCap.DepthTest);
-                    }
-                }
-
-                //// V_DEPTH_MASK
-                if ((Model.Hundrets[iGroupIdx].field_C & 0x10000) != 0)
-                {
-                    if ((Model.Hundrets[iGroupIdx].field_8 & 0x10000) != 0)
-                    {
-                        GL.DepthMask(true);
-                    }
-                    else
-                    {
-                        GL.DepthMask(false);
-                    }
-                }
-
-
-                //// V_SHADEMODE
-                if ((Model.Hundrets[iGroupIdx].field_C & 0x020000) != 0)
-                {
-                    if ((Model.Hundrets[iGroupIdx].field_8 & 0x020000) != 0)
-                    {
-                        if (Model.Hundrets[iGroupIdx].shademode == 1 &&
-                            !bSkeleton.IsBattleLocation)
-                        {
-                            GL.ShadeModel(ShadingModel.Flat);
-                        }
-                        else if (Model.Hundrets[iGroupIdx].shademode == 2 ||
-                                 bSkeleton.IsBattleLocation)
-                        {
-                            GL.ShadeModel(ShadingModel.Smooth);
-                        }
-                        else
-                        {
-                            MessageBox.Show("Not shade mode assigned to the Group " + iGroupIdx.ToString("00") + ".\n" +
-                                            "I will assign shade mode 1 by default.", "Warning");
-
-                            GL.ShadeModel(ShadingModel.Flat);
-                            Model.Hundrets[iGroupIdx].shademode = 1;
-                        }
-                    }
-                    else
-                    {
-                        GL.ShadeModel(ShadingModel.Flat);
-                    }
-                }
-
-
-                //// V_ALPHABLEND
-                if ((Model.Hundrets[iGroupIdx].field_C & 0x400) != 0)
-                {
-                    if ((Model.Hundrets[iGroupIdx].field_8 & 0x400) != 0)
-                    {                        
-                        SetBlendMode((BlendModes)Model.Hundrets[iGroupIdx].blend_mode);
-                    }
-                    else
-                    {
-                        // BLEND NONE
-                        SetBlendMode(BlendModes.None);
-                    }
-                }
-                else
-                {
-                    if (Model.Hundrets[iGroupIdx].blend_mode == 0)
-                        SetBlendMode(BlendModes.Average);
-                    else
-                        SetBlendMode(BlendModes.Disabled);
-                }
-
-
-                // This option enables somehow some few zSort order for specific Battle Stage model.
-                // So, it is possible to know if the model is well rendered or it has any flaws,
-                // like meshes wrong rendered or drawn.
-                if (bSkeleton.IsBattleLocation)
-                {
-                    if (Model.fileName.Substring(Model.fileName.Length - 2, 2) == "AO")
-                        GL.DepthFunc(DepthFunction.Always);
-                    else
-                        GL.DepthFunc(DepthFunction.Lequal);
-                }
-
-
-                if ((Model.Hundrets[iGroupIdx].field_C & 0x2) != 0)
-                {
-                    if(Model.Groups[iGroupIdx].texID < tex_ids.Length &&
-                       Model.Groups[iGroupIdx].texFlag == 1)
-                    {
-                        if ((Model.Hundrets[iGroupIdx].field_8 & 0x2) != 0)
-                        {
-                            GL.Enable(EnableCap.Texture2d);
-
-                            if (GL.IsTexture((int)tex_ids[Model.Groups[iGroupIdx].texID]))
-                            {
-                                GL.BindTexture(TextureTarget.Texture2d,
-                                              (int)tex_ids[Model.Groups[iGroupIdx].texID]);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        GL.Disable(EnableCap.Texture2d);
-                    }
-                }
-
-
-                // Use Group Reposition/Resize/Rotate changes.
-                double[] rot_mat = new double[16];
-
-                GL.MatrixMode(MatrixMode.Modelview);
-                GL.PushMatrix();
-
-                GL.Translated(Model.Groups[iGroupIdx].repGroupX,
-                             Model.Groups[iGroupIdx].repGroupY,
-                             Model.Groups[iGroupIdx].repGroupZ);
-
-                BuildRotationMatrixWithQuaternionsXYZ(Model.Groups[iGroupIdx].rotGroupAlpha,
-                                                      Model.Groups[iGroupIdx].rotGroupBeta,
-                                                      Model.Groups[iGroupIdx].rotGroupGamma,
-                                                      ref rot_mat);
-
-                GL.MultMatrixd(rot_mat);
-                GL.Scaled(Model.Groups[iGroupIdx].rszGroupX,
-                         Model.Groups[iGroupIdx].rszGroupY,
-                         Model.Groups[iGroupIdx].rszGroupZ);
-
-                DrawGroup(Model.Groups[iGroupIdx], Model.Polys, Model.Verts, Model.Vcolors,
-                          Model.Normals, Model.NormalIndex, Model.TexCoords, 
-                          Model.Hundrets[iGroupIdx], HideHiddenGroupsQ);
-
-                GL.Disable(EnableCap.Texture2d);
-
-                GL.PopMatrix();
-
-            }
+            // Restore original matrices
+            GLRenderer.ProjectionMatrix = savedProjection;
+            GLRenderer.ViewMatrix = savedView;
+            GLRenderer.ModelMatrix = savedModel;
         }
 
         public static void DrawGroupDList(ref PGroup Group)
@@ -441,112 +225,42 @@ namespace KimeraCS
 
         public static void DrawPModelDLists(ref PModel Model, ref uint[] tex_ids)
         {
-            // Modern OpenGL rendering path (same as DrawPModel)
-            if (GLRenderer.UseModernRendering && GLRenderer.IsReady)
+            // Get current legacy matrices - these contain the full camera + bone transforms
+            double[] projMatrix = new double[16];
+            GL.GetDouble(GetPName.ProjectionMatrix,projMatrix);
+            var legacyProjection = ToMatrix4(projMatrix);
+
+            double[] mvMatrix = new double[16];
+            GL.GetDouble(GetPName.ModelviewMatrix,mvMatrix);
+            var legacyModelView = ToMatrix4(mvMatrix);
+
+            // Save original matrices
+            var savedProjection = GLRenderer.ProjectionMatrix;
+            var savedView = GLRenderer.ViewMatrix;
+            var savedModel = GLRenderer.ModelMatrix;
+
+            // Use the legacy matrices directly for full compatibility
+            // This ensures bone transforms and camera setup match exactly
+            GLRenderer.ProjectionMatrix = legacyProjection;
+            GLRenderer.ViewMatrix = OpenTK.Mathematics.Matrix4.Identity;
+            GLRenderer.ModelMatrix = legacyModelView;
+
+            GLRenderer.DrawPModelModern(ref Model, tex_ids, false);
+
+            // Show normals if enabled (must be done after model drawing)
+            if (bShowVertexNormals || bShowFaceNormals)
             {
-                // Get current legacy matrices - these contain the full camera + bone transforms
-                double[] projMatrix = new double[16];
-                GL.GetDouble(GetPName.ProjectionMatrix,projMatrix);
-                var legacyProjection = ToMatrix4(projMatrix);
-
-                double[] mvMatrix = new double[16];
-                GL.GetDouble(GetPName.ModelviewMatrix,mvMatrix);
-                var legacyModelView = ToMatrix4(mvMatrix);
-
-                // Save original matrices
-                var savedProjection = GLRenderer.ProjectionMatrix;
-                var savedView = GLRenderer.ViewMatrix;
-                var savedModel = GLRenderer.ModelMatrix;
-
-                // Use the legacy matrices directly for full compatibility
-                // This ensures bone transforms and camera setup match exactly
-                GLRenderer.ProjectionMatrix = legacyProjection;
-                GLRenderer.ViewMatrix = OpenTK.Mathematics.Matrix4.Identity;
-                GLRenderer.ModelMatrix = legacyModelView;
-
-                GLRenderer.DrawPModelModern(ref Model, tex_ids, false);
-
-                // Show normals if enabled (must be done after model drawing)
-                if (bShowVertexNormals || bShowFaceNormals)
+                for (int g = 0; g < Model.Header.numGroups; g++)
                 {
-                    for (int g = 0; g < Model.Header.numGroups; g++)
-                    {
-                        ShowNormals(Model.Groups[g], Model.Polys, Model.Verts,
-                                    Model.Normals, Model.NormalIndex);
-                    }
+                    ShowNormals(Model.Groups[g], Model.Polys, Model.Verts,
+                                Model.Normals, Model.NormalIndex);
                 }
-
-                // Restore original matrices
-                GLRenderer.ProjectionMatrix = savedProjection;
-                GLRenderer.ViewMatrix = savedView;
-                GLRenderer.ModelMatrix = savedModel;
-                return;
             }
 
-            // Legacy Display List rendering below
-            int iGroupIdx;
-
-            //GL.MatrixMode(MatrixMode.Modelview);
-            //GL.PushMatrix();
-
-            //GL.Scaled(Model.resizeX, Model.resizeY, Model.resizeZ);
-            //glRotatef(Model.rotateAlpha, 1, 0, 0);
-            //glRotatef(Model.rotateBeta, 0, 1, 0);
-            //glRotatef(Model.rotateGamma, 0, 0, 1);
-            //GL.Translated(Model.repositionX, Model.repositionY, Model.repositionZ);
-
-            GL.PolygonMode(TriangleFace.Front, PolygonMode.Fill);
-            GL.PolygonMode(TriangleFace.Back, PolygonMode.Fill);
-
-            GL.Enable(EnableCap.ColorMaterial);
-
-            for (iGroupIdx = 0; iGroupIdx < Model.Header.numGroups; iGroupIdx++)
-            {
-
-                if (Model.Hundrets[iGroupIdx].shademode == 1) GL.ShadeModel(ShadingModel.Flat);
-                else GL.ShadeModel(ShadingModel.Smooth);
-
-                GL.Disable(EnableCap.Texture2d);
-
-                if (tex_ids.Length > 0)
-                {
-                    if (Model.Groups[iGroupIdx].texFlag == 1 && tex_ids[0] > 0)
-                    {
-                        if (Model.Groups[iGroupIdx].texID <= tex_ids.Length)
-                        {
-                            if (GL.IsTexture((int)tex_ids[Model.Groups[iGroupIdx].texID]))
-                            {
-                                GL.Enable(EnableCap.Texture2d);
-
-                                GL.BindTexture(TextureTarget.Texture2d, (int)tex_ids[Model.Groups[iGroupIdx].texID]);
-                                GL.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-                                GL.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    if (Model.Groups[iGroupIdx].texFlag == 1)
-                    {
-                        DialogResult drYesNo;
-                        drYesNo = 
-                            MessageBox.Show("The part: " + Model.fileName + " has not any texture assigned but it has " +
-                                            "the texture flags enabled in group: " + iGroupIdx.ToString() + ".\n" +
-                                            "Do you want to disable the texture flag?", "Warning", 
-                                            MessageBoxButtons.YesNo);
-
-                        if (drYesNo == DialogResult.Yes)
-                        {
-                            Model.Groups[iGroupIdx].texFlag = 0;
-                        }
-                    }
-                }
-
-                DrawGroupDList(ref Model.Groups[iGroupIdx]);
-
-                GL.Disable(EnableCap.Texture2d);
-            }
+            // Restore original matrices
+            GLRenderer.ProjectionMatrix = savedProjection;
+            GLRenderer.ViewMatrix = savedView;
+            GLRenderer.ModelMatrix = savedModel;
         }
 
         public static void DrawPModelBoundingBox(PModel Model)
@@ -1374,11 +1088,7 @@ namespace KimeraCS
                             DrawShadow(ref p_min, ref p_max);
                         }
 
-                        // Use modern or legacy lighting
-                        if (GLRenderer.UseModernRendering && GLRenderer.IsReady)
-                            SetLightsModern();
-                        else
-                            SetLights();
+                        SetLights();
 
                         GL.MatrixMode(MatrixMode.Modelview);
                         GL.PushMatrix();
@@ -1418,11 +1128,7 @@ namespace KimeraCS
                             DrawShadow(ref p_min, ref p_max);
                         }
 
-                        // Use modern or legacy lighting
-                        if (GLRenderer.UseModernRendering && GLRenderer.IsReady)
-                            SetLightsModern();
-                        else
-                            SetLights();
+                        SetLights();
 
                         DrawFieldSkeleton(fSkeleton, fAnimation.frames[iCurrentFrameScroll], bDListsEnable);
 
@@ -1446,17 +1152,8 @@ namespace KimeraCS
                         {
                             GL.Disable(EnableCap.DepthTest);
 
-                            // Use modern or legacy bone rendering
-                            if (GLRenderer.UseModernRendering && GLRenderer.IsReady)
-                            {
-                                SkeletonRenderer.RenderFieldSkeletonBones(fSkeleton,
-                                    fAnimation.frames[iCurrentFrameScroll], 0, 1, 0, 1, 0, 0);
-                            }
-                            else
-                            {
-                                GL.Color3f(0, 1, 0);
-                                DrawFieldSkeletonBones(fSkeleton, fAnimation.frames[iCurrentFrameScroll]);
-                            }
+                            SkeletonRenderer.RenderFieldSkeletonBones(fSkeleton,
+                                fAnimation.frames[iCurrentFrameScroll], 0, 1, 0, 1, 0, 0);
 
                             GL.Enable(EnableCap.DepthTest);
                         }
@@ -1484,11 +1181,7 @@ namespace KimeraCS
                             DrawShadow(ref p_min, ref p_max);
                         }
 
-                        // Use modern or legacy lighting
-                        if (GLRenderer.UseModernRendering && GLRenderer.IsReady)
-                            SetLightsModern();
-                        else
-                            SetLights();
+                        SetLights();
 
                         tmpbFrame = new BattleFrame();
                         if (bSkeleton.wpModels.Count > 0 && bAnimationsPack.WeaponAnimations.Count > 0)
@@ -1521,24 +1214,15 @@ namespace KimeraCS
                         {
                             GL.Disable(EnableCap.DepthTest);
 
-                            // Use modern or legacy bone rendering
-                            if (GLRenderer.UseModernRendering && GLRenderer.IsReady)
-                            {
-                                SkeletonRenderer.RenderBattleSkeletonBones(bSkeleton,
-                                    bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll],
-                                    0, 1, 0, 1, 0, 0);
-                            }
-                            else
-                            {
-                                GL.Color3f(0, 1, 0);
-                                DrawBattleSkeletonBones(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll]);
-                            }
+                            SkeletonRenderer.RenderBattleSkeletonBones(bSkeleton,
+                                bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll],
+                                0, 1, 0, 1, 0, 0);
 
                             GL.Enable(EnableCap.DepthTest);
                         }
 
                         SelectBattleBoneAndModel(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll],
-                                                 tmpbFrame, ianimWeaponIndex, SelectedBone, SelectedBonePiece);
+                            tmpbFrame, ianimWeaponIndex, SelectedBone, SelectedBonePiece);
                         break;
                 }
             }
