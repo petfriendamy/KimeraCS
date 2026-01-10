@@ -5,15 +5,12 @@ using System.Text.RegularExpressions;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Linq;
-using System.Windows.Forms;
 using OpenTK.Graphics.OpenGL.Compatibility;
 
 namespace KimeraCS
 {
 
     using static Utils;
-    //using static User32;
-    //using static GDI32;
 
     public class FF7TEXTexture
     {
@@ -201,15 +198,14 @@ namespace KimeraCS
                 }
                 else
                 {
-                    MessageBox.Show("TEX texture file " + Path.GetFileName(inTEXfile) + " not found.",
-                                    "Warning");
+                    throw new FileNotFoundException("TEX texture file " + Path.GetFileName(inTEXfile) + " not found.",
+                                                    inTEXfile);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                //  Debug.Print "TEX file not found!!!"
-                MessageBox.Show("Error reading TEX texture file " + inTEXfile + ".",
-                "Error");
+                throw new FileLoadException("Error reading TEX texture file " + Path.GetFileName(inTEXfile) + ".",
+                                            inTEXfile, ex);
             }
 
             return iReadTEXTextureResult;
@@ -371,9 +367,10 @@ namespace KimeraCS
 
                 inTEXTexture.bitmap.UnlockBits(bmpData);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                MessageBox.Show("Error loading Bitmap from TEXTexture: " + e.Message + ".", "Error");
+                throw new FileLoadException("Error loading Bitmap from TEXTexture: " + ex.Message,
+                                            inTEXTexture.TEXfileName ?? "unknown", ex);
             }
         }
 
@@ -733,9 +730,10 @@ namespace KimeraCS
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                MessageBox.Show("Error writing TEX Texture " + fileName + ".", "Error", MessageBoxButtons.OK);
+                throw new FileWriteException(fileName,
+                    "Error writing TEX Texture " + Path.GetFileName(fileName) + ".", ex);
             }
         }
 

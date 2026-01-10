@@ -1102,7 +1102,9 @@ namespace KimeraCS
             AddStateToBufferPE(this);
 
             VCountNewPoly = 0;
-            RemoveGroup(ref EditedPModel, lbGroups.SelectedIndex);
+            bool removeTextureCoords = UserPrompts.TextureCoordinateCheck(ref EditedPModel,
+                lbGroups.SelectedIndex);
+            RemoveGroup(ref EditedPModel, lbGroups.SelectedIndex, removeTextureCoords);
 
             KillUnusedVertices(ref EditedPModel);
 
@@ -1521,9 +1523,9 @@ namespace KimeraCS
                         }
                         else
                         {
-                            LoadPModel(ref EditedPModel, strGlobalPathPModelFolderPE,
-                                       Path.GetFileName(strGlobalPModelNamePE),
-                                       true);
+                            UserPrompts.PModelLoader(ref EditedPModel, strGlobalPathPModelFolderPE,
+                                                      Path.GetFileName(strGlobalPModelNamePE),
+                                                      true);
                         }
 
                         // Assign old filename to the PModel
@@ -1620,9 +1622,9 @@ namespace KimeraCS
                         }
                         else
                         {
-                            LoadPModel(ref GroupModel, strGlobalPathPModelFolderPE,
-                                       Path.GetFileName(strGlobalPModelNamePE),
-                                       false);
+                            UserPrompts.PModelLoader(ref GroupModel, strGlobalPathPModelFolderPE,
+                                                      Path.GetFileName(strGlobalPModelNamePE),
+                                                      false);
 
                         }                     
 
@@ -1803,7 +1805,14 @@ namespace KimeraCS
                 AddStateToBufferPE(this);
 
                 CutPModelThroughPlane(ref EditedPModel, planeA, planeB, planeC, planeD, ref knownPlaneVPoints);
-                EraseHemisphereVertices(ref EditedPModel, planeA, planeB, planeC, planeD, false, ref knownPlaneVPoints);
+                bool removeTextureCoords = UserPrompts.TextureCoordinateCheck(ref EditedPModel);
+                int eraseResult = EraseHemisphereVertices(ref EditedPModel, planeA, planeB, planeC, planeD,
+                                                          false, ref knownPlaneVPoints, removeTextureCoords);
+                if (eraseResult > 1)
+                {
+                    MessageBox.Show("A .P Model must have at least one polygon. The last triangle was spared.",
+                                    "Information", MessageBoxButtons.OK);
+                }
                 DuplicateMirrorHemisphere(ref EditedPModel, planeA, planeB, planeC, planeD);
                 CheckModelConsistency(ref EditedPModel);
 
@@ -1847,7 +1856,8 @@ namespace KimeraCS
 
                 KillUnusedVertices(ref EditedPModel);
 
-                RepairGroups(ref EditedPModel);
+                bool removeTextureCoords = UserPrompts.TextureCoordinateCheck(ref EditedPModel);
+                RepairGroups(ref EditedPModel, removeTextureCoords);
                 FillGroupsList();
 
                 ComputeNormals(ref EditedPModel);
@@ -1885,8 +1895,9 @@ namespace KimeraCS
                 }
 
                 KillUnusedVertices(ref EditedPModel);
-                
-                RepairGroups(ref EditedPModel);
+
+                bool removeTextureCoords = UserPrompts.TextureCoordinateCheck(ref EditedPModel);
+                RepairGroups(ref EditedPModel, removeTextureCoords);
                 FillGroupsList();
 
                 ComputeNormals(ref EditedPModel);
@@ -2443,7 +2454,8 @@ namespace KimeraCS
         {
             if (EditedPModel.Header.numGroups > 1)
             {
-                MergeGroupsIntoOne(EditedPModel, out EditedPModel, true);
+                bool removeTextureCoords = UserPrompts.TextureCoordinateCheck(ref EditedPModel);
+                MergeGroupsIntoOne(EditedPModel, out EditedPModel, true, removeTextureCoords);
                 ComputeBoundingBox(ref EditedPModel);
 
                 FillGroupsList();
@@ -2456,7 +2468,8 @@ namespace KimeraCS
         {
             if (EditedPModel.Header.numGroups > 1)
             {
-                MergeGroupsIntoOne(EditedPModel, out EditedPModel, false);
+                bool removeTextureCoords = UserPrompts.TextureCoordinateCheck(ref EditedPModel);
+                MergeGroupsIntoOne(EditedPModel, out EditedPModel, false, removeTextureCoords);
                 ComputeBoundingBox(ref EditedPModel);
 
                 FillGroupsList();
@@ -2506,7 +2519,14 @@ namespace KimeraCS
                 AddStateToBufferPE(this);
 
                 CutPModelThroughPlane(ref EditedPModel, planeA, planeB, planeC, planeD, ref knownPlaneVPoints);
-                EraseHemisphereVertices(ref EditedPModel, planeA, planeB, planeC, planeD, false, ref knownPlaneVPoints);
+                bool removeTextureCoords = UserPrompts.TextureCoordinateCheck(ref EditedPModel);
+                int eraseResult = EraseHemisphereVertices(ref EditedPModel, planeA, planeB, planeC, planeD,
+                                  false, ref knownPlaneVPoints, removeTextureCoords);
+                if (eraseResult > 1)
+                {
+                    MessageBox.Show("A .P Model must have at least one polygon. The last triangle was spared.",
+                                    "Information", MessageBoxButtons.OK);
+                }
 
                 FillGroupsList();
 

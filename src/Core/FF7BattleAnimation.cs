@@ -2,7 +2,6 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Windows.Forms;
 using OpenTK.Graphics.OpenGL.Compatibility;
 
 namespace KimeraCS
@@ -506,7 +505,7 @@ namespace KimeraCS
                         break;
 
                     default:
-                        MessageBox.Show("What?!", "Error", MessageBoxButtons.OK);
+                        //MessageBox.Show("What?!", "Error", MessageBoxButtons.OK);
                         break;
                 }
 

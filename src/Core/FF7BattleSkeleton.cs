@@ -1,11 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Globalization;
-using System.Runtime.InteropServices;
 
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
@@ -57,7 +52,8 @@ namespace KimeraCS
             public bool CanHaveLimitBreak;
 
             //  Constructor for the Battle Skeleton (battle.lgp files with ??AA filename format)
-            public BattleSkeleton(string strFullFileName, bool isLimitBreak, bool loadGeometryQ)
+            public BattleSkeleton(string strFullFileName, bool isLimitBreak, bool loadGeometryQ,
+                                  bool repairPolys, bool removeTextureCoords)
             {
                 int pSuffix1, pSuffix2, pSuffix2End;
                 string baseBattleSkeletonName;
@@ -133,7 +129,8 @@ namespace KimeraCS
                                     LoadBattleLocationPiece(ref tmpbBone, nBones, 
                                                             strFileDirectoryName, 
                                                             baseBattleSkeletonName + Convert.ToChar(pSuffix1) +
-                                                                                     Convert.ToChar(pSuffix2));
+                                                                                     Convert.ToChar(pSuffix2),
+                                                            repairPolys, removeTextureCoords);
                                     nBones++;
                                     bones.Add(tmpbBone);
 
@@ -160,7 +157,7 @@ namespace KimeraCS
                                 bones.Add(new BattleBone(memReader, strFileDirectoryName, 
                                                          baseBattleSkeletonName + Convert.ToChar(pSuffix1) +
                                                                                   Convert.ToChar(pSuffix2), 
-                                                         loadGeometryQ));
+                                                         loadGeometryQ, repairPolys, removeTextureCoords));
 
                                 pSuffix2++;                                
                             }
@@ -180,7 +177,8 @@ namespace KimeraCS
                                         {
                                             tmpWPModel = new PModel();
 
-                                            LoadPModel(ref tmpWPModel, strFileDirectoryName, weaponFileName, true);
+                                            LoadPModel(ref tmpWPModel, strFileDirectoryName, weaponFileName, true,
+                                                       repairPolys, removeTextureCoords);
                                             wpModels.Add(tmpWPModel);
                                         }
 
@@ -232,7 +230,8 @@ namespace KimeraCS
 
 
             //  Constructor for the Magic Skeleton (magic.lgp files with .D extension)
-            public BattleSkeleton(string strFullFileName, bool loadGeometryQ)
+            public BattleSkeleton(string strFullFileName, bool loadGeometryQ, bool repairPolys,
+                                  bool removeTextureCoords)
             {
                 int bi, ti;
                 string baseMagicSkeletonName, strFileDirectoryName;
@@ -282,7 +281,8 @@ namespace KimeraCS
                             pSuffix = ".P" + bi.ToString("00");
 
                             // Have in mind that not all the models exists.
-                            bones.Add(new BattleBone(memReader, strFileDirectoryName, baseMagicSkeletonName + pSuffix, loadGeometryQ));
+                            bones.Add(new BattleBone(memReader, strFileDirectoryName, baseMagicSkeletonName + pSuffix,
+                                                     loadGeometryQ, repairPolys, removeTextureCoords));
                         }
 
                         //  Read Magic Texture files (T?? tex files)
@@ -314,6 +314,33 @@ namespace KimeraCS
                 }
             }
 
+            //checks if the internal polys need to be repaired
+            public PModel? CheckPolys()
+            {
+                foreach (var bone in bones)
+                {
+                    foreach (var p in bone.Models)
+                    {
+                        var curr = p;
+                        int result = FF7PModel.CheckPolys(ref curr);
+                        if (result >= 0) return curr;
+                    }
+                }
+                return null;
+            }
+
+            //attempts to repair internal polys
+            public void RepairPolys()
+            {
+                foreach (var bone in bones)
+                {
+                    foreach (var p in bone.Models)
+                    {
+                        var curr = p;
+                        FF7PModel.RepairPolys(ref curr);
+                    }
+                }
+            }
         }
 
 
@@ -333,7 +360,8 @@ namespace KimeraCS
             public float resizeY;
             public float resizeZ;
 
-            public BattleBone(BinaryReader memReader, string strDirectoryName, string modelName, bool loadGeometryQ)
+            public BattleBone(BinaryReader memReader, string strDirectoryName, string modelName,
+                              bool loadGeometryQ, bool repairPolys, bool removeTextureCoords)
             {
                 PModel tmpbPModel;
 
@@ -351,7 +379,7 @@ namespace KimeraCS
                         nModels = 1;
 
                         tmpbPModel = new PModel();
-                        LoadPModel(ref tmpbPModel, strDirectoryName, modelName, true);
+                        LoadPModel(ref tmpbPModel, strDirectoryName, modelName, true, repairPolys, removeTextureCoords);
                         Models.Add(tmpbPModel);
                     }
                 }
@@ -362,7 +390,8 @@ namespace KimeraCS
             }
         }
 
-        public static void LoadBattleLocationPiece(ref BattleBone bBone, int boneIndex, string strDirectoryName, string modelName)
+        public static void LoadBattleLocationPiece(ref BattleBone bBone, int boneIndex, string strDirectoryName,
+                                                   string modelName, bool repairPolys, bool removeTextureCoords)
         {
             PModel bLocBone;
             
@@ -371,7 +400,7 @@ namespace KimeraCS
             bBone.nModels = 1;
 
             bLocBone = new PModel();
-            LoadPModel(ref bLocBone, strDirectoryName, modelName, true);
+            LoadPModel(ref bLocBone, strDirectoryName, modelName, true, repairPolys, removeTextureCoords);
             bBone.Models.Add(bLocBone);
 
             bBone.len = ComputeDiameter(bLocBone.BoundingBox) / 2;
@@ -379,8 +408,6 @@ namespace KimeraCS
             bBone.resizeY = 1;
             bBone.resizeZ = 1;
         }
-
-
 
         //
         // Battle Skeleton functions

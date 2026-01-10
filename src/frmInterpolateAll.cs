@@ -1,12 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.ComponentModel;
-using System.Threading;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -18,7 +12,6 @@ namespace KimeraCS
 
     using static FF7BattleSkeleton;
     using static FF7BattleAnimationsPack;
-    using static FF7BattleAnimation;
 
     using static FileTools;
     using static Utils;
@@ -570,7 +563,7 @@ namespace KimeraCS
                     {
                         if (File.Exists(txtExtractedCharLGPSrc.Text + "\\" + itmSkAnim.strSkeleton))
                         {
-                            fSkeleton = new FieldSkeleton(txtExtractedCharLGPSrc.Text + "\\" + itmSkAnim.strSkeleton, false);
+                            fSkeleton = UserPrompts.FieldSkeletonLoader(txtExtractedCharLGPSrc.Text + "\\" + itmSkAnim.strSkeleton, false);
                         }
                         else
                         {
@@ -668,14 +661,17 @@ namespace KimeraCS
                     strbAnimationsPackFullWriteFileName = strBattleLGPPathDest + "\\" + baseBattleAnimationFileName;
 
                     //  Load Battle Skeleton and Animations Pack files
-                    bSkeleton = new BattleSkeleton(strbSkeletonFullFileName,
-                                                   CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strbSkeletonFullFileName).ToUpper()),
-                                                   true);
+                    bSkeleton = UserPrompts.BattleSkeletonLoader(strbSkeletonFullFileName,
+                        CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strbSkeletonFullFileName).ToUpper()));
 
                     //  Interpolate Animation
                     if (SameBattleAnimNumBones(strbAnimationsPackFullFileName, bSkeleton))
                     {
                         bAnimationsPack = new BattleAnimationsPack(bSkeleton, strbAnimationsPackFullFileName);
+                        if (bAnimationsPack.WrongAnimationCount)
+                            rtbLog.AppendText("Warning. The number of animations of the Battle Animation Pack " +
+                                "is lower than the number of animations of the Battle Skeleton " +
+                                "header. FIXING.\n");
 
                         await Task.Run(() => InterpolateBattleAnimationsPack(ref bSkeleton, ref bAnimationsPack, (int)nudInterpFrameBattleMagic.Value, false));
                         Task.WaitAll();
@@ -750,7 +746,7 @@ namespace KimeraCS
                     //  Load Battle Skeleton and Animations Pack files
                     if (File.Exists(strbSkeletonFullFileName))
                     {
-                        bSkeleton = new BattleSkeleton(strbSkeletonFullFileName, true);
+                        bSkeleton = UserPrompts.BattleSkeletonLoader(strbSkeletonFullFileName, true);
 
                         //  Interpolate Animation
                         if (SameBattleAnimNumBones(strbAnimationsPackFullFileName, bSkeleton))

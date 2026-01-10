@@ -139,7 +139,15 @@ namespace KimeraCS
 
         private void BtnSaveInfo_Click(object sender, EventArgs e)
         {
-            WriteTMDLOG();
+            try
+            {
+                WriteTMDLOG();
+                MessageBox.Show("Log for TMD file " + strGlobalTMDModelName + " saved correctly.", "Info");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error");
+            }
         }
 
         private void BtnSaveTMD_Click(object sender, EventArgs e)
@@ -204,6 +212,9 @@ namespace KimeraCS
             if (lbTMDObjectList.SelectedIndex > -1)
             {
                 ConvertPModel2TMD(fPModel, lbTMDObjectList.SelectedIndex);
+
+                // Check vertex winding of the object polys
+                MessageBox.Show("The P Model has been converted to TMD Object.", "Info");
 
                 LbTMDObjectList_DoubleClick(lbTMDObjectList, EventArgs.Empty);
             }

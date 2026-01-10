@@ -1,5 +1,4 @@
-﻿using System;
-using System.Windows.Forms;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using OpenTK.Graphics.OpenGL.Compatibility;
@@ -26,8 +25,6 @@ namespace KimeraCS
 
     using static Utils;
     using static FileTools;
-    using Rendering;
-
 
     public static class FF7Skeleton
     {
@@ -74,7 +71,8 @@ namespace KimeraCS
         //
         // Global Skeleton/Model functions/procedures
         //
-        public static int LoadSkeleton(string strFileName, bool loadGeometryQ)
+        public static int LoadSkeleton(string strFileName, bool loadGeometryQ, bool ignoreMissingPFiles,
+                                       bool repairPolys, bool removeTextureCoords)
         {
             int iloadSkeletonResult = 1;
 
@@ -99,7 +97,8 @@ namespace KimeraCS
                             string strAnimationName = "";
 
                             // Field Skeleton (.hrc)
-                            fSkeleton = new FieldSkeleton(strFileName, loadGeometryQ);
+                            fSkeleton = new FieldSkeleton(strFileName, loadGeometryQ, ignoreMissingPFiles,
+                                                          repairPolys, removeTextureCoords);
 
                             // We try to find some compatible Field Animation for the Field Skeleton.
                             // If there is no compatible field animation we have this var:   strGlobalFieldAnimationName = ""
@@ -116,7 +115,8 @@ namespace KimeraCS
 
                         case K_AA_SKELETON:
                             // Battle Skeleton (aa)
-                            bSkeleton = new BattleSkeleton(strFileName, CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strFileName).ToUpper()), true);
+                            bSkeleton = new BattleSkeleton(strFileName, CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strFileName).ToUpper()),
+                                true, repairPolys);
 
                             // Normally we will have the ??DA file with the Animation Pack.
                             // Location Battle Models has NOT ??DA file.
@@ -128,7 +128,7 @@ namespace KimeraCS
 
                         case K_MAGIC_SKELETON:
                             // Magic Skeleton (.d)
-                            bSkeleton = new BattleSkeleton(strFileName, true);
+                            bSkeleton = new BattleSkeleton(strFileName, true, repairPolys, removeTextureCoords);
 
                             // Normally we will have the *.A00 file with the Animation Pack.
                             // But editing models, it is possible we work without it. So, we will make something
@@ -145,8 +145,7 @@ namespace KimeraCS
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Exception", MessageBoxButtons.OK);
-                iloadSkeletonResult = -1;  // Error loading skeleton
+                throw new KimeraException("Error loading skeleton.", ex);
             }
 
             return iloadSkeletonResult;
@@ -154,7 +153,10 @@ namespace KimeraCS
 
         public static int LoadFieldSkeletonFromDB(string strFileName, 
                                                   string strAnimFileName, 
-                                                  bool loadGeometryQ)
+                                                  bool loadGeometryQ,
+                                                  bool ignoreMissingPFiles,
+                                                  bool repairPolys,
+                                                  bool removeTextureCoords)
         {
             int iloadSkeletonResult = 1;
 
@@ -178,14 +180,16 @@ namespace KimeraCS
                             // We load the Field Skeleton into memory.
 
                             // Field Skeleton (.hrc)
-                            fSkeleton = new FieldSkeleton(strFileName, loadGeometryQ);
+                            fSkeleton = new FieldSkeleton(strFileName, loadGeometryQ, ignoreMissingPFiles,
+                                                          repairPolys, removeTextureCoords);
 
                             iloadSkeletonResult = LoadAnimationFromDB(strAnimFileName);
                             break;
 
                         case K_AA_SKELETON:
                             // Battle Skeleton (aa)
-                            bSkeleton = new BattleSkeleton(strFileName, CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strFileName).ToUpper()), true);
+                            bSkeleton = new BattleSkeleton(strFileName, CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strFileName).ToUpper()),
+                                                           true, repairPolys);
 
                             // Normally we will have the ??DA file with the Animation Pack.
                             // Location Battle Models has NOT ??DA file.
@@ -196,7 +200,7 @@ namespace KimeraCS
 
                         case K_MAGIC_SKELETON:
                             // Magic Skeleton (.d)
-                            bSkeleton = new BattleSkeleton(strFileName, true);
+                            bSkeleton = new BattleSkeleton(strFileName, true, repairPolys, removeTextureCoords);
 
                             // Normally we will have the ??DA file with the Animation Pack.
                             // Location Battle Models has NOT ??DA file.
@@ -221,11 +225,10 @@ namespace KimeraCS
             return iloadSkeletonResult;
         }
 
-        public static int WriteSkeleton(string strFileName)
+        public static int WriteSkeleton(string strFileName, bool compileMultiPBones)
         {
             Point3D p_min = new Point3D();
             Point3D p_max = new Point3D();
-            bool compileMultiPBones = false;
             BattleFrame tmpwpFrame;
 
             int isaveSkeletonResult = 0;
@@ -241,9 +244,6 @@ namespace KimeraCS
                                              0, 0, 0, 1, 1, 1);
 
                         SetLights();
-
-                        if (MessageBox.Show("Merge multi PModels bones in a single file?", "Confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                            compileMultiPBones = true;
 
                         ApplyFieldChanges(ref fSkeleton, fAnimation.frames[iCurrentFrameScroll], compileMultiPBones);
 
@@ -424,7 +424,9 @@ namespace KimeraCS
             return isaveModelResult;
         }
 
-        public static int LoadRSDResourceModel(string strRSDFolder, string strRSDName)
+        public static int LoadRSDResourceModel(string strRSDFolder, string strRSDName,
+                                               bool ignoreMissingPFiles, bool repairPolys,
+                                               bool removeTextureCoords)
         {
             int iLoadRSDResourceModelResult = 0;
             string strfAnimation = "";
@@ -459,7 +461,8 @@ namespace KimeraCS
                     resizeZ = 1,
                 };
 
-                tmpfRSDResource = new FieldRSDResource(strRSDName, ref textures_pool, strRSDFolder);
+                tmpfRSDResource = new FieldRSDResource(strRSDName, ref textures_pool, strRSDFolder,
+                                                       ignoreMissingPFiles, repairPolys, removeTextureCoords);
                 tmpfBone.fRSDResources.Add(tmpfRSDResource);
 
                 fSkeleton.bones.Add(tmpfBone);
@@ -474,11 +477,8 @@ namespace KimeraCS
             }
             catch (Exception ex)
             {
-                strGlobalExceptionMessage = ex.Message;
-
-                MessageBox.Show("There has been some error loading RSD Resource: " + strRSDName + ".", "Error");
-                
-                iLoadRSDResourceModelResult = -1;
+                throw new FileLoadException("There has been some error loading RSD Resource: " + strRSDName + ".",
+                                            strRSDName, ex);
             }
 
             return iLoadRSDResourceModelResult;

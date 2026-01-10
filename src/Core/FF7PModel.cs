@@ -2,11 +2,8 @@ using System;
 using System.IO;
 using System.Drawing;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 
@@ -18,8 +15,6 @@ namespace KimeraCS
     using static FrmPEditor;
 
     using static FF7Skeleton;
-
-    using static ModelDrawing;
 
     using static Utils;
     using static FileTools;
@@ -234,7 +229,8 @@ namespace KimeraCS
         }
 
 
-        public static void LoadPModel(ref PModel Model, string strPFolder, string strPFileName, bool bComputeNormals)
+        public static void LoadPModel(ref PModel Model, string strPFolder, string strPFileName,
+                                      bool bComputeNormals, bool repairPolys, bool removeTextureCoords)
         {
             byte[] fileBuffer;
             long fileBufferPos = 0;
@@ -245,7 +241,8 @@ namespace KimeraCS
             if (!File.Exists(strPFullFileName))
             {
                 //  Debug.Print fileName
-                throw new FileNotFoundException("Error opening .P Model " + strPFileName + " file.");
+                throw new PFileNotFoundException("Error opening .P Model " + strPFileName + " file.",
+                                                 strPFileName);
             }
 
             // Read All P Model file into memory
@@ -342,11 +339,11 @@ namespace KimeraCS
 
             Model.DListNum = 0;
 
-            RepairGroups(ref Model);
+            RepairGroups(ref Model, removeTextureCoords);
             AssignRealGID(ref Model);
             //CheckModelConsistency(ref Model);
 
-            if (!bDontCheckRepairPolys) RepairPolys(ref Model);
+            if (repairPolys) RepairPolys(ref Model);
 
             KillUnusedVertices(ref Model);
             ComputeBoundingBox(ref Model);
@@ -376,9 +373,7 @@ namespace KimeraCS
 
                     if (Header.version != 1 || Header.off04 != 1)
                     {
-                        MessageBox.Show("The file header of the P file " + fileName + " is not correct.",
-                                        "Error");
-                        return 0;
+                        throw new FileFormatException("The file header of the P file " + Path.GetFileName(fileName) + " is not correct.");
                     }
 
                     Header.vertexColor = memReader.ReadInt32();
@@ -876,13 +871,14 @@ namespace KimeraCS
 
                 CheckModelConsistency(ref Model);
             }
-            catch
+            catch (Exception ex)
             {
-                MessageBox.Show("Error merging " + Model.fileName + " with " + inModel.fileName + "!!!", "Error", MessageBoxButtons.OK);
+                throw new Exception("Error merging " + Model.fileName + " with " + inModel.fileName + ".", ex);
             }
         }
 
-        public static void MergeGroupsIntoOne(PModel inPModel, out PModel outPModel, bool bIncludeTextures)
+        public static void MergeGroupsIntoOne(PModel inPModel, out PModel outPModel,
+                                              bool bIncludeTextures, bool removeTextureCoords)
         {
             int iGroupIdx;
 
@@ -905,7 +901,7 @@ namespace KimeraCS
                 {
                     if (inPModel.Groups[iGroupIdx].texFlag == 1)
                     {
-                        RemoveGroup(ref inPModel, iGroupIdx);
+                        RemoveGroup(ref inPModel, iGroupIdx, removeTextureCoords);
                         iGroupIdx--;
                     }
                 }
@@ -1300,7 +1296,7 @@ namespace KimeraCS
 
         // This procedure removes the Groups with numpolys = 0.
         // This should never happen (but Kaldarasha reported models created with numpolys = 0).
-        public static void RepairGroups(ref PModel Model)
+        public static void RepairGroups(ref PModel Model, bool removeTextureCoords)
         {
             int iGroupIdx;
 
@@ -1310,21 +1306,62 @@ namespace KimeraCS
                 if (Model.Groups[iGroupIdx].numPoly == 0 ||
                     Model.Groups[iGroupIdx].numVert == 0)
                 {
-                    RemoveGroup(ref Model, iGroupIdx);
+                    RemoveGroup(ref Model, iGroupIdx, removeTextureCoords);
                     iGroupIdx--;
                 }
             }
         }
 
 
+        // Checks for polys that need to be repaired
+        public static int CheckPolys(ref PModel Model)
+        {
+            int iGroupIdx, iPolyIdx;
+
+            for (iGroupIdx = 0; iGroupIdx < Model.Header.numGroups; iGroupIdx++)
+            {
+                for (iPolyIdx = Model.Groups[iGroupIdx].offsetPoly;
+                     iPolyIdx < Model.Groups[iGroupIdx].offsetPoly + Model.Groups[iGroupIdx].numPoly;
+                     iPolyIdx++)
+                {
+                    if (PolyHasDuplicateVertexCoords(ref Model, iGroupIdx, iPolyIdx))
+                        return iGroupIdx;
+                }
+            }
+            return -1;
+        }
+
+        private static bool PolyHasDuplicateVertexCoords(ref PModel Model, int iGroupIdx, int iPolyIdx)
+        {
+            int iV0 = Model.Polys[iPolyIdx].Verts[0],
+                iV1 = Model.Polys[iPolyIdx].Verts[1],
+                iV2 = Model.Polys[iPolyIdx].Verts[2];
+
+            // Poly with duplicated vertex indices
+            if (iV0 == iV1 || iV0 == iV2 || iV1 == iV2)
+            {
+                return true;
+            }
+
+            // Poly with duplicate vertex coordinates (different vertex indices)
+            if (ComparePoints3D(Model.Verts[iV0 + Model.Groups[iGroupIdx].offsetVert],
+                                Model.Verts[iV1 + Model.Groups[iGroupIdx].offsetVert]) ||
+                ComparePoints3D(Model.Verts[iV0 + Model.Groups[iGroupIdx].offsetVert],
+                                Model.Verts[iV2 + Model.Groups[iGroupIdx].offsetVert]) ||
+                ComparePoints3D(Model.Verts[iV1 + Model.Groups[iGroupIdx].offsetVert],
+                                Model.Verts[iV2 + Model.Groups[iGroupIdx].offsetVert]))
+            {
+                return true;
+            }
+            return false;
+        }
+
         // This procedure removes polys that has some vertices with the
         // same index (then supposedly is a line).
         public static void RepairPolys(ref PModel Model)
         {
             int iGroupIdx, iPolyIdx, iV0, iV1, iV2;
-            bool bRepairYes = false;
-
-            // Poly with duplicated vertex indices
+            
             for (iGroupIdx = 0; iGroupIdx < Model.Header.numGroups; iGroupIdx++)
             {
                 for (iPolyIdx = Model.Groups[iGroupIdx].offsetPoly;
@@ -1335,90 +1372,13 @@ namespace KimeraCS
                     iV1 = Model.Polys[iPolyIdx].Verts[1];
                     iV2 = Model.Polys[iPolyIdx].Verts[2];
 
-                    if (iV0 == iV1 || iV0 == iV2 || iV1 == iV2)
+                    if (PolyHasDuplicateVertexCoords(ref Model, iGroupIdx, iPolyIdx))
                     {
+                        RemovePolygon(ref Model, iPolyIdx);
 
-                        if (!bRepairYes)
-                        {
-                            if (MessageBox.Show("The model: " + Model.fileName + " has one vertex index duplicated in " +
-                                                "the same triangle/poly. Do you want to fix it?\n(the triangle will be " +
-                                                "removed)\n\nNOTE: This answer will be used for all the model and will " +
-                                                "cancel the check of duplicated vertex coordinates.\n\n" +
-                                                "[INFO] Group:     " + iGroupIdx.ToString() + "\n" +
-                                                "       Poly:      " + iPolyIdx.ToString() + "\n" +
-                                                "       Vertex V0: " + iV0.ToString() + "\n" +
-                                                "       Vertex V1: " + iV1.ToString() + "\n" +
-                                                "       Vertex V2: " + iV2.ToString(),
-                                                "Warning", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                                bRepairYes = true;
-                            else return;
-                        }
-
-                        if (bRepairYes)
-                        {
-                            RemovePolygon(ref Model, iPolyIdx);
-
-                            if (Model.Groups[iGroupIdx].numPoly > 1 &&
-                                Model.Header.numPolys > iPolyIdx)
-                                iPolyIdx--;
-                        }
-                    }
-                }
-            }
-
-            // Poly with duplicate vertex coordinates (different vertex indices)
-            bRepairYes = false;
-
-            for (iGroupIdx = 0; iGroupIdx < Model.Header.numGroups; iGroupIdx++)
-            {
-                for (iPolyIdx = Model.Groups[iGroupIdx].offsetPoly;
-                     iPolyIdx < Model.Groups[iGroupIdx].offsetPoly + Model.Groups[iGroupIdx].numPoly;
-                     iPolyIdx++)
-                {
-                    iV0 = Model.Polys[iPolyIdx].Verts[0];
-                    iV1 = Model.Polys[iPolyIdx].Verts[1];
-                    iV2 = Model.Polys[iPolyIdx].Verts[2];
-
-                    if (ComparePoints3D(Model.Verts[iV0 + Model.Groups[iGroupIdx].offsetVert],
-                                        Model.Verts[iV1 + Model.Groups[iGroupIdx].offsetVert]) ||
-                        ComparePoints3D(Model.Verts[iV0 + Model.Groups[iGroupIdx].offsetVert],
-                                        Model.Verts[iV2 + Model.Groups[iGroupIdx].offsetVert]) ||
-                        ComparePoints3D(Model.Verts[iV1 + Model.Groups[iGroupIdx].offsetVert],
-                                        Model.Verts[iV2 + Model.Groups[iGroupIdx].offsetVert]))
-                    {
-
-                        if (!bRepairYes)
-                        {
-                            if (MessageBox.Show("The model: " + Model.fileName + " has one vertex coordinate duplicated in " +
-                                                "the same triangle/poly. Do you want to fix it?\n(the triangle will be " +
-                                                "removed)\n\nNOTE: This answer will be used for all the model.\n\n" +
-                                                "[INFO] Group:     " + iGroupIdx.ToString() + "\n" +
-                                                "       Poly:      " + iPolyIdx.ToString() + "\n" +
-                                                "       Vertex V0: " + iV0.ToString() + "\n" +
-                                                "       Vertex V1: " + iV1.ToString() + "\n" +
-                                                "       Vertex V2: " + iV2.ToString() + "\n" +
-                                                "       Vertex V0.x: " + Model.Verts[iV0].x.ToString() + "\n" +
-                                                "       Vertex V0.y: " + Model.Verts[iV0].y.ToString() + "\n" +
-                                                "       Vertex V0.z: " + Model.Verts[iV0].z.ToString() + "\n" +
-                                                "       Vertex V1.x: " + Model.Verts[iV1].x.ToString() + "\n" +
-                                                "       Vertex V1.y: " + Model.Verts[iV1].y.ToString() + "\n" +
-                                                "       Vertex V1.z: " + Model.Verts[iV1].z.ToString() + "\n" +
-                                                "       Vertex V2.x: " + Model.Verts[iV2].x.ToString() + "\n" +
-                                                "       Vertex V2.y: " + Model.Verts[iV2].y.ToString() + "\n" +
-                                                "       Vertex V2.z: " + Model.Verts[iV2].z.ToString() + "\n",
-                                                "Warning", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                                bRepairYes = true;
-                            else return;
-                        }
-
-                        if (bRepairYes)
-                        {
-                            RemovePolygon(ref Model, iPolyIdx);
-
-                            if (Model.Groups[iGroupIdx].numPoly > 1 &&
-                                Model.Header.numPolys > iPolyIdx)
-                                iPolyIdx--;
-                        }
+                        if (Model.Groups[iGroupIdx].numPoly > 1 &&
+                            Model.Header.numPolys > iPolyIdx)
+                            iPolyIdx--;
                     }
                 }
             }
@@ -2323,9 +2283,9 @@ namespace KimeraCS
                 Model.rotateGamma = 0;
 
             }
-            catch
+            catch (Exception ex)
             {
-                MessageBox.Show("Error applying PChange at " + Model.fileName + "!!!", "Error", MessageBoxButtons.OK);
+                throw new KimeraException("Error applying PChange at " + Model.fileName + ".", ex);
             }
         }
 
@@ -2365,9 +2325,10 @@ namespace KimeraCS
                 Model.rotationQuaternion.w = 1;
 
             }
-            catch
+            catch (Exception ex)
             {
-                MessageBox.Show("Error applying PChange at " + Model.fileName + "!!!", "Error", MessageBoxButtons.OK);
+                throw new KimeraException(
+                    "Error applying PChange at " + Model.fileName + ".", ex);
             }
         }
 
@@ -2576,10 +2537,10 @@ namespace KimeraCS
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                //  Debug.Print "Error writing P file!!!"
-                MessageBox.Show("Error writing PModel file " + fileName + ".", "Error", MessageBoxButtons.OK);
+                throw new FileWriteException(fileName,
+                    "Error writing PModel file " + Path.GetFileName(fileName) + ".", ex);
             }
         }
 
@@ -3012,7 +2973,7 @@ namespace KimeraCS
             Model.Header.numGroups--;
         }
 
-        public static void RemoveGroup(ref PModel Model, int iGroupIdx)
+        public static void RemoveGroup(ref PModel Model, int iGroupIdx, bool removeTextureCoords)
         {
             //int gi, gi2, giActualGroup, giPrevGroup, giMinOffPoly, giMaxOffPoly;
             int iActualGroup, iNextGroup, iNumTexCoords, iRealGID;
@@ -3032,15 +2993,8 @@ namespace KimeraCS
                         RemoveGroupTexCoords(ref Model, iGroupIdx);
                 else
                 {
-                    if  (Model.Groups[iGroupIdx].offsetTex > 0)
-                        if (MessageBox.Show("Group " + iGroupIdx.ToString("00") + " seems to have Texture " +
-                                            "Coordinates assigned, but it has not any Texture assigned.\nDo you " +
-                                            "want -Reset to 0- the Texture Coordinates?\n\nNOTE: If you don't reset " +
-                                            "them to 0, the Texture Flag will be enabled.", 
-                                            "Question", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                        {
-                            Model.Groups[iGroupIdx].offsetTex = 0;
-                        }
+                    if (Model.Groups[iGroupIdx].offsetTex > 0 && removeTextureCoords)
+                        Model.Groups[iGroupIdx].offsetTex = 0;
                 }
             }
             else
@@ -3860,21 +3814,19 @@ namespace KimeraCS
             // Check Add Vertex result
             if (iVertResult == -1)
             {
-                MessageBox.Show("There has been some issue adding the New Poly vertices into the " +
-                                "array of vertices.", "Warning");
+                throw new KimeraException(
+                    "There has been some issue adding the New Poly vertices into the array of vertices.");
             }
-            else
-            {
-                // Add the New Poly to the Polys array of the Group
-                // Now we need to put the New Poly in the interval of polys for that Group
-                // We will take advantage of this and will add also the Poly color
-                iPolyResult = InsertPPolyIntoGroup(ref Model, tmpPPoly, iGroupIdx);
 
-                if (iPolyResult == -1)
-                {
-                    MessageBox.Show("There has been some issue adding the New Poly into the " +
-                                    "array of polys.", "Warning");
-                }
+            // Add the New Poly to the Polys array of the Group
+            // Now we need to put the New Poly in the interval of polys for that Group
+            // We will take advantage of this and will add also the Poly color
+            iPolyResult = InsertPPolyIntoGroup(ref Model, tmpPPoly, iGroupIdx);
+
+            if (iPolyResult == -1)
+            {
+                throw new KimeraException(
+                    "There has been some issue adding the New Poly into the array of polys.");
             }
 
             ComputeNormals(ref Model);
@@ -4456,10 +4408,12 @@ namespace KimeraCS
 
         }
 
-        public static void EraseHemisphereVertices(ref PModel Model, float pA, float pB, float pC, float pD,
-                                                   bool underPlaneQ, ref List<Point3D> knownPlaneVPoints)
+        public static int EraseHemisphereVertices(ref PModel Model, float pA, float pB, float pC, float pD,
+                                                   bool underPlaneQ, ref List<Point3D> knownPlaneVPoints,
+                                                   bool removeTextureCoords)
         {
-            int iGroupIdx, iPolyIdx, iVertIdx, offsetVert, offsetPoly, iActualVertIdx, kppi;
+            int iGroupIdx, iPolyIdx, iVertIdx, offsetVert, offsetPoly, iActualVertIdx, kppi,
+                result = 1;
             bool atLeastOneSparedQ, foundQ;
 
             for (iGroupIdx = 0; iGroupIdx < Model.Header.numGroups; iGroupIdx++)
@@ -4512,16 +4466,17 @@ namespace KimeraCS
 
             if (Model.Header.numPolys == 1)
             {
-                MessageBox.Show("A .P Model must have at least one polygon. The last triangle was spared.",
-                                "Information", MessageBoxButtons.OK);
+                // P model must have at least one polygon
+                result = 2;
             }
 
             KillUnusedVertices(ref Model);
 
-            RepairGroups(ref Model);
+            RepairGroups(ref Model, removeTextureCoords);
 
             ComputeNormals(ref Model);
             ComputeEdges(ref Model);
+            return result;
         }
 
         public static void ApplyPModelTransformation(ref PModel Model, double[] transMatrix)

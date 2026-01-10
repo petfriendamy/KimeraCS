@@ -1,11 +1,11 @@
-﻿using System;
+﻿using OpenTK.Graphics.OpenGL.Compatibility;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
-using OpenTK.Graphics.OpenGL.Compatibility;
 
 
 namespace KimeraCS
@@ -13,28 +13,23 @@ namespace KimeraCS
     using Core;
     using Rendering;
 
-    using static FrmPEditor;
-
-    using static FF7Skeleton;
-    using static FF7FieldSkeleton;
+    using static FF7BattleAnimation;
+    using static FF7BattleAnimationsPack;
+    using static FF7BattleSkeleton;
     using static FF7FieldAnimation;
     using static FF7FieldRSDResource;
-
-    using static FF7BattleSkeleton;
-    using static FF7BattleAnimationsPack;
-    using static FF7BattleAnimation;
-
-    using static FF7TEXTexture;
+    using static FF7FieldSkeleton;
     using static FF7PModel;
+    using static FF7Skeleton;
+    using static FF7TEXTexture;
     using static FF7TMDModel;
-
-    using static ModelDrawing;
+    using static FileTools;
+    using static FrmPEditor;
     using static InputBoxCS;
     using static Model_3DS;
-
+    using static ModelDrawing;
     using static UndoRedo;
     using static Utils;
-    using static FileTools;
 
     public partial class FrmSkeletonEditor : Form
     {
@@ -1941,7 +1936,7 @@ namespace KimeraCS
                         InitializeWinFormsDataControls();
 
                         // Load Field Skeleton
-                        iLoadResult = LoadSkeleton(openFile.FileName, true);
+                        iLoadResult = UserPrompts.LoadGenericSkeleton(openFile.FileName, true);
 
                         if (iLoadResult == -2)
                         {
@@ -2038,7 +2033,7 @@ namespace KimeraCS
                         InitializeWinFormsDataControls();
 
                         // Load Field Skeleton
-                        iLoadResult = LoadSkeleton(openFile.FileName, true);
+                        iLoadResult = UserPrompts.LoadGenericSkeleton(openFile.FileName, true);
 
                         if (iLoadResult == -2)
                         {
@@ -2057,7 +2052,7 @@ namespace KimeraCS
                         if (iLoadResult == 0)
                         {
                             MessageBox.Show("The file " + Path.GetFileName(openFile.FileName).ToUpper() +
-                                            " has not any known Battle Skeleton format.",
+                                            " has an unknown Battle Skeleton format.",
                                             "Warning");
                             return;
                         }
@@ -2171,8 +2166,8 @@ namespace KimeraCS
 
                         // Load the RSD Resource
                         // We need to prepare some type of "FAKE" or RSD only fSkeleton
-                        LoadRSDResourceModel(strGlobalPathRSDResourceFolder,
-                                             Path.GetFileNameWithoutExtension(strGlobalRSDResourceName));
+                        UserPrompts.FieldRSDLoader(strGlobalPathRSDResourceFolder,
+                                                    Path.GetFileNameWithoutExtension(strGlobalRSDResourceName));
 
                         // Enable/Make Visible Win Forms Data controls
                         EnableWinFormsDataControls();
@@ -2266,7 +2261,7 @@ namespace KimeraCS
                             strGlobalPModelName = Path.GetFileName(openFile.FileName).ToUpper();
 
                             fPModel = new PModel();
-                            LoadPModel(ref fPModel, strGlobalPathPModelFolder,
+                            UserPrompts.PModelLoader(ref fPModel, strGlobalPathPModelFolder,
                                        Path.GetFileName(strGlobalPModelName),
                                        true);
                         }
@@ -2602,7 +2597,12 @@ namespace KimeraCS
                     else
                     {
                         // We save the Skeleton.
-                        iSaveResult = WriteSkeleton(saveFileName);
+                        bool mergeBones = false;
+                        if (modelType == K_HRC_SKELETON)
+                        {
+                            mergeBones = (MessageBox.Show("Merge multi PModels bones in a single file?", "Confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes);
+                        }
+                        iSaveResult = WriteSkeleton(saveFileName, mergeBones);
                     }
 
                     if (iSaveResult == 1)
@@ -2749,7 +2749,12 @@ namespace KimeraCS
                                 else
                                 {
                                     // We save the Skeleton.
-                                    iSaveResult = WriteSkeleton(saveFile.FileName);
+                                    bool mergeBones = false;
+                                    if (modelType == K_HRC_SKELETON)
+                                    {
+                                        mergeBones = (MessageBox.Show("Merge multi PModels bones in a single file?", "Confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes);
+                                    }
+                                    iSaveResult = WriteSkeleton(saveFile.FileName, mergeBones);
                                 }
 
                                 if (iSaveResult == 1)
@@ -4437,7 +4442,7 @@ namespace KimeraCS
                         }
                         else
                         {
-                            LoadPModel(ref AdditionalP, strGlobalPathPartModelFolder, strGlobalPartModelName, true);
+                            UserPrompts.PModelLoader(ref AdditionalP, strGlobalPathPartModelFolder, strGlobalPartModelName, true);
                         }
 
                         if (AdditionalP.Header.numVerts > 0)
@@ -6421,28 +6426,11 @@ namespace KimeraCS
                 InitializeWinFormsDataControls();
 
                 // Load Field Skeleton
-                iLoadResult = LoadFieldSkeletonFromDB(FrmFieldDB.strFieldFile, FrmFieldDB.strAnimFile, true);
+                iLoadResult = UserPrompts.LoadSkeletonFromDB(FrmFieldDB.strFieldFile, FrmFieldDB.strAnimFile, true);
 
-                if (iLoadResult == -2)
-                {
-                    MessageBox.Show("Error Destroying Skeleton file " + Path.GetFileName(FrmFieldDB.strFieldFile).ToUpper() + ".",
-                                    "Error");
-                    return;
-                }
-
-                if (iLoadResult == -1)
-                {
-                    MessageBox.Show("Error opening Skeleton file " + Path.GetFileName(FrmFieldDB.strFieldFile).ToUpper() + ".",
-                                    "Error");
-                    return;
-                }
-
-                if (iLoadResult == 0)
-                {
-                    MessageBox.Show("The file " + Path.GetFileName(FrmFieldDB.strFieldFile).ToUpper() + " has not any known Skeleton format.",
-                                    "Warning");
-                    return;
-                }
+                // Error messages
+                ShowDBErrorMessages(iLoadResult, FrmFieldDB.strFieldFile);
+                if (iLoadResult < 1) return;
 
                 // Enable/Make Visible Win Forms Data controls
                 EnableWinFormsDataControls();
@@ -6498,28 +6486,11 @@ namespace KimeraCS
                 InitializeWinFormsDataControls();
 
                 // Load Battle Skeleton
-                iLoadResult = LoadFieldSkeletonFromDB(strfileNameModel, strfileNameAnim, true);
+                iLoadResult = UserPrompts.LoadSkeletonFromDB(strfileNameModel, strfileNameAnim, true);
 
-                if (iLoadResult == -2)
-                {
-                    MessageBox.Show("Error Destroying Skeleton file " + Path.GetFileName(strfileNameModel).ToUpper() + ".",
-                                    "Error");
-                    return;
-                }
-
-                if (iLoadResult == -1)
-                {
-                    MessageBox.Show("Error opening Skeleton file " + Path.GetFileName(strfileNameModel).ToUpper() + ".",
-                                    "Error");
-                    return;
-                }
-
-                if (iLoadResult == 0)
-                {
-                    MessageBox.Show("The file " + Path.GetFileName(strfileNameModel).ToUpper() + " has not any known Skeleton format.",
-                                    "Warning");
-                    return;
-                }
+                // Error messages
+                ShowDBErrorMessages(iLoadResult, strfileNameModel);
+                if (iLoadResult < 1) return;
 
                 // Update Paths
                 WriteCFGFile();
@@ -6549,6 +6520,33 @@ namespace KimeraCS
             {
                 MessageBox.Show("Global error opening Battle Skeleton file " + Path.GetFileName(FrmFieldDB.strFieldFile).ToUpper() + ".",
                                 "Error");
+            }
+        }
+
+        private void ShowDBErrorMessages(int errorCode, string filePath)
+        {
+            switch (errorCode)
+            {
+                case -2:
+                    MessageBox.Show("Error Destroying Skeleton file " + Path.GetFileName(filePath).ToUpper() + ".",
+                                    "Error");
+                    break;
+                case -1:
+                    MessageBox.Show("Error opening Skeleton file " + Path.GetFileName(filePath).ToUpper() + ".",
+                                    "Error");
+                    break;
+                case 0:
+                    MessageBox.Show("The file " + Path.GetFileName(filePath).ToUpper() + " has an unknown Skeleton format.",
+                                    "Warning");
+                    break;
+                case 2:
+                    MessageBox.Show("The animation selected has different number of bones. " +
+                                    "Using a compatible animation.", "Warning", MessageBoxButtons.OK);
+                    break;
+                case 3:
+                    MessageBox.Show("There is not selected animation (should not happen). " +
+                                    " Using a compatible animation.", "Warning", MessageBoxButtons.OK);
+                    break;
             }
         }
 

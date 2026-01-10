@@ -73,12 +73,7 @@
 using System;
 using System.IO;
 using System.Drawing;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Globalization;
 
 namespace KimeraCS
@@ -357,68 +352,74 @@ namespace KimeraCS
             fileBuffer = File.ReadAllBytes(strTMDFullFileName);
 
 
-            //// Read TMD Model structure.
-            // Header
-            mTMDModel.TMDHeader = new TMD_HEADER();
-            ReadTMDHeader(fileBuffer, ref fileBufferPos, ref mTMDModel.TMDHeader, strTMDFullFileName);
-
-            // Objects
-            mTMDModel.TMDObjectList = new TMD_OBJECT[mTMDModel.TMDHeader.nObjects];
-            for (iCountObj = 0; iCountObj < mTMDModel.TMDHeader.nObjects; iCountObj++)
+            try
             {
-                // Read Object
-                ReadTMDObject(fileBuffer, ref fileBufferPos, ref mTMDModel.TMDObjectList[iCountObj]);
+                //// Read TMD Model structure.
+                // Header
+                mTMDModel.TMDHeader = new TMD_HEADER();
+                ReadTMDHeader(fileBuffer, ref fileBufferPos, ref mTMDModel.TMDHeader, strTMDFullFileName);
 
-                // Read Object Data
-                // Read Primitives
-                mTMDModel.TMDObjectList[iCountObj].TMDPrimitiveList =
-                        new TMD_PRIMITIVE_HEADER[mTMDModel.TMDObjectList[iCountObj].nPrimitives];
-
-                mTMDModel.TMDObjectList[iCountObj].TMDPrimitiveListPacket =
-                        new TMD_PRIMITIVE_PACKET[mTMDModel.TMDObjectList[iCountObj].nPrimitives];
-
-                fileBufferPosItems = mTMDModel.TMDObjectList[iCountObj].offsetPrimitives + TMD_PADDING;
-
-                for (iCountItem = 0; iCountItem < mTMDModel.TMDObjectList[iCountObj].nPrimitives; iCountItem++)
+                // Objects
+                mTMDModel.TMDObjectList = new TMD_OBJECT[mTMDModel.TMDHeader.nObjects];
+                for (iCountObj = 0; iCountObj < mTMDModel.TMDHeader.nObjects; iCountObj++)
                 {
-                    // Read Primitive
-                    ReadTMDPrimitive(fileBuffer, ref fileBufferPosItems,
-                                     ref mTMDModel.TMDObjectList[iCountObj].TMDPrimitiveList[iCountItem]);
+                    // Read Object
+                    ReadTMDObject(fileBuffer, ref fileBufferPos, ref mTMDModel.TMDObjectList[iCountObj]);
 
-                    // Read Primitive Packet
-                    ReadTMDPrimitivePacket(fileBuffer, ref fileBufferPosItems, 
-                                           mTMDModel.TMDObjectList[iCountObj].TMDPrimitiveList[iCountItem].mode,
-                                           ref mTMDModel.TMDObjectList[iCountObj].TMDPrimitiveListPacket[iCountItem]);
+                    // Read Object Data
+                    // Read Primitives
+                    mTMDModel.TMDObjectList[iCountObj].TMDPrimitiveList =
+                            new TMD_PRIMITIVE_HEADER[mTMDModel.TMDObjectList[iCountObj].nPrimitives];
+
+                    mTMDModel.TMDObjectList[iCountObj].TMDPrimitiveListPacket =
+                            new TMD_PRIMITIVE_PACKET[mTMDModel.TMDObjectList[iCountObj].nPrimitives];
+
+                    fileBufferPosItems = mTMDModel.TMDObjectList[iCountObj].offsetPrimitives + TMD_PADDING;
+
+                    for (iCountItem = 0; iCountItem < mTMDModel.TMDObjectList[iCountObj].nPrimitives; iCountItem++)
+                    {
+                        // Read Primitive
+                        ReadTMDPrimitive(fileBuffer, ref fileBufferPosItems,
+                                         ref mTMDModel.TMDObjectList[iCountObj].TMDPrimitiveList[iCountItem]);
+
+                        // Read Primitive Packet
+                        ReadTMDPrimitivePacket(fileBuffer, ref fileBufferPosItems,
+                                               mTMDModel.TMDObjectList[iCountObj].TMDPrimitiveList[iCountItem].mode,
+                                               ref mTMDModel.TMDObjectList[iCountObj].TMDPrimitiveListPacket[iCountItem]);
+                    }
+
+
+                    // Read Vertices
+                    mTMDModel.TMDObjectList[iCountObj].TMDVertexList =
+                            new TMD_VERTEX[mTMDModel.TMDObjectList[iCountObj].nVerts];
+
+                    fileBufferPosItems = mTMDModel.TMDObjectList[iCountObj].offsetVerts + TMD_PADDING;
+
+                    ReadTMDVertices(fileBuffer, fileBufferPosItems, mTMDModel.TMDObjectList[iCountObj].nVerts,
+                                    ref mTMDModel.TMDObjectList[iCountObj].TMDVertexList);
+
+
+                    // Read Normals
+                    mTMDModel.TMDObjectList[iCountObj].TMDNormalList =
+                            new TMD_NORMAL[mTMDModel.TMDObjectList[iCountObj].nNormals];
+
+                    fileBufferPosItems = mTMDModel.TMDObjectList[iCountObj].offsetNormals + TMD_PADDING;
+
+                    ReadTMDNormals(fileBuffer, fileBufferPosItems, mTMDModel.TMDObjectList[iCountObj].nNormals,
+                                   ref mTMDModel.TMDObjectList[iCountObj].TMDNormalList);
                 }
-
-
-                // Read Vertices
-                mTMDModel.TMDObjectList[iCountObj].TMDVertexList =
-                        new TMD_VERTEX[mTMDModel.TMDObjectList[iCountObj].nVerts];
-
-                fileBufferPosItems = mTMDModel.TMDObjectList[iCountObj].offsetVerts + TMD_PADDING;
-
-                ReadTMDVertices(fileBuffer, fileBufferPosItems, mTMDModel.TMDObjectList[iCountObj].nVerts,                                         
-                                ref mTMDModel.TMDObjectList[iCountObj].TMDVertexList);
-
-
-                // Read Normals
-                mTMDModel.TMDObjectList[iCountObj].TMDNormalList =
-                        new TMD_NORMAL[mTMDModel.TMDObjectList[iCountObj].nNormals];
-
-                fileBufferPosItems = mTMDModel.TMDObjectList[iCountObj].offsetNormals + TMD_PADDING;
-
-                ReadTMDNormals(fileBuffer, fileBufferPosItems, mTMDModel.TMDObjectList[iCountObj].nNormals,
-                               ref mTMDModel.TMDObjectList[iCountObj].TMDNormalList);
             }
-
+            catch (Exception e)
+            {
+                throw new FileLoadException(e.Message);
+            }
         }
 
 
 
         /////////////////////////////////////////////////////////////////////////////////////////////
         // Load TMD functions
-        public static int ReadTMDHeader(byte[] fileBuffer, ref long pos, ref TMD_HEADER TMDHeader, string fileName)
+        public static void ReadTMDHeader(byte[] fileBuffer, ref long pos, ref TMD_HEADER TMDHeader, string fileName)
         {
             using (var fileMemory = new MemoryStream(fileBuffer))
             {
@@ -431,9 +432,7 @@ namespace KimeraCS
                     // 0xFF - converted 2 float model (with vertex coordinates as floats)
                     if (TMDHeader.version != 0x41 && TMDHeader.version != 0xFF)
                     {
-                        MessageBox.Show("The file header of the TMD file " + fileName + " is not correct.",
-                                        "Error");
-                        return 0;
+                        throw new ArgumentException("The file header of the TMD file " + fileName + " is not correct.");
                     }
 
                     if (TMDHeader.version == 0xFF) bConverted2Float = true;
@@ -445,8 +444,6 @@ namespace KimeraCS
                     pos = memReader.BaseStream.Position;
                 }
             }
-
-            return 1;
         }
 
         public static void ReadTMDObject(byte[] fileBuffer, ref long pos, ref TMD_OBJECT TMDObject)
@@ -1241,7 +1238,7 @@ namespace KimeraCS
 
             // This should not happen
             if (iGetVertexIndexResult >= inVertex.Length)
-                MessageBox.Show("This should not happen. The Vertex searched is not found!", "Info");
+                throw new ArgumentOutOfRangeException("This should not happen. The Vertex searched is not found!");
 
             return iGetVertexIndexResult;
         }
@@ -1258,7 +1255,7 @@ namespace KimeraCS
             // one unique Group if needed.
             if (inPModel.Header.numGroups > 1)
             {
-                MergeGroupsIntoOne(inPModel, out PModel tmpPModel, true);
+                MergeGroupsIntoOne(inPModel, out PModel tmpPModel, true, true);
 
                 inPModel = tmpPModel;
             }
@@ -1429,9 +1426,6 @@ namespace KimeraCS
                 // Accumulate the Primitive Header + Packet sizes for next Primitive
                 iSizeAccum += mTMDModel.TMDObjectList[iCounter].nNormals * 8;
             }
-
-            // Check vertex winding of the object polys
-            MessageBox.Show("The P Model has been converted to TMD Object.", "Info");
         }
 
         public static void RecalculateOffsets()
@@ -1672,8 +1666,8 @@ namespace KimeraCS
             {
                 // Write TMD header
                 strTMDLOG.AppendLine("Version: 0x" + String.Format("{0:X}", mTMDModel.TMDHeader.version) + "    " +
-                                     "Flag: " + mTMDModel.TMDHeader.flags.ToString() + "    " +
-                                     "Num. Objects: " + mTMDModel.TMDHeader.nObjects.ToString("000"));
+                    "Flag: " + mTMDModel.TMDHeader.flags.ToString() + "    " +
+                    "Num. Objects: " + mTMDModel.TMDHeader.nObjects.ToString("000"));
                 strTMDLOG.AppendLine("");
 
                 // For each TMD object we will write each primitive data
@@ -1845,14 +1839,13 @@ namespace KimeraCS
                 }
 
                 File.WriteAllText(strGlobalPathTMDModelFolder + "\\" +
-                                  Path.GetFileNameWithoutExtension(strGlobalTMDModelName).ToUpper() + ".log",
-                                  strTMDLOG.ToString());
+                    Path.GetFileNameWithoutExtension(strGlobalTMDModelName).ToUpper() + ".log",
+                    strTMDLOG.ToString());
 
-                MessageBox.Show("Log for TMD file " + strGlobalTMDModelName + " saved correctly.", "Info", MessageBoxButtons.OK);
             }
             catch
             {
-                MessageBox.Show("Error saving the log for TMD file " + strGlobalTMDModelName + ".", "Error", MessageBoxButtons.OK);
+                throw new Exception("Error saving the log for TMD file " + strGlobalTMDModelName + ".");
             }
         }
 

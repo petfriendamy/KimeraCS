@@ -1,14 +1,9 @@
-﻿//  Code ported from P.P.A.Narayanan c++ 3ds loader
+//  Code ported from P.P.A.Narayanan c++ 3ds loader
 //  http://www.gamedev.net/reference/articles/article1259.asp
 
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Windows.Forms;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
 namespace KimeraCS
@@ -770,10 +765,10 @@ namespace KimeraCS
 
                 iLoad3DSResult = 1;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                MessageBox.Show(e.Message, "Error Loading 3DS.");
-                iLoad3DSResult = -1;
+                throw new FileLoadException("Error loading 3DS file " + Path.GetFileName(fileName) + ".",
+                                            fileName, ex);
             }
 
             return iLoad3DSResult;
@@ -1022,22 +1017,18 @@ namespace KimeraCS
                     // Let's check the max number of polys and vertices
                     if (Model.meshesV[iMeshIdx].vertsV.Length > 0xFFFF)
                     {
-                        MessageBox.Show("The mesh number: " + iMeshIdx.ToString() + " has " +
-                                        Model.meshesV[iMeshIdx].vertsV.Length.ToString() + " vertices.\n" +
-                                        "The max number of vertices allowed for a FF7 .P model is 65535.\n" +
-                                        "The process of importing this mesh is cancelled.", "Warning", 
-                                        MessageBoxButtons.OK);
+                        throw new TooManyVerticesException("The mesh number " + iMeshIdx + " has " +
+                            Model.meshesV[iMeshIdx].vertsV.Length + " vertices. " +
+                            "The max number of vertices allowed for a FF7 .P model is 65535.");
+                    }
 
-                    }
-                    else if (Model.meshesV[iMeshIdx].facesV.Length > 0xFFFF)
+                    if (Model.meshesV[iMeshIdx].facesV.Length > 0xFFFF)
                     {
-                        MessageBox.Show("The mesh number: " + iMeshIdx.ToString() + " has " +
-                                        Model.meshesV[iMeshIdx].facesV.Length.ToString() + " faces.\n" +
-                                        "The max number of faces allowed for a FF7 .P model is 65535.\n" +
-                                        "The process of importing this mesh is cancelled.", "Warning",
-                                        MessageBoxButtons.OK);
+                        throw new TooManyFacesException("The mesh number " + iMeshIdx + " has " +
+                            Model.meshesV[iMeshIdx].facesV.Length + " faces. " +
+                            "The max number of faces allowed for a FF7 .P model is 65535.");
                     }
-                    else
+
                     {
                         ConvertMesh3DSToPModel(Model.meshesV[iMeshIdx], Model.materialsV, ref outModel);
 

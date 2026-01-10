@@ -141,14 +141,12 @@ namespace KimeraCS
 
             catch (Exception ex)
             {
-                strGlobalExceptionMessage = ex.Message;
-
-                MessageBox.Show("Exception in DrawGroup procedure.\nGroup: " + Group.realGID.ToString() +
-                                "\nPolygon (iPolyIdx): " + iPolyIdx.ToString() +
-                                "\nVertex (iVertIdx): " + iVertIdx.ToString() +
-                                "\noffsetVertex: " + Group.offsetVert.ToString() +
-                                "\noffsetPolygon: " + Group.offsetPoly.ToString(), 
-                                "Exception error", MessageBoxButtons.OK);
+                throw new KimeraException(
+                    "Exception in DrawGroup procedure. Group: " + Group.realGID +
+                    ", Polygon (iPolyIdx): " + iPolyIdx +
+                    ", Vertex (iVertIdx): " + iVertIdx +
+                    ", offsetVertex: " + Group.offsetVert +
+                    ", offsetPolygon: " + Group.offsetPoly, ex);
             }
         }
 
@@ -1286,9 +1284,9 @@ namespace KimeraCS
                         break;
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                MessageBox.Show("Error Drawing current model: " + e.Message + ".", "Error");
+                throw new KimeraException("Error Drawing current model.", ex);
             }
         }
 

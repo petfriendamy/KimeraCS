@@ -22,11 +22,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Runtime.InteropServices;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KimeraCS
 {
@@ -57,6 +53,7 @@ namespace KimeraCS
             public List<BattleAnimation> SkeletonAnimations;
             public List<BattleAnimation> WeaponAnimations;
             public bool IsLimit;
+            public readonly bool WrongAnimationCount;
 
             public BattleAnimationsPack(BattleSkeleton bSkeleton, string strFileName)
             {
@@ -107,24 +104,28 @@ namespace KimeraCS
                     strAnimsPackFullFileName = Path.GetDirectoryName(strFileName) + "\\" + strBattleAnimPackFileName;
 
                     if (File.Exists(strAnimsPackFullFileName))
+                    {
+                        int result;
                         if (bSkeleton.CanHaveLimitBreak && Path.GetExtension(strFileName).Length == 4)
                         {
                             IsLimit = true;
-                            LoadBattleAnimationsPack(strAnimsPackFullFileName, bSkeleton.nBones, 8, 8, ref this);
+                            result = LoadBattleAnimationsPack(strAnimsPackFullFileName, bSkeleton.nBones, 8, 8, ref this);
                         }
                         else
-                            LoadBattleAnimationsPack(strAnimsPackFullFileName, bSkeleton.nBones,
-                                                     bSkeleton.nsSkeletonAnims, bSkeleton.nsWeaponsAnims, ref this);
+                            result = LoadBattleAnimationsPack(strAnimsPackFullFileName, bSkeleton.nBones,
+                                bSkeleton.nsSkeletonAnims, bSkeleton.nsWeaponsAnims, ref this);
+                        WrongAnimationCount = result == 1;
+                    }
                     else
                         CreateCompatibleBattleAnimationsPack(bSkeleton, ref this);
                 }
             }
         }
 
-        public static void LoadBattleAnimationsPack(string strAnimsPackFullFileName, int nsSkeletonBones,
+        public static int LoadBattleAnimationsPack(string strAnimsPackFullFileName, int nsSkeletonBones,
                                                     int nsSkeletonAnims, int nsWeaponsAnims, ref BattleAnimationsPack bAnimationsPack)
         {
-            int ai;
+            int ai, result = 0;
             byte[] fileBuffer;
             //  Debug.Print "Loadng animations pack " + fileName
             //  Debug.Print "Reading pack "; fileName
@@ -143,11 +144,9 @@ namespace KimeraCS
 
                         if (nsSkeletonAnims > bAnimationsPack.nAnimations)
                         {
-                            MessageBox.Show("Warning. The number of animations of the Battle Animation Pack " +
-                                            "is lower than the number of animations of the Battle Skeleton " +
-                                            "header. FIXING.", "Warning", MessageBoxButtons.OK);
-
+                            // Auto-fix: Animation pack has fewer animations than skeleton header expects
                             nsSkeletonAnims = bAnimationsPack.nAnimations;
+                            result = 1;
 
                             if (!bAnimationsPack.IsLimit) bSkeleton.nsSkeletonAnims = nsSkeletonAnims;
                         }
@@ -184,12 +183,10 @@ namespace KimeraCS
             }
             catch (Exception ex)
             {
-                strGlobalExceptionMessage = ex.Message;
-
-                MessageBox.Show("Error reading Battle Animation Pack file " + Path.GetFileName(strAnimsPackFullFileName) + ".",
-                                "Error", MessageBoxButtons.OK);
+                throw new FileLoadException("Error reading Battle Animation Pack file " + Path.GetFileName(strAnimsPackFullFileName) + ".",
+                                            strAnimsPackFullFileName, ex);
             }
-
+            return result;
         }
 
 
@@ -337,13 +334,10 @@ namespace KimeraCS
 
             if (bBlockOverSize)
             {
-                MessageBox.Show("The size of the Battle Animation is higher than the maximum " +
-                                "size (65535) expected by FF7 format. Animation not saved.", "Error", MessageBoxButtons.OK);
-                
-                // Restore Battle Animations Pack 
+                // Restore Battle Animations Pack
                 bAnimationsPack = CopybAnimationsPack(tmpbAnimationsPack);
 
-                return -2;
+                throw new AnimationSizeException($"The size of the Battle Animation is higher than the maximum size (65535) expected by FF7 format.");
             }
             else
             {
@@ -392,14 +386,15 @@ namespace KimeraCS
         //  ---------------------------------------------------------------------------------------------------
         public static BattleAnimationsPack CopybAnimationsPack(BattleAnimationsPack bAnimationsPackIn)
         {
-            BattleAnimationsPack bAnimationsPackOut;
+            BattleAnimationsPack bAnimationsPackOut = new()
+            {
+                nAnimations = bAnimationsPackIn.nAnimations,
+                nbSkeletonAnims = bAnimationsPackIn.nbSkeletonAnims,
+                nbWeaponAnims = bAnimationsPackIn.nbWeaponAnims,
+                IsLimit = bAnimationsPackIn.IsLimit,
 
-            bAnimationsPackOut.nAnimations = bAnimationsPackIn.nAnimations;
-            bAnimationsPackOut.nbSkeletonAnims = bAnimationsPackIn.nbSkeletonAnims;
-            bAnimationsPackOut.nbWeaponAnims = bAnimationsPackIn.nbWeaponAnims;
-            bAnimationsPackOut.IsLimit = bAnimationsPackIn.IsLimit;
-
-            bAnimationsPackOut.SkeletonAnimations = new List<BattleAnimation>();
+                SkeletonAnimations = new List<BattleAnimation>()
+            };
             foreach (BattleAnimation itmbAnimation in bAnimationsPackIn.SkeletonAnimations) bAnimationsPackOut.SkeletonAnimations.Add(CopybAnimation(itmbAnimation));
 
             bAnimationsPackOut.WeaponAnimations = new List<BattleAnimation>();
@@ -421,10 +416,8 @@ namespace KimeraCS
             // First check if exists
             if (!File.Exists(fileAnimFullPath))
             {
-                MessageBox.Show("The Battle Animations Pack file " + Path.GetFileName(fileAnimFullPath) + " does not exists. " +
-                                "Animation not loaded for getting the number of bones.",
-                                "Error");
-                return numBones;
+                throw new FileNotFoundException("The Battle Animations Pack file " + Path.GetFileName(fileAnimFullPath) + " does not exist.",
+                                                fileAnimFullPath);
             }
 
             // Read All *DA Model file into memory for get numBones

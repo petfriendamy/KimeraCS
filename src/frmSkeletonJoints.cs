@@ -349,9 +349,9 @@ namespace KimeraCS
             {
                 tmpfBone.nResources = 1;
 
-                tmpfRSDResource = new FieldRSDResource(Path.GetFileNameWithoutExtension(txtRSDFile.Text),
-                                                       ref fSkeleton.textures_pool, 
-                                                       Path.GetDirectoryName(txtRSDFile.Text));
+                tmpfRSDResource = UserPrompts.FieldRSDLoader(Path.GetFileNameWithoutExtension(txtRSDFile.Text),
+                                                           ref fSkeleton.textures_pool, 
+                                                           Path.GetDirectoryName(txtRSDFile.Text));
                 tmpfBone.fRSDResources.Add(tmpfRSDResource);
             }
 

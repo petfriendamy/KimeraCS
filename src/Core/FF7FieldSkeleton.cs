@@ -36,7 +36,8 @@ namespace KimeraCS
             public List<FieldBone> bones;
             public List<TEX> textures_pool;
 
-            public FieldSkeleton(string strfileName, bool loadGeometryQ)
+            public FieldSkeleton(string strfileName, bool loadGeometryQ, bool ignoreMissingPFiles,
+                                 bool repairPolys, bool removeTextureCoords)
             {
                 string strFileDirectoryName = Path.GetDirectoryName(strfileName);
 
@@ -100,11 +101,42 @@ namespace KimeraCS
                                                     rowFour,
                                                     ref textures_pool,
                                                     loadGeometryQ,
-                                                    strFileDirectoryName));
+                                                    strFileDirectoryName,
+                                                    ignoreMissingPFiles,
+                                                    repairPolys,
+                                                    removeTextureCoords));
                         }
                     }
 
                     i++;
+                }
+            }
+
+            //checks if the internal polys need to be repaired
+            public PModel? CheckPolys()
+            {
+                foreach (var bone in bones)
+                {
+                    foreach (var rsd in bone.fRSDResources)
+                    {
+                        var curr = rsd.Model;
+                        int result = FF7PModel.CheckPolys(ref curr);
+                        if (result >= 0) return curr;
+                    }
+                }
+                return null;
+            }
+
+            //attempts to repair internal polys
+            public void RepairPolys()
+            {
+                foreach (var bone in bones)
+                {
+                    foreach (var rsd in bone.fRSDResources)
+                    {
+                        var curr = rsd.Model;
+                        FF7PModel.RepairPolys(ref curr);
+                    }
                 }
             }
         }
@@ -125,12 +157,13 @@ namespace KimeraCS
             public float resizeZ;
 
             public FieldBone(string inJointI, string inJointF, string inLen, string inRSDLine,
-                             ref List<TEX> texturesPool, bool loadgeometryQ, string strFolderName)
+                             ref List<TEX> texturesPool, bool loadgeometryQ, string strFolderName,
+                             bool ignoreMissingPFiles, bool repairPolys, bool removeTextureCoords)
             {
                 string[] rsdRes = inRSDLine.Split();
                 int i;
 
-                len = Double.Parse(inLen, CultureInfo.InvariantCulture);
+                len = double.Parse(inLen, CultureInfo.InvariantCulture);
 
                 joint_i = "";
                 joint_f = "";
@@ -146,7 +179,7 @@ namespace KimeraCS
                 if (loadgeometryQ)
                 {
                     if (inRSDLine.Length > 2)
-                        nResources = Int32.Parse(rsdRes[0].Substring(0, inRSDLine.IndexOf(" ")));
+                        nResources = int.Parse(rsdRes[0].Substring(0, inRSDLine.IndexOf(" ")));
 
                     joint_i = inJointI;
                     joint_f = inJointF;
@@ -162,7 +195,8 @@ namespace KimeraCS
 
                         for (i = 0; i < nResources && rsdRes[i + 1] != null; i++)
                         {
-                            fRSDResources.Add(new FieldRSDResource(rsdRes[i + 1], ref texturesPool, strFolderName));
+                            fRSDResources.Add(new FieldRSDResource(rsdRes[i + 1], ref texturesPool, strFolderName,
+                                                                   ignoreMissingPFiles, repairPolys, removeTextureCoords));
                         }
                     }
                 }

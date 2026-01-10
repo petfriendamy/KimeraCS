@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KimeraCS
 {
@@ -14,7 +10,7 @@ namespace KimeraCS
         public const float fDefaultDPI = 96.0f;
 
         public Bitmap Bitmap { get; set; }
-        public Int32[] Bits { get; private set; }
+        public int[] Bits { get; private set; }
         public bool Disposed { get; private set; }
         public int Height { get; private set; }
         public int Width { get; private set; }
@@ -27,15 +23,13 @@ namespace KimeraCS
         {
             Width = width;
             Height = height;
-            Bits = new Int32[width * height];
+            Bits = new int[width * height];
             BitsHandle = GCHandle.Alloc(Bits, GCHandleType.Pinned);
 
             Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppPArgb, BitsHandle.AddrOfPinnedObject());
 
             Rectangle rect = new Rectangle(0, 0, Bitmap.Width, Bitmap.Height);
-            System.Drawing.Imaging.BitmapData bmpData =
-                Bitmap.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadWrite,
-                Bitmap.PixelFormat);
+            BitmapData bmpData = Bitmap.LockBits(rect, ImageLockMode.ReadWrite, Bitmap.PixelFormat);
 
             Stride = bmpData.Stride;
 
@@ -94,15 +88,13 @@ namespace KimeraCS
 
             Width = tmpBmp.Width;
             Height = tmpBmp.Height;
-            Bits = new Int32[tmpBmp.Width * tmpBmp.Height];
+            Bits = new int[tmpBmp.Width * tmpBmp.Height];
             BitsHandle = GCHandle.Alloc(Bits, GCHandleType.Pinned);
 
             Bitmap = new Bitmap(tmpBmp.Width, tmpBmp.Height, tmpBmp.Width * 4, PixelFormat.Format32bppPArgb, BitsHandle.AddrOfPinnedObject());
 
             Rectangle rect = new Rectangle(0, 0, Bitmap.Width, Bitmap.Height);
-            System.Drawing.Imaging.BitmapData bmpData =
-                Bitmap.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadWrite,
-                Bitmap.PixelFormat);
+            BitmapData bmpData = Bitmap.LockBits(rect, ImageLockMode.ReadWrite, Bitmap.PixelFormat);
 
             Stride = bmpData.Stride;
 

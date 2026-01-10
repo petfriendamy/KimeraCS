@@ -1,8 +1,6 @@
-﻿using System;
+using System;
 using System.IO;
-using System.Drawing;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -110,23 +108,17 @@ namespace KimeraCS
                     }
                     else
                     {
-                        // Case were we didn't found a compatible animation for the opened model.
+                        // Case where we didn't find a compatible animation for the opened model.
                         strFieldAnimationFile = "DUMMY.A";
                         strGlobalFieldAnimationName = strFieldAnimationFile;
-
-                        if (Path.GetFileName(strFullFileName).ToUpper() == strFieldAnimationFile)
-                            MessageBox.Show("There is no animation file that fits the model in the same folder.", "Info");
 
                         CreateCompatibleFieldAnimation();
                     }
                 }
                 catch (Exception ex)
                 {
-                    // Ok. If loading the animation we have problems,
-                    // we will create a compatible animation.
-                    MessageBox.Show("Error exception reading Field Animation: " + strFieldAnimationFile.ToUpper() + ".\n" +
-                                    "Exception message: " + ex.Message + ".",
-                                    "Error", MessageBoxButtons.OK);
+                    throw new FileLoadException("Error reading Field Animation: " + strFieldAnimationFile.ToUpper() + ".",
+                                                strFieldAnimationFile, ex);
                 }
             }
 
@@ -470,11 +462,9 @@ namespace KimeraCS
 
                         // Ok. If loading the animation we have problems,
                         // we will create a compatible animation.
-                        MessageBox.Show("The animation selected has different number of bones. " +
-                                        "Using a compatible animation.", "Warning", MessageBoxButtons.OK);
-
                         strGlobalFieldAnimationName = "--";
                         fAnimation = new FieldAnimation(fSkeleton, "--", false);
+                        iloadAnimationFromDBResult = 2;
                     }
                     else
                     {
@@ -485,11 +475,9 @@ namespace KimeraCS
                 {
                     // Ok. If loading the animation we have problems,
                     // we will create a compatible animation.
-                    MessageBox.Show("There is not selected animation (should not happen). " +
-                                    " Using a compatible animation.", "Warning", MessageBoxButtons.OK);
-
                     strGlobalFieldAnimationName = "--";
                     fAnimation = new FieldAnimation(fSkeleton, "--", false);
+                    iloadAnimationFromDBResult = 3;
                 }
             }
             catch
@@ -707,9 +695,7 @@ namespace KimeraCS
 
                             if (strSplitKeyData[1] != "3")
                             {
-                                MessageBox.Show("This is very odd, but you have loaded a file with an unsupported Model Type.",
-                                                "Warning");
-                                return;
+                                throw new FileFormatException("This is very odd, but you have loaded a file with an unsupported Model Type.");
                             }
                             break;
 
@@ -903,9 +889,7 @@ namespace KimeraCS
             // Let's check number of frames among animations.
             if (iFrameCounter != fAnimation.nFrames)
             {
-                MessageBox.Show("Warning. The number of frames of both animations is different.",
-                                "Warning", MessageBoxButtons.OK);
-                return;
+                throw new ArgumentException("The number of frames of both animations is different.");
             }
 
             // Now, let's make that the user decide which joints/bones wants to import.
@@ -927,9 +911,7 @@ namespace KimeraCS
                             case "MODEL_TYPE":
                                 if (strSplitKeyData[1] != "3")
                                 {
-                                    MessageBox.Show("This is very odd, but you have loaded a file with an unsupported Model Type.",
-                                                    "Warning");
-                                    return;
+                                    throw new FileFormatException("This is very odd, but you have loaded a file with an unsupported Model Type.");
                                 }
                                 break;
 
@@ -1376,9 +1358,8 @@ namespace KimeraCS
             // First check if exists
             if (!File.Exists(fileAnimFullPath))
             {
-                MessageBox.Show("The Field Animation file " + strFileName + " does not exists. Animation not loaded.",
-                                "Error");
-                return numBones;
+                throw new FileNotFoundException("The Field Animation file " + strFileName + " does not exist.",
+                                                fileAnimFullPath);
             }
 
             // Read All *.A Model file into memory for get numBones

@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Text;
 using OpenTK.Graphics.OpenGL.Compatibility;
@@ -13,6 +12,7 @@ namespace KimeraCS
 
     using static FF7TEXTexture;
 
+    using Core;
     using static Utils;
     using static FileTools;
 
@@ -27,11 +27,11 @@ namespace KimeraCS
             public int numTextures;
             public List<TEX> textures;
 
-            public FieldRSDResource(string in_res_file, ref List<TEX> textures_pool, string strFolderName)
+            public FieldRSDResource(string in_res_file, ref List<TEX> textures_pool, string strFolderName,
+                                    bool ignoreMissingPFiles, bool repairPolys, bool removeTextureCoords)
             {
                 int ti, ti_pool;
                 bool tex_foundQ;
-                DialogResult drPModelError;
 
                 TEX itmTextureTEX;
                 Model = new PModel();
@@ -56,10 +56,9 @@ namespace KimeraCS
                 // First check if exists
                 if (!File.Exists(rsdFileName))
                 {
-                    //throw new FileNotFoundException("Error opening RSD file '" + rsdFileName);
-                    MessageBox.Show("File: " + in_res_file + ".RSD does not exists.");
+                    throw new FileLoadException("File: " + in_res_file + ".RSD does not exist.", rsdFileName);
                 }
-                else
+
                 {
                     rsdString = File.ReadAllLines(rsdFileName);
 
@@ -74,24 +73,20 @@ namespace KimeraCS
                     // First check if exists
                     if (!File.Exists(strFolderName + "\\" + polyFileName))
                     {
-                        // We maybe want to load the rest of the model.
-                        // Here we give the choice to load it o cancel loading the model.
-                        drPModelError = MessageBox.Show("The .P Model file '" + polyFileName + "' does not exists. " +
-                                                        "Do you want to continue loading the other parts of the model?",
-                                                        "Information", MessageBoxButtons.YesNo);
-
-                        if (drPModelError == DialogResult.No)
+                        if (ignoreMissingPFiles)
                         {
-                            // throw new FileNotFoundException("Error opening P file '" + polyFileName + ".P'.");
-                            throw new FileNotFoundException();
+                            // We can fill the name of the .P model. This will help with saving.
+                            Model.fileName = polyFileName;
                         }
-
-                        // We can fill the name of the .P model. This will help to saving.
-                        Model.fileName = polyFileName;
+                        else
+                        {
+                            throw new PFileNotFoundException("Error opening P file '" + polyFileName + ".P'.",
+                                                             polyFileName);
+                        }
                     }
                     else
                     {
-                        LoadPModel(ref Model, strFolderName, polyFileName, true);
+                        LoadPModel(ref Model, strFolderName, polyFileName, true, repairPolys, removeTextureCoords);
                     }
 
 
@@ -199,11 +194,10 @@ namespace KimeraCS
 
                 iWriteRSDResourceResult = 1;
             }
-            catch
+            catch (Exception ex)
             {
-                MessageBox.Show("Error saving RSD file " + fileName, "Error", MessageBoxButtons.OK);
-
-                iWriteRSDResourceResult = -1;
+                throw new FileWriteException("Error saving RSD file " + Path.GetFileName(fileName) + ".",
+                                             fileName, ex);
             }
 
             return iWriteRSDResourceResult;
