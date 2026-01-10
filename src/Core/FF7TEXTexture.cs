@@ -12,7 +12,7 @@ namespace KimeraCS
 
     using static Utils;
 
-    public class FF7TEXTexture
+    public static class FF7TEXTexture
     {
         public struct TEX
         {

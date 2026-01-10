@@ -1,23 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
+using KimeraCS.Rendering;
 
 namespace KimeraCS
 {
     using static FrmPEditor;
-
-    using static FF7Skeleton;
-    using static FF7FieldSkeleton;
-    using static FF7FieldAnimation;
     using static FF7PModel;
-
-    using static FF7BattleSkeleton;
-    using static FF7BattleAnimationsPack;
-    using static FF7BattleAnimation;
 
     using static Utils;
 
@@ -194,6 +184,9 @@ namespace KimeraCS
             gammaPE = sState.URPEgamma;
 
             EditedPModel = CopyPModel(sState.URPEEditedPModel);
+
+            // Invalidate mesh cache after restoring model from undo/redo
+            GLRenderer.InvalidateMesh(ref EditedPModel);
 
             if (sState.PalettizedQ)
             {

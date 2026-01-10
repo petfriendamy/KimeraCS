@@ -21,7 +21,7 @@ namespace KimeraCS
 
     using static Utils;
 
-    public class FF7FieldSkeleton
+    public static class FF7FieldSkeleton
     {
 
         //

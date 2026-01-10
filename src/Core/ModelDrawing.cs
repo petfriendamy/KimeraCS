@@ -19,7 +19,6 @@ namespace KimeraCS
     using static FF7FieldRSDResource;
 
     using static FF7BattleSkeleton;
-    using static FF7BattleAnimationsPack;
     using static FF7BattleAnimation;
 
     using static FF7PModel;
@@ -29,7 +28,7 @@ namespace KimeraCS
     using static Utils;
     using KimeraCS.Core;
 
-    public class ModelDrawing
+    public static class ModelDrawing
     {
         public static uint[] tex_ids = new uint[1];
 

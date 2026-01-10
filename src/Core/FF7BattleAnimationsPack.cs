@@ -34,7 +34,7 @@ namespace KimeraCS
     using static Utils;
     using static FileTools;
 
-    public class FF7BattleAnimationsPack
+    public static class FF7BattleAnimationsPack
     {
         //  Battle animations notes by L.Spiro and Qhimm:
         //  http://wiki.qhimm.com/FF7/Battle/Battle_Animation_(PC)

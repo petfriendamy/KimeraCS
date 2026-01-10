@@ -8,7 +8,6 @@ using OpenTK.Mathematics;
 namespace KimeraCS.Rendering
 {
     using static FF7PModel;
-    using static Utils;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct Vertex

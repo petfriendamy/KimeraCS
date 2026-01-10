@@ -11,7 +11,7 @@ namespace KimeraCS
     using static Utils;
 
 
-    public class FF7BattleAnimation
+    public static class FF7BattleAnimation
     {
 
         public struct BattleFrameBone

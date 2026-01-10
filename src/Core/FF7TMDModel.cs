@@ -85,7 +85,7 @@ namespace KimeraCS
     using static Utils;
     using static FileTools;
 
-    public class FF7TMDModel
+    public static class FF7TMDModel
     {
         public const int TMD_PADDING = 12;
 

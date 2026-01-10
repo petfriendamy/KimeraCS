@@ -17,9 +17,8 @@ namespace KimeraCS
     using static FF7Skeleton;
 
     using static Utils;
-    using static FileTools;
 
-    public class FF7PModel
+    public static class FF7PModel
     {
 
         public const int PPOLY_TAG2 = 0xCFCEA00;  //217901568

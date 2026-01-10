@@ -3748,6 +3748,9 @@ namespace KimeraCS
                                                    ref translationTableVertex, ref translationTablePolys, iThreshold);
 
                                 CopyModelColors2VP(EditedPModel, ref vcolorsOriginal, ref pcolorsOriginal);
+
+                                // Invalidate mesh cache so polygon colors update on next render
+                                GLRenderer.InvalidateMesh(ref EditedPModel);
                             }
 
 
@@ -3820,10 +3823,13 @@ namespace KimeraCS
                             //if (glIsEnabled(GLCapability.GL_LIGHTING)) ComputeNormals(ref EditedPModel);
 
                             if (chkPaletteMode.Checked)
-                                FillColorTable(EditedPModel, ref colorTable, 
+                                FillColorTable(EditedPModel, ref colorTable,
                                                ref translationTableVertex, ref translationTablePolys, iThreshold);
 
                             CopyModelColors2VP(EditedPModel, ref vcolorsOriginal, ref pcolorsOriginal);
+
+                            // Invalidate mesh cache after cutting edge
+                            GLRenderer.InvalidateMesh(ref EditedPModel);
                         }
                     }
 
@@ -3864,6 +3870,9 @@ namespace KimeraCS
                                                ref translationTableVertex, ref translationTablePolys, iThreshold);
 
                             CopyModelColors2VP(EditedPModel, ref vcolorsOriginal, ref pcolorsOriginal);
+
+                            // Invalidate mesh cache after erasing polygon
+                            GLRenderer.InvalidateMesh(ref EditedPModel);
                         }
                     }
                     break;
@@ -3913,6 +3922,9 @@ namespace KimeraCS
                                 // -- Commented in KimeraVB6
                                 //ComputeNormals(ref EditedPModel);
                             //}
+
+                            // Invalidate mesh cache after moving vertex
+                            GLRenderer.InvalidateMesh(ref EditedPModel);
                         }
                     }
                     break;
@@ -3970,6 +3982,8 @@ namespace KimeraCS
 
                             CopyModelColors2VP(EditedPModel, ref vcolorsOriginal, ref pcolorsOriginal);
 
+                            // Invalidate mesh cache after creating new polygon
+                            GLRenderer.InvalidateMesh(ref EditedPModel);
                         }
                     }
                     break;

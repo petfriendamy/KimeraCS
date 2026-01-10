@@ -14,7 +14,7 @@ namespace KimeraCS
     using static Utils;
     using static FileTools;
 
-    public class FF7FieldAnimation
+    public static class FF7FieldAnimation
     {
 
         public static FrmFF7IDFJointsBonesSelection frmFF7IDFJBS;
