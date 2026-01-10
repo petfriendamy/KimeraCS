@@ -518,7 +518,7 @@ namespace KimeraCS
                 while (!(bSkeleton.bones[bi].parentBone == joint_stack[jsp]) && jsp > 0)
                 {
                     matrixStackPtr--;
-                    currentMatrix = matrixStack[matrixStackPtr - 1];
+                    currentMatrix = matrixStack[matrixStackPtr];
                     jsp--;
                 }
                 matrixStack[matrixStackPtr++] = currentMatrix;
@@ -618,7 +618,7 @@ namespace KimeraCS
         }
 
         /// <summary>
-        /// Möller–Trumbore ray-triangle intersection algorithm.
+        /// Mï¿½llerï¿½Trumbore ray-triangle intersection algorithm.
         /// </summary>
         private static bool RayTriangleIntersect(Vector3 rayOrigin, Vector3 rayDir,
                                                   Vector3 v0, Vector3 v1, Vector3 v2,
@@ -733,7 +733,7 @@ namespace KimeraCS
                 while (!(bSkeleton.bones[bi].parentBone == joint_stack[jsp]) && jsp > 0)
                 {
                     matrixStackPtr--;
-                    currentMatrix = matrixStack[matrixStackPtr - 1];
+                    currentMatrix = matrixStack[matrixStackPtr];
                     jsp--;
                 }
                 matrixStack[matrixStackPtr++] = currentMatrix;
@@ -909,7 +909,7 @@ namespace KimeraCS
                     while (!(bSkeleton.bones[bi].parentBone == joint_stack[jsp]) && jsp > 0)
                     {
                         matrixStackPtr--;
-                        currentMatrix = matrixStack[matrixStackPtr - 1];
+                        currentMatrix = matrixStack[matrixStackPtr];
                         jsp--;
                     }
                     matrixStack[matrixStackPtr++] = currentMatrix;
