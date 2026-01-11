@@ -12,10 +12,7 @@ namespace KimeraCS
     using Core;
     using Rendering;
 
-    using static FrmPEditor;
-
     using static FF7Skeleton;
-
     using static Utils;
 
     public static class FF7PModel
@@ -1387,19 +1384,6 @@ namespace KimeraCS
         /// Legacy display list function - now invalidates GLRenderer mesh cache instead.
         /// Display lists are deprecated in modern OpenGL.
         /// </summary>
-        public static void CreateDListFromPGroup(ref PGroup Group, PPolygon[] Polys, Point3D[] Verts,
-                                                 Color[] Vcolors, Point3D[] Normals, int[] NormalsIndex,
-                                                 Point2D[] TexCoords, PHundret Hundret)
-        {
-            // Display lists are deprecated - mesh caching is now handled by GLRenderer
-            // This function is kept for API compatibility but does nothing
-            // The mesh will be recreated on next render via GLRenderer.GetOrCreateMesh()
-        }
-
-        /// <summary>
-        /// Legacy display list function - now invalidates GLRenderer mesh cache instead.
-        /// Display lists are deprecated in modern OpenGL.
-        /// </summary>
         public static void CreateDListsFromPModel(ref PModel Model)
         {
             // Invalidate mesh cache to force recreation on next render
@@ -2154,14 +2138,16 @@ namespace KimeraCS
             }
         }
 
-        public static void ApplyCurrentVCoordsPE(ref PModel Model)
+        public static void ApplyCurrentVCoordsPE(ref PModel Model,
+            float repX, float repY, float repZ,
+            float rszX, float rszY, float rszZ)
         {
             int iVertIdx, iActualGroup;
 
             // Build base camera matrix using pure math
-            Matrix4 baseMatrix = CreateModelViewMatrixQuat(repXPE, repYPE, repZPE,
-                                                            EditedPModel.rotationQuaternion,
-                                                            rszXPE, rszYPE, rszZPE);
+            Matrix4 baseMatrix = CreateModelViewMatrixQuat(repX, repY, repZ,
+                                                            Model.rotationQuaternion,
+                                                            rszX, rszY, rszZ);
 
             iActualGroup = GetNextGroup(Model, -1);
 
@@ -2236,13 +2222,15 @@ namespace KimeraCS
             }
         }
 
-        public static void ApplyPChangesPE(ref PModel Model, bool DNormals)
+        public static void ApplyPChangesPE(ref PModel Model, bool DNormals,
+            float repX, float repY, float repZ,
+            float rszX, float rszY, float rszZ)
         {
             try
             {
                 KillUnusedVertices(ref Model);
 
-                ApplyCurrentVCoordsPE(ref Model);
+                ApplyCurrentVCoordsPE(ref Model, repX, repY, repZ, rszX, rszY, rszZ);
 
                 ComputePColors(ref Model);
                 ComputeEdges(ref Model);
@@ -3070,184 +3058,6 @@ namespace KimeraCS
 
         }
 
-
-        //  -------------------------------------------------------------------------------------------------
-        //  ======================================= PEDITOR PROCEDURES ======================================
-        //  -------------------------------------------------------------------------------------------------
-        //public static int GetClosestVertex(PModel Model, int px, int py, float DIST0, PictureBox panelEditorPModel)
-        public static int GetClosestVertex(PModel Model, int px, int py)
-        {
-            int iGetClosestVertexResult = -1;
-
-            Point3D pUP3D = new Point3D();
-            Point3D vpUP3D;
-            int iGroupIdx, iPolyIdx, iVertIdx, iHeight;
-            int[] vp = new int[4];
-
-            float[] DIST = new float[3];
-            float minDist;
-
-            pUP3D.x = px;
-            pUP3D.y = py;
-            pUP3D.z = 0;
-
-            GL.GetInteger(GetPName.Viewport, vp);
-            iHeight = vp[3];
-
-            //pi = GetClosestPolygon(Model, px, py, DIST0, panelEditorPModel);
-            iPolyIdx = GetClosestPolygon(Model, px, py);
-
-            if (iPolyIdx > -1)
-            {
-                iGroupIdx = GetPolygonGroup(Model, iPolyIdx);
-
-                pUP3D.y = iHeight - py;
-                for (iVertIdx = 0; iVertIdx < 3; iVertIdx++)
-                {
-                    vpUP3D = 
-                        GetVertexProjectedCoords(Model.Verts, 
-                                                 Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert);
-
-                    DIST[iVertIdx] = CalculateDistance(vpUP3D, pUP3D);
-                }
-
-                minDist = DIST[0];
-                iGetClosestVertexResult = Model.Polys[iPolyIdx].Verts[0] + Model.Groups[iGroupIdx].offsetVert;
-
-                for (iVertIdx = 1; iVertIdx < 3; iVertIdx++)
-                {
-                    if (DIST[iVertIdx] < minDist)
-                    {
-                        minDist = DIST[iVertIdx];
-                        iGetClosestVertexResult = Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert;
-                    }
-                }
-            }
-
-            return iGetClosestVertexResult;
-        }
-
-        /// <summary>
-        /// Finds the closest polygon in the model at the given screen coordinates using ray casting.
-        /// Replaces deprecated GL_SELECT mode with CPU-based ray-triangle intersection.
-        /// </summary>
-        public static int GetClosestPolygon(PModel Model, int px, int py)
-        {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
-
-            // Set up camera (this also syncs GLRenderer matrices)
-            ComputePModelBoundingBox(EditedPModel, ref p_min, ref p_max);
-            SetCameraAroundModel(ref p_min, ref p_max,
-                                 panXPE, panYPE, panZPE + DISTPE,
-                                 alphaPE, betaPE, gammaPE, 1, 1, 1);
-
-            // Get viewport
-            int[] vp = new int[4];
-            GL.GetInteger(GetPName.Viewport, vp);
-            int height = vp[3];
-
-            // Build model transformation matrix for the edited model
-            Matrix4 modelTransform = CreateModelViewMatrix(
-                EditedPModel.repositionX, EditedPModel.repositionY, EditedPModel.repositionZ,
-                EditedPModel.rotateAlpha, EditedPModel.rotateBeta, EditedPModel.rotateGamma,
-                EditedPModel.resizeX, EditedPModel.resizeY, EditedPModel.resizeZ);
-
-            // Get view and projection matrices from GLRenderer
-            Matrix4 view = GLRenderer.ViewMatrix;
-            Matrix4 projection = GLRenderer.ProjectionMatrix;
-
-            // Create ray from screen coordinates
-            Vector4 viewport = new Vector4(vp[0], vp[1], vp[2], vp[3]);
-
-            // Unproject near and far points to create ray
-            // Note: OpenGL Y is flipped from screen Y
-            float screenY = height - py;
-            Vector3 nearPoint = Unproject(new Vector3(px, screenY, 0.0f), modelTransform, view, projection, viewport);
-            Vector3 farPoint = Unproject(new Vector3(px, screenY, 1.0f), modelTransform, view, projection, viewport);
-
-            Vector3 rayOrigin = nearPoint;
-            Vector3 rayDir = Vector3.Normalize(farPoint - nearPoint);
-
-            // Test intersection with each polygon
-            int closestPoly = -1;
-            float closestDist = float.MaxValue;
-
-            for (int iGroupIdx = 0; iGroupIdx < Model.Header.numGroups; iGroupIdx++)
-            {
-                if (Model.Groups[iGroupIdx].HiddenQ) continue;
-
-                int offsetVert = Model.Groups[iGroupIdx].offsetVert;
-
-                for (int iPolyIdx = Model.Groups[iGroupIdx].offsetPoly;
-                     iPolyIdx < Model.Groups[iGroupIdx].offsetPoly + Model.Groups[iGroupIdx].numPoly;
-                     iPolyIdx++)
-                {
-                    // Get triangle vertices
-                    Vector3 v0 = new Vector3(
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].x,
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].y,
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].z);
-                    Vector3 v1 = new Vector3(
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].x,
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].y,
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].z);
-                    Vector3 v2 = new Vector3(
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].x,
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].y,
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].z);
-
-                    // Test ray-triangle intersection (Möller–Trumbore algorithm)
-                    if (RayTriangleIntersect(rayOrigin, rayDir, v0, v1, v2, out float dist))
-                    {
-                        if (dist > 0 && dist < closestDist)
-                        {
-                            closestDist = dist;
-                            closestPoly = iPolyIdx;
-                        }
-                    }
-                }
-            }
-
-            return closestPoly;
-        }
-
-        /// <summary>
-        /// Möller–Trumbore ray-triangle intersection algorithm.
-        /// </summary>
-        private static bool RayTriangleIntersect(Vector3 rayOrigin, Vector3 rayDir,
-                                                  Vector3 v0, Vector3 v1, Vector3 v2,
-                                                  out float distance)
-        {
-            distance = 0;
-            const float EPSILON = 0.0000001f;
-
-            Vector3 edge1 = v1 - v0;
-            Vector3 edge2 = v2 - v0;
-            Vector3 h = Vector3.Cross(rayDir, edge2);
-            float a = Vector3.Dot(edge1, h);
-
-            if (a > -EPSILON && a < EPSILON)
-                return false; // Ray is parallel to triangle
-
-            float f = 1.0f / a;
-            Vector3 s = rayOrigin - v0;
-            float u = f * Vector3.Dot(s, h);
-
-            if (u < 0.0f || u > 1.0f)
-                return false;
-
-            Vector3 q = Vector3.Cross(s, edge1);
-            float v = f * Vector3.Dot(rayDir, q);
-
-            if (v < 0.0f || u + v > 1.0f)
-                return false;
-
-            // Compute distance to intersection point
-            distance = f * Vector3.Dot(edge2, q);
-            return distance > EPSILON;
-        }
-
         public static int GetPolygonGroup(PModel Model, int iPolyIdx)
         {
             int iPolyCounter, iNextGroup;
@@ -3313,83 +3123,6 @@ namespace KimeraCS
                 Array.Resize(ref Model.Pcolors, Model.Header.numPolys);
             }
 
-        }
-
-        public static int GetClosestEdge(PModel Model, int iPolyIdx, int px, int py, ref float alpha)
-        {
-            int iGetClosestEdgeReturn;
-
-            Point3D tmpUP3D = new Point3D();
-            Point3D p1Proj, p2Proj, p3Proj;
-            Point3D p1, p2, p3;
-
-            float d1, d2, d3;
-
-            int height, offsetVerts;
-            int[] vp = new int[4];
-
-            GL.GetInteger(GetPName.Viewport, vp);
-            height = vp[3];
-
-            tmpUP3D.x = px;
-            tmpUP3D.y = height - py;
-            tmpUP3D.z = 0;
-
-            offsetVerts = Model.Groups[GetPolygonGroup(Model, iPolyIdx)].offsetVert;
-
-            // -- Commented in KimeraVB6
-            //glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            //glPushMatrix();
-            //glScalef(Model.resizeX, Model.resizeY, Model.resizeZ);
-            //glRotatef(Model.rotateAlpha, 1, 0, 0);
-            //glRotatef(Model.rotateBeta, 0, 1, 0);
-            //glRotatef(Model.rotateGamma, 0, 0, 1);
-            //glTranslatef(Model.repositionX, Model.repositionY, Model.repositionZ);
-
-            p1Proj = GetVertexProjectedCoords(Model.Verts, Model.Polys[iPolyIdx].Verts[0] + offsetVerts);
-            p2Proj = GetVertexProjectedCoords(Model.Verts, Model.Polys[iPolyIdx].Verts[1] + offsetVerts);
-            p3Proj = GetVertexProjectedCoords(Model.Verts, Model.Polys[iPolyIdx].Verts[2] + offsetVerts);
-
-            p1 = CalculatePoint2LineProjection(tmpUP3D, p1Proj, p2Proj);
-            p2 = CalculatePoint2LineProjection(tmpUP3D, p2Proj, p3Proj);
-            p3 = CalculatePoint2LineProjection(tmpUP3D, p3Proj, p1Proj);
-
-            d1 = CalculateDistance(tmpUP3D, p1);
-            d2 = CalculateDistance(tmpUP3D, p2);
-            d3 = CalculateDistance(tmpUP3D, p3);
-
-            if (d1 > d2)
-            {
-                if (d2 > d3)
-                {
-                    iGetClosestEdgeReturn = 2;
-                    alpha = CalculatePoint2LineProjectionPosition(tmpUP3D, p3Proj, p1Proj);
-                }
-                else
-                {
-                    iGetClosestEdgeReturn = 1;
-                    alpha = CalculatePoint2LineProjectionPosition(tmpUP3D, p2Proj, p3Proj);
-                }
-            }
-            else
-            {
-                if (d1 > d3)
-                {
-                    iGetClosestEdgeReturn = 2;
-                    alpha = CalculatePoint2LineProjectionPosition(tmpUP3D, p3Proj, p1Proj);
-                }
-                else
-                {
-                    iGetClosestEdgeReturn = 0;
-                    alpha = CalculatePoint2LineProjectionPosition(tmpUP3D, p1Proj, p2Proj);
-                }
-            }
-
-            // -- Commented in KimeraVB6
-            //glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
-            //glPopMatrix();
-
-            return iGetClosestEdgeReturn;
         }
 
         public static void CopyVPColors(Color[] vpcolorsIn, ref Color[] vpcolorsOut)
@@ -3742,12 +3475,13 @@ namespace KimeraCS
 
 
             // We can add also the New Pcolor of the PPoly
+            // Use tmpPPoly.Verts which contains absolute vertex indices before adjustment
             for (iVertIdx = 0; iVertIdx < 3; iVertIdx++)
             {
                 //  tmpA += Model.Vcolors[vertsIndexBuff[iVertIdx]].A;  -- Commented in KimeraVB6
-                tmpR += Model.Vcolors[tmpVNewPoly[iVertIdx]].R;
-                tmpG += Model.Vcolors[tmpVNewPoly[iVertIdx]].G;
-                tmpB += Model.Vcolors[tmpVNewPoly[iVertIdx]].B;
+                tmpR += Model.Vcolors[tmpPPoly.Verts[iVertIdx]].R;
+                tmpG += Model.Vcolors[tmpPPoly.Verts[iVertIdx]].G;
+                tmpB += Model.Vcolors[tmpPPoly.Verts[iVertIdx]].B;
             }
             Model.Pcolors[iPolyCounter] = Color.FromArgb(255, tmpR / 3, tmpG / 3, tmpB / 3);
 
@@ -4262,7 +3996,7 @@ namespace KimeraCS
                             CheckModelConsistency(ref Model);
                             iGroupIdx = GetPolygonGroup(Model, iInputPolyIdx);
 
-                            while (FindNextAdjacentPolyEdgeForward(EditedPModel, Model.Verts[p1Idx], Model.Verts[p2Idx],
+                            while (FindNextAdjacentPolyEdgeForward(Model, Model.Verts[p1Idx], Model.Verts[p2Idx],
                                                                    ref iGroupIdx, ref iInputPolyIdx, ref iEdgeIdx))
                             {
                                 //  Must recompute the texture junction point everytime we go beyond a textured
@@ -4282,7 +4016,7 @@ namespace KimeraCS
                                     iOldGroupIdx = iGroupIdx;
                                 }
 
-                                cutQ = CutEdgeAtPoint(ref EditedPModel, iInputPolyIdx, iEdgeIdx, 
+                                cutQ = CutEdgeAtPoint(ref Model, iInputPolyIdx, iEdgeIdx,
                                                       intersectionPoint, intersectionTexCoord);
                             }
 

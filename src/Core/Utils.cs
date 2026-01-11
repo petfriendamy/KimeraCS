@@ -8,7 +8,6 @@ using OpenTK.Mathematics;
 
 namespace KimeraCS
 {
-
     using Core;
     using Rendering;
 

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace KimeraCS
@@ -206,13 +205,6 @@ namespace KimeraCS
         public static BattleSkeleton BattleSkeletonLoader(string strFullFileName, bool isLimitBreak)
         {
             var bSkeleton = new BattleSkeleton(strFullFileName, isLimitBreak, false, TEXTURE_REMOVE_CHECK);
-            BattleSkeletonPolyCheck(ref bSkeleton);
-            return bSkeleton;
-        }
-
-        public static BattleSkeleton BattleSkeletonLoader(string strFullFileName, bool isLimitBreak, bool loadGeometryQ)
-        {
-            var bSkeleton = new BattleSkeleton(strFullFileName, isLimitBreak, loadGeometryQ, false);
             BattleSkeletonPolyCheck(ref bSkeleton);
             return bSkeleton;
         }

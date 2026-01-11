@@ -1,34 +1,29 @@
-﻿using System;
+﻿using OpenTK.Graphics.OpenGL.Compatibility;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using OpenTK.Graphics.OpenGL.Compatibility;
 
 namespace KimeraCS
 {
     using Core;
+    using OpenTK.Mathematics;
     using Rendering;
-
-    using static FrmSkeletonEditor;
-
-    using static FF7Skeleton;
-    using static FF7FieldSkeleton;
-    using static FF7FieldRSDResource;
     using static FF7BattleSkeleton;
-
+    using static FF7FieldRSDResource;
+    using static FF7FieldSkeleton;
     using static FF7PModel;
-    using static Model_3DS;
-
-    using static ModelDrawing;
-
+    using static FF7Skeleton;
+    using static FileTools;
+    using static FrmSkeletonEditor;
     using static Lighting;
-
+    using static Model_3DS;
+    using static ModelDrawing;
     using static UndoRedoPE;
     using static Utils;
-    using static FileTools;
 
     public partial class FrmPEditor : Form
     {
@@ -36,29 +31,27 @@ namespace KimeraCS
         readonly private FrmSkeletonEditor frmSkelEdit;
 
         // Const
-        private const int K_PAINT = 0;
-        private const int K_CUT_EDGE = 1;
-        private const int K_ERASE_POLY = 2;
-        private const int K_PICK_VERTEX = 3;
-        private const int K_MOVE_VERTEX = 8;
-        private const int K_ROTATE = 4;
-        private const int K_ZOOM = 5;
-        private const int K_PAN = 6;
-        private const int K_NEW_POLY = 7;
+        public enum EditMode
+        {
+            K_PAINT,
+            K_CUT_EDGE,
+            K_ERASE_POLY,
+            K_PICK_VERTEX,
+            K_ROTATE,
+            K_ZOOM,
+            K_PAN,
+            K_NEW_POLY,
+            K_MOVE_VERTEX
+        }
 
-        private const int K_LOAD = -1;
-        private const int K_MOVE = 0;
-        private const int K_CLICK = 1;
-        private const int K_CLICK_SHIFT = 2;
-
-
-        public const int K_MESH = 0;
-        public const int K_PCOLORS = 1;
-        public const int K_VCOLORS = 2;
-
-        public const int LETTER_SIZE = 5;
+        public enum Event
+        {
+            K_LOAD = -1,
+            K_MOVE = 0,
+            K_CLICK = 1,
+            K_CLICK_SHIFT = 2
+        }
         public const int LIGHT_STEPS = 10;
-
 
         private const int F_BATTLELOCATION_SCALE = 10;
 
@@ -69,9 +62,9 @@ namespace KimeraCS
 
         public static int EditedBone, EditedBonePiece;
 
-        public static int drawMode;
+        public static DrawMode drawMode;
 
-        public int primaryFunc, secondaryFunc, ternaryFunc;
+        public EditMode primaryFunc, secondaryFunc, ternaryFunc;
 
         public Color[] vcolorsOriginal;
         public Color[] pcolorsOriginal;
@@ -86,7 +79,7 @@ namespace KimeraCS
 
         public Point3D planeOriginalPoint = new Point3D();
         public Point3D planePoint = new Point3D();
-        public Quaternion planeRotationQuat = new Quaternion();
+        public Utils.Quaternion planeRotationQuat = new Utils.Quaternion();
         public static double[] planeTransformation = new double[16];
 
         public static Point3D planeOriginalPoint1 = new Point3D();
@@ -97,7 +90,6 @@ namespace KimeraCS
         public static float rszXPE, rszYPE, rszZPE;
         public static float repXPE, repYPE, repZPE;
         public float x_lastPE, y_lastPE;
-        public static int iLightX, iLightY, iLightZ;
 
         // PEditor drawing main DoFunction vars
         public static int VCountNewPoly;
@@ -325,7 +317,7 @@ namespace KimeraCS
 
         private void RbMesh_Click(object sender, EventArgs e)
         {
-            drawMode = 0;
+            drawMode = DrawMode.K_MESH;
 
             rbMesh.Checked = true;
             rbPolygonColors.Checked = false;
@@ -336,7 +328,7 @@ namespace KimeraCS
 
         private void RbPolygonColors_Click(object sender, EventArgs e)
         {
-            drawMode = 1;
+            drawMode = DrawMode.K_PCOLORS;
 
             rbMesh.Checked = false;
             rbPolygonColors.Checked = true;
@@ -347,7 +339,7 @@ namespace KimeraCS
 
         private void RbVertexColors_Click(object sender, EventArgs e)
         {
-            drawMode = 2;
+            drawMode = DrawMode.K_VCOLORS;
 
             rbMesh.Checked = false;
             rbPolygonColors.Checked = false;
@@ -377,15 +369,15 @@ namespace KimeraCS
                 switch (e.Button)
                 {
                     case MouseButtons.Left:
-                        DoFunction(primaryFunc, K_CLICK + shiftPressedQ, e.X, e.Y);
+                        DoFunction(primaryFunc, Event.K_CLICK + shiftPressedQ, e.X, e.Y);
                         break;
 
                     case MouseButtons.Right:
-                        DoFunction(secondaryFunc, K_CLICK + shiftPressedQ, e.X, e.Y);
+                        DoFunction(secondaryFunc, Event.K_CLICK + shiftPressedQ, e.X, e.Y);
                         break;
 
                     case MouseButtons.Middle:
-                        DoFunction(ternaryFunc, K_CLICK + shiftPressedQ, e.X, e.Y);
+                        DoFunction(ternaryFunc, Event.K_CLICK + shiftPressedQ, e.X, e.Y);
                         break;
 
                 }
@@ -420,15 +412,15 @@ namespace KimeraCS
                     switch (e.Button)
                     {
                         case MouseButtons.Left:
-                            DoFunction(primaryFunc, K_MOVE, e.X, e.Y);
+                            DoFunction(primaryFunc, Event.K_MOVE, e.X, e.Y);
                             break;
 
                         case MouseButtons.Right:
-                            DoFunction(secondaryFunc, K_MOVE, e.X, e.Y);
+                            DoFunction(secondaryFunc, Event.K_MOVE, e.X, e.Y);
                             break;
 
                         case MouseButtons.Middle:
-                            DoFunction(ternaryFunc, K_MOVE, e.X, e.Y);
+                            DoFunction(ternaryFunc, Event.K_MOVE, e.X, e.Y);
                             break;
 
                     }
@@ -447,11 +439,11 @@ namespace KimeraCS
 
             if (e.Button == MouseButtons.Left)
             {
-                if (primaryFunc == K_MOVE_VERTEX) 
-                        primaryFunc = K_PICK_VERTEX;
+                if (primaryFunc == EditMode.K_MOVE_VERTEX) 
+                        primaryFunc = EditMode.K_PICK_VERTEX;
                 else
-                    if (secondaryFunc == K_MOVE_VERTEX) 
-                            secondaryFunc = K_PICK_VERTEX;
+                    if (secondaryFunc == EditMode.K_MOVE_VERTEX) 
+                            secondaryFunc = EditMode.K_PICK_VERTEX;
             }
         }
 
@@ -493,7 +485,7 @@ namespace KimeraCS
                                                                              ref planeOriginalPoint3,
                                                                              ref planeOriginalPoint4);
 
-                if (chkShowAxes.Checked) DrawAxesPE(panelEditorPModel);
+                if (chkShowAxes.Checked) DrawAxesPE(panelEditorPModel, EditedPModel);
 
                 GL.Flush();
                 panelEditorPModel.SwapBuffers();
@@ -539,8 +531,8 @@ namespace KimeraCS
         private void NudAlphaPlane_ValueChanged(object sender, EventArgs e)
         {
             float fDiff;
-            Quaternion tmpQuat = new Quaternion();
-            Quaternion resQuat = new Quaternion();
+            Utils.Quaternion tmpQuat = new Utils.Quaternion();
+            Utils.Quaternion resQuat = new Utils.Quaternion();
 
             fDiff = (float)nudAlphaPlane.Value - oldAlphaPlane;
             oldAlphaPlane = (float)nudAlphaPlane.Value;
@@ -566,8 +558,8 @@ namespace KimeraCS
         private void NudBetaPlane_ValueChanged(object sender, EventArgs e)
         {
             float fDiff;
-            Quaternion tmpQuat = new Quaternion();
-            Quaternion resQuat = new Quaternion();
+            Utils.Quaternion tmpQuat = new Utils.Quaternion();
+            Utils.Quaternion resQuat = new Utils.Quaternion();
 
             fDiff = (float)nudBetaPlane.Value - oldBetaPlane;
             oldBetaPlane = (float)nudBetaPlane.Value;
@@ -592,19 +584,19 @@ namespace KimeraCS
 
         private void HsbLightX_ValueChanged(object sender, EventArgs e)
         {
-            iLightX = hsbLightX.Value;
+            PEditorLightX = hsbLightX.Value;
             PanelEditorPModel_Paint(null, null);
         }
 
         private void HsbLightY_ValueChanged(object sender, EventArgs e)
         {
-            iLightY = hsbLightY.Value;
+            PEditorLightY = hsbLightY.Value;
             PanelEditorPModel_Paint(null, null);
         }
 
         private void HsbLightZ_ValueChanged(object sender, EventArgs e)
         {
-            iLightZ = hsbLightZ.Value;
+            PEditorLightZ = hsbLightZ.Value;
             PanelEditorPModel_Paint(null, null);
         }
 
@@ -1291,17 +1283,17 @@ namespace KimeraCS
         {
             if (e.Button == MouseButtons.Left)
             {
-                primaryFunc = K_PAINT;
+                primaryFunc = EditMode.K_PAINT;
             }
             else
             {
                 if (e.Button == MouseButtons.Right)
                 {
-                    secondaryFunc = K_PAINT;
+                    secondaryFunc = EditMode.K_PAINT;
                 }
                 else
                 {
-                    ternaryFunc = K_PAINT;
+                    ternaryFunc = EditMode.K_PAINT;
                 }
             }
 
@@ -1312,17 +1304,17 @@ namespace KimeraCS
         {
             if (e.Button == MouseButtons.Left)
             {
-                primaryFunc = K_CUT_EDGE;
+                primaryFunc = EditMode.K_CUT_EDGE;
             }
             else
             {
                 if (e.Button == MouseButtons.Right)
                 {
-                    secondaryFunc = K_CUT_EDGE;
+                    secondaryFunc = EditMode.K_CUT_EDGE;
                 }
                 else
                 {
-                    ternaryFunc = K_CUT_EDGE;
+                    ternaryFunc = EditMode.K_CUT_EDGE;
                 }
             }
 
@@ -1333,17 +1325,17 @@ namespace KimeraCS
         {
             if (e.Button == MouseButtons.Left)
             {
-                primaryFunc = K_ERASE_POLY;
+                primaryFunc = EditMode.K_ERASE_POLY;
             }
             else
             {
                 if (e.Button == MouseButtons.Right)
                 {
-                    secondaryFunc = K_ERASE_POLY;
+                    secondaryFunc = EditMode.K_ERASE_POLY;
                 }
                 else
                 {
-                    ternaryFunc = K_ERASE_POLY;
+                    ternaryFunc = EditMode.K_ERASE_POLY;
                 }
             }
 
@@ -1354,17 +1346,17 @@ namespace KimeraCS
         {
             if (e.Button == MouseButtons.Left)
             {
-                primaryFunc = K_PICK_VERTEX;
+                primaryFunc = EditMode.K_PICK_VERTEX;
             }
             else
             {
                 if (e.Button == MouseButtons.Right)
                 {
-                    secondaryFunc = K_PICK_VERTEX;
+                    secondaryFunc = EditMode.K_PICK_VERTEX;
                 }
                 else
                 {
-                    ternaryFunc = K_PICK_VERTEX;
+                    ternaryFunc = EditMode.K_PICK_VERTEX;
                 }
             }
 
@@ -1375,17 +1367,17 @@ namespace KimeraCS
         {
             if (e.Button == MouseButtons.Left)
             {
-                primaryFunc = K_ROTATE;
+                primaryFunc = EditMode.K_ROTATE;
             }
             else
             {
                 if (e.Button == MouseButtons.Right)
                 {
-                    secondaryFunc = K_ROTATE;
+                    secondaryFunc = EditMode.K_ROTATE;
                 }
                 else
                 {
-                    ternaryFunc = K_ROTATE;
+                    ternaryFunc = EditMode.K_ROTATE;
                 }
             }
 
@@ -1396,17 +1388,17 @@ namespace KimeraCS
         {
             if (e.Button == MouseButtons.Left)
             {
-                primaryFunc = K_ZOOM;
+                primaryFunc = EditMode.K_ZOOM;
             }
             else
             {
                 if (e.Button == MouseButtons.Right)
                 {
-                    secondaryFunc = K_ZOOM;
+                    secondaryFunc = EditMode.K_ZOOM;
                 }
                 else
                 {
-                    ternaryFunc = K_ZOOM;
+                    ternaryFunc = EditMode.K_ZOOM;
                 }
             }
 
@@ -1417,17 +1409,17 @@ namespace KimeraCS
         {
             if (e.Button == MouseButtons.Left)
             {
-                primaryFunc = K_PAN;
+                primaryFunc = EditMode.K_PAN;
             }
             else
             {
                 if (e.Button == MouseButtons.Right)
                 {
-                    secondaryFunc = K_PAN;
+                    secondaryFunc = EditMode.K_PAN;
                 }
                 else
                 {
-                    ternaryFunc = K_PAN;
+                    ternaryFunc = EditMode.K_PAN;
                 }
             }
 
@@ -1438,17 +1430,17 @@ namespace KimeraCS
         {
             if (e.Button == MouseButtons.Left)
             {
-                primaryFunc = K_NEW_POLY;
+                primaryFunc = EditMode.K_NEW_POLY;
             }
             else
             {
                 if (e.Button == MouseButtons.Right)
                 {
-                    secondaryFunc = K_NEW_POLY;
+                    secondaryFunc = EditMode.K_NEW_POLY;
                 }
                 else
                 {
-                    ternaryFunc = K_NEW_POLY;
+                    ternaryFunc = EditMode.K_NEW_POLY;
                 }
             }
 
@@ -1821,7 +1813,7 @@ namespace KimeraCS
                 //if (chkEnableLighting.Checked) ComputeNormals(ref EditedPModel);
                 KillUnusedVertices(ref EditedPModel);
 
-                ApplyCurrentVCoordsPE(ref EditedPModel);
+                ApplyCurrentVCoordsPE(ref EditedPModel, repXPE, repYPE, repZPE, rszXPE, rszYPE, rszZPE);
 
                 ComputePColors(ref EditedPModel);
                 ComputeEdges(ref EditedPModel);
@@ -1866,7 +1858,7 @@ namespace KimeraCS
                 FillColorTable(EditedPModel, ref colorTable,
                                ref translationTableVertex, ref translationTablePolys, (byte)iThreshold);
 
-                DrawPalette(K_CLICK);
+                DrawPalette(Event.K_CLICK);
 
                 PanelEditorPModel_Paint(null, null);
             }
@@ -1906,7 +1898,7 @@ namespace KimeraCS
                 FillColorTable(EditedPModel, ref colorTable,
                                ref translationTableVertex, ref translationTablePolys, (byte)iThreshold);
 
-                DrawPalette(K_CLICK);
+                DrawPalette(Event.K_CLICK);
 
                 PanelEditorPModel_Paint(null, null);
             }
@@ -1967,7 +1959,7 @@ namespace KimeraCS
                     killPrecalculatedLightningToolStripMenuItem.Enabled = true;
                 }
 
-                DrawPalette(K_CLICK);
+                DrawPalette(Event.K_CLICK);
                 bColorsChanged = false;
             }
         }
@@ -2028,7 +2020,7 @@ namespace KimeraCS
 
         private void PbPalette_Paint(object sender, PaintEventArgs e)
         {
-            DrawPalette(K_CLICK);
+            DrawPalette(Event.K_CLICK);
         }
 
         private void PbPalette_MouseDown(object sender, MouseEventArgs e)
@@ -2089,7 +2081,7 @@ namespace KimeraCS
                 txtSelectedColorG.Text = hsbSelectedColorG.Value.ToString();
                 txtSelectedColorB.Text = hsbSelectedColorB.Value.ToString();
 
-                DrawPalette(K_CLICK);
+                DrawPalette(Event.K_CLICK);
 
                 loadingColorModifiersQ = false;
             }
@@ -2157,7 +2149,7 @@ namespace KimeraCS
                 txtSelectedColorG.Text = hsbSelectedColorG.Value.ToString();
                 txtSelectedColorB.Text = hsbSelectedColorB.Value.ToString();
 
-                DrawPalette(K_MOVE);
+                DrawPalette(Event.K_MOVE);
 
                 loadingColorModifiersQ = false;
             }
@@ -2191,7 +2183,7 @@ namespace KimeraCS
             }
 
             txtSelectedColorR.Text = hsbSelectedColorR.Value.ToString();
-            DrawPalette(K_MOVE);
+            DrawPalette(Event.K_MOVE);
         }
 
         private void HsbSelectedColorG_ValueChanged(object sender, EventArgs e)
@@ -2222,7 +2214,7 @@ namespace KimeraCS
             }
 
             txtSelectedColorG.Text = hsbSelectedColorG.Value.ToString();
-            DrawPalette(K_MOVE);
+            DrawPalette(Event.K_MOVE);
         }
 
         private void HsbSelectedColorB_ValueChanged(object sender, EventArgs e)
@@ -2253,7 +2245,7 @@ namespace KimeraCS
             }
 
             txtSelectedColorB.Text = hsbSelectedColorB.Value.ToString();
-            DrawPalette(K_MOVE);
+            DrawPalette(Event.K_MOVE);
         }
 
         private void HsbThresholdSlider_ValueChanged(object sender, EventArgs e)
@@ -2498,7 +2490,7 @@ namespace KimeraCS
                 //if (chkEnableLighting.Checked) ComputeNormals(ref EditedPModel);
                 KillUnusedVertices(ref EditedPModel);
 
-                ApplyCurrentVCoordsPE(ref EditedPModel);
+                ApplyCurrentVCoordsPE(ref EditedPModel, repXPE, repYPE, repZPE, rszXPE, rszYPE, rszZPE);
 
                 ComputePColors(ref EditedPModel);
                 ComputeEdges(ref EditedPModel);
@@ -2533,7 +2525,7 @@ namespace KimeraCS
                 //if (chkEnableLighting.Checked) ComputeNormals(ref EditedPModel);
                 KillUnusedVertices(ref EditedPModel);
 
-                ApplyCurrentVCoordsPE(ref EditedPModel);
+                ApplyCurrentVCoordsPE(ref EditedPModel, repXPE, repYPE, repZPE, rszXPE, rszYPE, rszZPE);
 
                 ComputePColors(ref EditedPModel);
                 ComputeEdges(ref EditedPModel);
@@ -2752,14 +2744,14 @@ namespace KimeraCS
             hsbLightZ.Minimum = -LIGHT_STEPS;
 
             // Select Vertex colors draw mode by default
-            drawMode = 2;
+            drawMode = DrawMode.K_VCOLORS;
             rbVertexColors.PerformClick();
 
             chkEnableLighting.Checked = false;
 
-            primaryFunc = K_ROTATE;
-            secondaryFunc = K_ZOOM;
-            ternaryFunc = K_PAN;
+            primaryFunc = EditMode.K_ROTATE;
+            secondaryFunc = EditMode.K_ZOOM;
+            ternaryFunc = EditMode.K_PAN;
             SetFunctionButtonColors();
 
             // Adding MouseWheel feature to panelEditorPModel_MouseWheel PictureBox
@@ -2834,9 +2826,9 @@ namespace KimeraCS
             hsbLightX.Value = 0;
             hsbLightY.Value = 1;
             hsbLightZ.Value = 0;
-            iLightX = 0;
-            iLightY = 1;
-            iLightZ = 0;
+            PEditorLightX = 0;
+            PEditorLightY = 1;
+            PEditorLightZ = 0;
 
             // Load modifiers
             loadingModifiersQ = true;
@@ -2894,7 +2886,7 @@ namespace KimeraCS
             bmpFullGradientPalette = new DirectBitmap(pbPalette.ClientRectangle.Width, pbPalette.ClientRectangle.Height);
 
             chkPaletteMode.Checked = false;
-            DrawPalette(K_LOAD);
+            DrawPalette(Event.K_LOAD);
 
             // Draw palette in pbPalette picturebox
             iSelectedColor = -1;
@@ -3076,7 +3068,7 @@ namespace KimeraCS
                                    rszXPE, rszYPE, rszZPE);
 
 
-            ApplyPChangesPE(ref EditedPModel, bDNormals);
+            ApplyPChangesPE(ref EditedPModel, bDNormals, repXPE, repYPE, repZPE, rszXPE, rszYPE, rszZPE);
 
             loadingModifiersQ = true;
             hsbResizeX.Value = 100;
@@ -3148,21 +3140,21 @@ namespace KimeraCS
 
         public void SetPaintButtonColor()
         {
-            if (primaryFunc == K_PAINT)
+            if (primaryFunc == EditMode.K_PAINT)
             {
                 rbPaintPolygon.BackColor = Color.LightCoral;
                 rbPolygonColors.PerformClick();
             }
             else
             {
-                if (secondaryFunc == K_PAINT)
+                if (secondaryFunc == EditMode.K_PAINT)
                 {
                     rbPaintPolygon.BackColor = Color.PowderBlue;
                     rbPolygonColors.PerformClick();
                 }                   
                 else
                 {
-                    if (ternaryFunc == K_PAINT)
+                    if (ternaryFunc == EditMode.K_PAINT)
                     {
                         rbPaintPolygon.BackColor = Color.MediumAquamarine;
                         rbPolygonColors.PerformClick();
@@ -3175,21 +3167,21 @@ namespace KimeraCS
 
         public void SetCutEdgeButtonColor()
         {
-            if (primaryFunc == K_CUT_EDGE)
+            if (primaryFunc == EditMode.K_CUT_EDGE)
             {
                 rbCutEdge.BackColor = Color.LightCoral;
                 rbPolygonColors.PerformClick();
             }
             else
             {
-                if (secondaryFunc == K_CUT_EDGE)
+                if (secondaryFunc == EditMode.K_CUT_EDGE)
                 {
                     rbCutEdge.BackColor = Color.PowderBlue;
                     rbPolygonColors.PerformClick();
                 }
                 else
                 {
-                    if (ternaryFunc == K_CUT_EDGE)
+                    if (ternaryFunc == EditMode.K_CUT_EDGE)
                     {
                         rbCutEdge.BackColor = Color.MediumAquamarine;
                         rbPolygonColors.PerformClick();
@@ -3202,21 +3194,21 @@ namespace KimeraCS
 
         public void SetEraseButtonColor()
         {
-            if (primaryFunc == K_ERASE_POLY)
+            if (primaryFunc == EditMode.K_ERASE_POLY)
             {
                 rbErasePolygon.BackColor = Color.LightCoral;
                 rbPolygonColors.PerformClick();
             }
             else
             {
-                if (secondaryFunc == K_ERASE_POLY)
+                if (secondaryFunc == EditMode.K_ERASE_POLY)
                 {
                     rbErasePolygon.BackColor = Color.PowderBlue;
                     rbPolygonColors.PerformClick();
                 }
                 else
                 {
-                    if (ternaryFunc == K_ERASE_POLY)
+                    if (ternaryFunc == EditMode.K_ERASE_POLY)
                     {
                         rbErasePolygon.BackColor = Color.MediumAquamarine;
                         rbPolygonColors.PerformClick();
@@ -3229,21 +3221,21 @@ namespace KimeraCS
 
         public void SetPickVertexButtonColor()
         {
-            if (primaryFunc == K_PICK_VERTEX)
+            if (primaryFunc == EditMode.K_PICK_VERTEX)
             {
                 rbMoveVertex.BackColor = Color.LightCoral;
                 rbPolygonColors.PerformClick();
             }
             else
             {
-                if (secondaryFunc == K_PICK_VERTEX)
+                if (secondaryFunc == EditMode.K_PICK_VERTEX)
                 {
                     rbMoveVertex.BackColor = Color.PowderBlue;
                     rbPolygonColors.PerformClick();
                 }
                 else
                 {
-                    if (ternaryFunc == K_PICK_VERTEX)
+                    if (ternaryFunc == EditMode.K_PICK_VERTEX)
                     {
                         rbMoveVertex.BackColor = Color.MediumAquamarine;
                         rbPolygonColors.PerformClick();
@@ -3256,17 +3248,17 @@ namespace KimeraCS
 
         public void SetRotateButtonColor()
         {
-            if (primaryFunc == K_ROTATE)
+            if (primaryFunc == EditMode.K_ROTATE)
             {
                 rbFreeRotate.BackColor = Color.LightCoral;
             }
             else
             {
-                if (secondaryFunc == K_ROTATE)
+                if (secondaryFunc == EditMode.K_ROTATE)
                     rbFreeRotate.BackColor = Color.PowderBlue;
                 else
                 {
-                    if (ternaryFunc == K_ROTATE)
+                    if (ternaryFunc == EditMode.K_ROTATE)
                         rbFreeRotate.BackColor = Color.MediumAquamarine;
                     else
                         rbFreeRotate.BackColor = Color.Transparent;
@@ -3276,17 +3268,17 @@ namespace KimeraCS
 
         public void SetZoomButtonColor()
         {
-            if (primaryFunc == K_ZOOM)
+            if (primaryFunc == EditMode.K_ZOOM)
             {
                 rbZoomInOut.BackColor = Color.LightCoral;
             }
             else
             {
-                if (secondaryFunc == K_ZOOM)
+                if (secondaryFunc == EditMode.K_ZOOM)
                     rbZoomInOut.BackColor = Color.PowderBlue;
                 else
                 {
-                    if (ternaryFunc == K_ZOOM)
+                    if (ternaryFunc == EditMode.K_ZOOM)
                         rbZoomInOut.BackColor = Color.MediumAquamarine;
                     else
                         rbZoomInOut.BackColor = Color.Transparent;
@@ -3296,17 +3288,17 @@ namespace KimeraCS
 
         public void SetPanButtonColor()
         {
-            if (primaryFunc == K_PAN)
+            if (primaryFunc == EditMode.K_PAN)
             {
                 rbPanning.BackColor = Color.LightCoral;
             }
             else
             {
-                if (secondaryFunc == K_PAN)
+                if (secondaryFunc == EditMode.K_PAN)
                     rbPanning.BackColor = Color.PowderBlue;
                 else
                 {
-                    if (ternaryFunc == K_PAN)
+                    if (ternaryFunc == EditMode.K_PAN)
                         rbPanning.BackColor = Color.MediumAquamarine;
                     else
                         rbPanning.BackColor = Color.Transparent;
@@ -3316,21 +3308,21 @@ namespace KimeraCS
 
         public void SetNewPolyButtonColor()
         {
-            if (primaryFunc == K_NEW_POLY)
+            if (primaryFunc == EditMode.K_NEW_POLY)
             {
                 rbNewPolygon.BackColor = Color.LightCoral;
                 rbPolygonColors.PerformClick();
             }
             else
             {
-                if (secondaryFunc == K_NEW_POLY)
+                if (secondaryFunc == EditMode.K_NEW_POLY)
                 {
                     rbNewPolygon.BackColor = Color.PowderBlue;
                     rbPolygonColors.PerformClick();
                 }
                 else
                 {
-                    if (ternaryFunc == K_NEW_POLY)
+                    if (ternaryFunc == EditMode.K_NEW_POLY)
                     {
                         rbNewPolygon.BackColor = Color.MediumAquamarine;
                         rbPolygonColors.PerformClick();
@@ -3341,7 +3333,7 @@ namespace KimeraCS
             }
         }
 
-        public void DrawPalette(int iEvent)
+        public void DrawPalette(Event iEvent)
         {
             int iColorCounter, x, y, numRow, numCol, szColorRowsHeight, szColorColsWidth, numColorRows, numColorCols;
             //float numColorsFactor;
@@ -3437,7 +3429,7 @@ namespace KimeraCS
             {
                 for (x = 0; x < pbPalette.ClientRectangle.Width; x++)
                 {
-                    if (iEvent == K_LOAD)
+                    if (iEvent == Event.K_LOAD)
                     { 
                         for (y = 0; y < pbPalette.ClientRectangle.Height - 16; y++)
                         {
@@ -3645,7 +3637,7 @@ namespace KimeraCS
 
         ////////////////////////////////////////////////////////////
         //  Main DoFunction procedure
-        public void DoFunction(int nFunc, int iEvent, int x, int y)
+        public void DoFunction(EditMode nFunc, Event iEvent, int x, int y)
         {
             Point3D tmpPoint3D = new Point3D();
             Point3D tmpPoint3D_2 = new Point3D();
@@ -3665,21 +3657,21 @@ namespace KimeraCS
 
             switch (nFunc)
             {
-                case K_PAINT:
+                case EditMode.K_PAINT:
                     //  Change polygon color/get polygon color
-                    if (iEvent >= K_CLICK)
+                    if (iEvent >= Event.K_CLICK)
                     {
                         //iPolyIdx = GetClosestPolygon(EditedPModel, x, y, DISTPE, panelEditorPModel);
-                        iPolyIdx = GetClosestPolygon(EditedPModel, x, y);
+                        iPolyIdx = GetClosestPolygon(EditedPModel, x, y, panXPE, panYPE, panZPE, DISTPE, alphaPE, betaPE, gammaPE);
 
                         if (iPolyIdx > -1)
                         {
-                            if (iEvent != K_CLICK_SHIFT)
+                            if (iEvent != Event.K_CLICK_SHIFT)
                                 AddStateToBufferPE(this);
 
                             if (chkPaletteMode.Checked)
                             {
-                                if (iEvent == K_CLICK_SHIFT)
+                                if (iEvent == Event.K_CLICK_SHIFT)
                                 {
                                     iSelectedColor = 
                                         translationTableVertex[EditedPModel.Polys[iPolyIdx].Verts[0] +
@@ -3714,7 +3706,7 @@ namespace KimeraCS
                             }
                             else
                             {
-                                if (iEvent == K_CLICK_SHIFT)
+                                if (iEvent == Event.K_CLICK_SHIFT)
                                 {
                                     tmpColor = ComputePolyColor(EditedPModel, iPolyIdx);
 
@@ -3739,7 +3731,7 @@ namespace KimeraCS
                             }
 
                             // Apply color arrays of the model to P Editor dynamic arrays.
-                            if (iEvent != K_CLICK_SHIFT)
+                            if (iEvent != Event.K_CLICK_SHIFT)
                             {
                                 ComputePColors(ref EditedPModel);
 
@@ -3760,12 +3752,12 @@ namespace KimeraCS
                     }
                     break;
 
-                case K_CUT_EDGE:
+                case EditMode.K_CUT_EDGE:
                     //  Cut an edge on the clicked point (thus splitting the surrounding polygons)
-                    if (iEvent == K_CLICK)
+                    if (iEvent == Event.K_CLICK)
                     {
                         //iPolyIdx = GetClosestPolygon(EditedPModel, x, y, DISTPE, panelEditorPModel);
-                        iPolyIdx = GetClosestPolygon(EditedPModel, x, y);
+                        iPolyIdx = GetClosestPolygon(EditedPModel, x, y, panXPE, panYPE, panZPE, DISTPE, alphaPE, betaPE, gammaPE);
 
                         if (iPolyIdx > -1)
                         {
@@ -3836,11 +3828,11 @@ namespace KimeraCS
                     PbPalette_Paint(null, null);
                     break;
 
-                case K_ERASE_POLY:
+                case EditMode.K_ERASE_POLY:
                     //  Erase polygon
-                    if (iEvent == K_CLICK)
+                    if (iEvent == Event.K_CLICK)
                     {
-                        iPolyIdx = GetClosestPolygon(EditedPModel, x, y);
+                        iPolyIdx = GetClosestPolygon(EditedPModel, x, y, panXPE, panYPE, panZPE, DISTPE, alphaPE, betaPE, gammaPE);
 
                         if (iPolyIdx > -1)
                         {
@@ -3877,12 +3869,12 @@ namespace KimeraCS
                     }
                     break;
 
-                case K_PICK_VERTEX:
+                case EditMode.K_PICK_VERTEX:
                     //  Pick a vertex. When a vertex is picked, switch to the K_MOVE_VERTEX operation
-                    if (iEvent == K_CLICK)
+                    if (iEvent == Event.K_CLICK)
                     {
                         
-                        iVertIdx = GetClosestVertex(EditedPModel, x, y);
+                        iVertIdx = GetClosestVertex(EditedPModel, x, y, panXPE, panYPE, panZPE, DISTPE, alphaPE, betaPE, gammaPE);
 
                         if (iVertIdx > -1)
                         {
@@ -3892,8 +3884,8 @@ namespace KimeraCS
 
                             GetEqualVertices(EditedPModel, iVertIdx, ref lstPickedVertices);
 
-                            if (primaryFunc == K_PICK_VERTEX) primaryFunc = K_MOVE_VERTEX;
-                            else secondaryFunc = K_MOVE_VERTEX;
+                            if (primaryFunc == EditMode.K_PICK_VERTEX) primaryFunc = EditMode.K_MOVE_VERTEX;
+                            else secondaryFunc = EditMode.K_MOVE_VERTEX;
 
                             if (GL.IsEnabled(EnableCap.Lighting))
                                 GetAllNormalDependentPolys(EditedPModel, lstPickedVertices,
@@ -3903,9 +3895,9 @@ namespace KimeraCS
                     }
                     break;
 
-                case K_MOVE_VERTEX:
+                case EditMode.K_MOVE_VERTEX:
                     //  Freehand vertex movement
-                    if (iEvent == K_MOVE)
+                    if (iEvent == Event.K_MOVE)
                     {
                         if (lstPickedVertices.Count > 0)
                         {
@@ -3929,12 +3921,12 @@ namespace KimeraCS
                     }
                     break;
 
-                case K_NEW_POLY:
+                case EditMode.K_NEW_POLY:
                     //  Create new polygon
-                    if (iEvent == K_CLICK)
+                    if (iEvent == Event.K_CLICK)
                     {
                         //vi = GetClosestVertex(EditedPModel, x, y, DISTPE, panelEditorPModel);
-                        iVertIdx = GetClosestVertex(EditedPModel, x, y);
+                        iVertIdx = GetClosestVertex(EditedPModel, x, y, panXPE, panYPE, panZPE, DISTPE, alphaPE, betaPE, gammaPE);
 
                         if (iVertIdx > -1)
                         {
@@ -3988,21 +3980,21 @@ namespace KimeraCS
                     }
                     break;
 
-                case K_ROTATE:
-                    if (iEvent == K_MOVE)
+                case EditMode.K_ROTATE:
+                    if (iEvent == Event.K_MOVE)
                     {
                         betaPE = (betaPE + x - x_lastPE) % 360;
                         alphaPE = (alphaPE + y - y_lastPE) % 360;
                     }
                     break;
 
-                case K_ZOOM:
-                    if (iEvent == K_MOVE)
+                case EditMode.K_ZOOM:
+                    if (iEvent == Event.K_MOVE)
                         DISTPE += (y - y_lastPE) * ComputeDiameter(EditedPModel.BoundingBox) / 100;
                     break;
 
-                case K_PAN:
-                    if (iEvent == K_MOVE)
+                case EditMode.K_PAN:
+                    if (iEvent == Event.K_MOVE)
                     {
                         SetCameraPModel(EditedPModel, 0, 0, DISTPE, 0, 0, 0, rszXPE, rszYPE, rszZPE);
 
@@ -4029,8 +4021,284 @@ namespace KimeraCS
             }
         }
 
+        /// <summary>
+        /// Draws a P-model in the editor using the current FrmPEditor static state.
+        /// For decoupled rendering, use ModelDrawing.DrawPModelEditor(PEditorContext, Control) directly.
+        /// </summary>
+        private static void DrawPModelEditor(bool bEnableLighting, Control pbIn)
+        {
+            // Create context from current FrmPEditor state and delegate
+            var ctx = PEditorContext.FromPEditor(
+                EditedPModel,
+                ModelDrawing.tex_ids,
+                alphaPE, betaPE, gammaPE,
+                DISTPE,
+                panXPE, panYPE, panZPE,
+                rszXPE, rszYPE, rszZPE,
+                repXPE, repYPE, repZPE,
+                drawMode,
+                bEnableLighting,
+                PEditorLightX, PEditorLightY, PEditorLightZ);
+
+            ModelDrawing.DrawPModelEditor(ctx, pbIn);
+        }
 
 
+        //  -------------------------------------------------------------------------------------------------
+        //  ======================================= PEDITOR PROCEDURES ======================================
+        //  -------------------------------------------------------------------------------------------------
+        public static int GetClosestVertex(PModel Model, int px, int py,
+            float panX, float panY, float panZ, float cameraDist,
+            float alpha, float beta, float gamma)
+        {
+            int iGetClosestVertexResult = -1;
+
+            Point3D pUP3D = new Point3D();
+            Point3D vpUP3D;
+            int iGroupIdx, iPolyIdx, iVertIdx, iHeight;
+            int[] vp = new int[4];
+
+            float[] DIST = new float[3];
+            float minDist;
+
+            pUP3D.x = px;
+            pUP3D.y = py;
+            pUP3D.z = 0;
+
+            GL.GetInteger(GetPName.Viewport, vp);
+            iHeight = vp[3];
+
+            iPolyIdx = GetClosestPolygon(Model, px, py, panX, panY, panZ, cameraDist, alpha, beta, gamma);
+
+            if (iPolyIdx > -1)
+            {
+                iGroupIdx = GetPolygonGroup(Model, iPolyIdx);
+
+                pUP3D.y = iHeight - py;
+                for (iVertIdx = 0; iVertIdx < 3; iVertIdx++)
+                {
+                    vpUP3D =
+                        GetVertexProjectedCoords(Model.Verts,
+                                                 Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert);
+
+                    DIST[iVertIdx] = CalculateDistance(vpUP3D, pUP3D);
+                }
+
+                minDist = DIST[0];
+                iGetClosestVertexResult = Model.Polys[iPolyIdx].Verts[0] + Model.Groups[iGroupIdx].offsetVert;
+
+                for (iVertIdx = 1; iVertIdx < 3; iVertIdx++)
+                {
+                    if (DIST[iVertIdx] < minDist)
+                    {
+                        minDist = DIST[iVertIdx];
+                        iGetClosestVertexResult = Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert;
+                    }
+                }
+            }
+
+            return iGetClosestVertexResult;
+        }
+
+        /// <summary>
+        /// Finds the closest polygon in the model at the given screen coordinates using ray casting.
+        /// Replaces deprecated GL_SELECT mode with CPU-based ray-triangle intersection.
+        /// </summary>
+        public static int GetClosestPolygon(PModel Model, int px, int py,
+            float panX, float panY, float panZ, float cameraDist,
+            float alpha, float beta, float gamma)
+        {
+            Point3D p_min = new Point3D();
+            Point3D p_max = new Point3D();
+
+            // Set up camera (this also syncs GLRenderer matrices)
+            ComputePModelBoundingBox(Model, ref p_min, ref p_max);
+            SetCameraAroundModel(ref p_min, ref p_max,
+                                 panX, panY, panZ + cameraDist,
+                                 alpha, beta, gamma, 1, 1, 1);
+
+            // Get viewport
+            int[] vp = new int[4];
+            GL.GetInteger(GetPName.Viewport, vp);
+            int height = vp[3];
+
+            // Build model transformation matrix
+            Matrix4 modelTransform = CreateModelViewMatrix(
+                Model.repositionX, Model.repositionY, Model.repositionZ,
+                Model.rotateAlpha, Model.rotateBeta, Model.rotateGamma,
+                Model.resizeX, Model.resizeY, Model.resizeZ);
+
+            // Get view and projection matrices from GLRenderer
+            Matrix4 view = GLRenderer.ViewMatrix;
+            Matrix4 projection = GLRenderer.ProjectionMatrix;
+
+            // Create ray from screen coordinates
+            Vector4 viewport = new Vector4(vp[0], vp[1], vp[2], vp[3]);
+
+            // Unproject near and far points to create ray
+            // Note: OpenGL Y is flipped from screen Y
+            float screenY = height - py;
+            Vector3 nearPoint = Unproject(new Vector3(px, screenY, 0.0f), modelTransform, view, projection, viewport);
+            Vector3 farPoint = Unproject(new Vector3(px, screenY, 1.0f), modelTransform, view, projection, viewport);
+
+            Vector3 rayOrigin = nearPoint;
+            Vector3 rayDir = Vector3.Normalize(farPoint - nearPoint);
+
+            // Test intersection with each polygon
+            int closestPoly = -1;
+            float closestDist = float.MaxValue;
+
+            for (int iGroupIdx = 0; iGroupIdx < Model.Header.numGroups; iGroupIdx++)
+            {
+                if (Model.Groups[iGroupIdx].HiddenQ) continue;
+
+                int offsetVert = Model.Groups[iGroupIdx].offsetVert;
+
+                for (int iPolyIdx = Model.Groups[iGroupIdx].offsetPoly;
+                     iPolyIdx < Model.Groups[iGroupIdx].offsetPoly + Model.Groups[iGroupIdx].numPoly;
+                     iPolyIdx++)
+                {
+                    // Get triangle vertices
+                    Vector3 v0 = new Vector3(
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].x,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].y,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].z);
+                    Vector3 v1 = new Vector3(
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].x,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].y,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].z);
+                    Vector3 v2 = new Vector3(
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].x,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].y,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].z);
+
+                    // Test ray-triangle intersection (Möller–Trumbore algorithm)
+                    if (RayTriangleIntersect(rayOrigin, rayDir, v0, v1, v2, out float dist))
+                    {
+                        if (dist > 0 && dist < closestDist)
+                        {
+                            closestDist = dist;
+                            closestPoly = iPolyIdx;
+                        }
+                    }
+                }
+            }
+
+            return closestPoly;
+        }
+
+        /// <summary>
+        /// Möller–Trumbore ray-triangle intersection algorithm.
+        /// </summary>
+        private static bool RayTriangleIntersect(Vector3 rayOrigin, Vector3 rayDir,
+                                                  Vector3 v0, Vector3 v1, Vector3 v2,
+                                                  out float distance)
+        {
+            distance = 0;
+            const float EPSILON = 0.0000001f;
+
+            Vector3 edge1 = v1 - v0;
+            Vector3 edge2 = v2 - v0;
+            Vector3 h = Vector3.Cross(rayDir, edge2);
+            float a = Vector3.Dot(edge1, h);
+
+            if (a > -EPSILON && a < EPSILON)
+                return false; // Ray is parallel to triangle
+
+            float f = 1.0f / a;
+            Vector3 s = rayOrigin - v0;
+            float u = f * Vector3.Dot(s, h);
+
+            if (u < 0.0f || u > 1.0f)
+                return false;
+
+            Vector3 q = Vector3.Cross(s, edge1);
+            float v = f * Vector3.Dot(rayDir, q);
+
+            if (v < 0.0f || u + v > 1.0f)
+                return false;
+
+            // Compute distance to intersection point
+            distance = f * Vector3.Dot(edge2, q);
+            return distance > EPSILON;
+        }
+
+        public static int GetClosestEdge(PModel Model, int iPolyIdx, int px, int py, ref float alpha)
+        {
+            int iGetClosestEdgeReturn;
+
+            Point3D tmpUP3D = new Point3D();
+            Point3D p1Proj, p2Proj, p3Proj;
+            Point3D p1, p2, p3;
+
+            float d1, d2, d3;
+
+            int height, offsetVerts;
+            int[] vp = new int[4];
+
+            GL.GetInteger(GetPName.Viewport, vp);
+            height = vp[3];
+
+            tmpUP3D.x = px;
+            tmpUP3D.y = height - py;
+            tmpUP3D.z = 0;
+
+            offsetVerts = Model.Groups[GetPolygonGroup(Model, iPolyIdx)].offsetVert;
+
+            // -- Commented in KimeraVB6
+            //glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
+            //glPushMatrix();
+            //glScalef(Model.resizeX, Model.resizeY, Model.resizeZ);
+            //glRotatef(Model.rotateAlpha, 1, 0, 0);
+            //glRotatef(Model.rotateBeta, 0, 1, 0);
+            //glRotatef(Model.rotateGamma, 0, 0, 1);
+            //glTranslatef(Model.repositionX, Model.repositionY, Model.repositionZ);
+
+            p1Proj = GetVertexProjectedCoords(Model.Verts, Model.Polys[iPolyIdx].Verts[0] + offsetVerts);
+            p2Proj = GetVertexProjectedCoords(Model.Verts, Model.Polys[iPolyIdx].Verts[1] + offsetVerts);
+            p3Proj = GetVertexProjectedCoords(Model.Verts, Model.Polys[iPolyIdx].Verts[2] + offsetVerts);
+
+            p1 = CalculatePoint2LineProjection(tmpUP3D, p1Proj, p2Proj);
+            p2 = CalculatePoint2LineProjection(tmpUP3D, p2Proj, p3Proj);
+            p3 = CalculatePoint2LineProjection(tmpUP3D, p3Proj, p1Proj);
+
+            d1 = CalculateDistance(tmpUP3D, p1);
+            d2 = CalculateDistance(tmpUP3D, p2);
+            d3 = CalculateDistance(tmpUP3D, p3);
+
+            if (d1 > d2)
+            {
+                if (d2 > d3)
+                {
+                    iGetClosestEdgeReturn = 2;
+                    alpha = CalculatePoint2LineProjectionPosition(tmpUP3D, p3Proj, p1Proj);
+                }
+                else
+                {
+                    iGetClosestEdgeReturn = 1;
+                    alpha = CalculatePoint2LineProjectionPosition(tmpUP3D, p2Proj, p3Proj);
+                }
+            }
+            else
+            {
+                if (d1 > d3)
+                {
+                    iGetClosestEdgeReturn = 2;
+                    alpha = CalculatePoint2LineProjectionPosition(tmpUP3D, p3Proj, p1Proj);
+                }
+                else
+                {
+                    iGetClosestEdgeReturn = 0;
+                    alpha = CalculatePoint2LineProjectionPosition(tmpUP3D, p1Proj, p2Proj);
+                }
+            }
+
+            // -- Commented in KimeraVB6
+            //glMatrixMode(GLMatrixModeList.GL_MODELVIEW);
+            //glPopMatrix();
+
+            return iGetClosestEdgeReturn;
+        }
 
 
     }

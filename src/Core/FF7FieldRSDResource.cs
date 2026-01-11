@@ -12,7 +12,6 @@ namespace KimeraCS
 
     using static FF7TEXTexture;
 
-    using Core;
     using static Utils;
     using static FileTools;
 

@@ -1,22 +1,23 @@
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
+using KimeraCS.Core;
 using KimeraCS.Rendering;
 
 namespace KimeraCS
 {
-    using static FrmSkeletonEditor;
-
-    using static FF7Skeleton;
-    using static FF7FieldSkeleton;
-    using static FF7PModel;
-
-    using static FF7BattleSkeleton;
-
     using static Utils;
 
     class Lighting
     {
         public const int LIGHT_STEPS = 20;
+
+        // P Editor uses a different scale for its light positioning
+        public const int LIGHT_STEPS_PEDITOR = 10;
+
+        // P Editor light position state (set by FrmPEditor scrollbars)
+        public static int PEditorLightX { get; set; } = 0;
+        public static int PEditorLightY { get; set; } = 1;
+        public static int PEditorLightZ { get; set; } = 0;
 
         // Light indices (matches GLRenderer arrays)
         public const int LIGHT_RIGHT = 0;
@@ -25,76 +26,49 @@ namespace KimeraCS
         public const int LIGHT_REAR = 3;
 
         /// <summary>
-        /// Modern lighting setup - sets GLRenderer light properties instead of legacy GL.Light calls.
-        /// Call this for modern shader-based rendering.
+        /// Modern lighting setup using provided configuration.
+        /// This overload is decoupled from FrmSkeletonEditor and can be used in other applications.
         /// </summary>
-        public static void SetLights()
+        /// <param name="config">Lighting configuration specifying which lights are enabled and their positions.</param>
+        /// <param name="sceneDiameter">The diameter of the scene, used to scale light positions.</param>
+        public static void SetLights(LightingConfig config, float sceneDiameter)
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            GLRenderer.LightingEnabled = config.AnyLightEnabled;
 
-            // Check if any lights are enabled
-            bool anyLightEnabled = bchkFrontLight || bchkRearLight || bchkRightLight || bchkLeftLight;
-            GLRenderer.LightingEnabled = anyLightEnabled;
-
-            if (!anyLightEnabled)
+            if (!config.AnyLightEnabled)
                 return;
 
-            // Compute scene bounds for light positioning
-            switch (modelType)
-            {
-                case K_P_FIELD_MODEL:
-                case K_P_BATTLE_MODEL:
-                case K_P_MAGIC_MODEL:
-                case K_3DS_MODEL:
-                    ComputePModelBoundingBox(fPModel, ref p_min, ref p_max);
-                    break;
+            float light_x = sceneDiameter / LIGHT_STEPS * config.PosXScroll;
+            float light_y = sceneDiameter / LIGHT_STEPS * config.PosYScroll;
+            float light_z = sceneDiameter / LIGHT_STEPS * config.PosZScroll;
 
-                case K_HRC_SKELETON:
-                    ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[iCurrentFrameScroll], ref p_min, ref p_max);
-                    break;
-
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
-                    ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll],
-                                             ref p_min, ref p_max);
-                    break;
-            }
-
-            float scene_diameter = (float)(-2 * ComputeSceneRadius(p_min, p_max));
-
-            float light_x = scene_diameter / LIGHT_STEPS * fLightPosXScroll;
-            float light_y = scene_diameter / LIGHT_STEPS * fLightPosYScroll;
-            float light_z = scene_diameter / LIGHT_STEPS * fLightPosZScroll;
-
-            // Set light positions and enable flags
             // Right light
-            GLRenderer.LightEnabled[LIGHT_RIGHT] = bchkRightLight;
-            if (bchkRightLight)
+            GLRenderer.LightEnabled[LIGHT_RIGHT] = config.RightLightEnabled;
+            if (config.RightLightEnabled)
             {
                 GLRenderer.LightPositions[LIGHT_RIGHT] = new Vector3(light_z, light_y, light_x);
                 GLRenderer.LightColors[LIGHT_RIGHT] = new Vector3(0.5f, 0.5f, 0.5f);
             }
 
             // Left light
-            GLRenderer.LightEnabled[LIGHT_LEFT] = bchkLeftLight;
-            if (bchkLeftLight)
+            GLRenderer.LightEnabled[LIGHT_LEFT] = config.LeftLightEnabled;
+            if (config.LeftLightEnabled)
             {
                 GLRenderer.LightPositions[LIGHT_LEFT] = new Vector3(-light_z, light_y, light_x);
                 GLRenderer.LightColors[LIGHT_LEFT] = new Vector3(0.5f, 0.5f, 0.5f);
             }
 
             // Front light
-            GLRenderer.LightEnabled[LIGHT_FRONT] = bchkFrontLight;
-            if (bchkFrontLight)
+            GLRenderer.LightEnabled[LIGHT_FRONT] = config.FrontLightEnabled;
+            if (config.FrontLightEnabled)
             {
                 GLRenderer.LightPositions[LIGHT_FRONT] = new Vector3(light_x, light_y, light_z);
                 GLRenderer.LightColors[LIGHT_FRONT] = new Vector3(1f, 1f, 1f);
             }
 
             // Rear light
-            GLRenderer.LightEnabled[LIGHT_REAR] = bchkRearLight;
-            if (bchkRearLight)
+            GLRenderer.LightEnabled[LIGHT_REAR] = config.RearLightEnabled;
+            if (config.RearLightEnabled)
             {
                 GLRenderer.LightPositions[LIGHT_REAR] = new Vector3(light_x, light_y, -light_z);
                 GLRenderer.LightColors[LIGHT_REAR] = new Vector3(0.75f, 0.75f, 0.75f);

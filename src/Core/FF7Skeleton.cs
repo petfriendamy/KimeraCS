@@ -5,7 +5,6 @@ using OpenTK.Graphics.OpenGL.Compatibility;
 
 namespace KimeraCS
 {
-
     using static FrmSkeletonEditor;
 
     using static FF7FieldSkeleton;
@@ -116,7 +115,7 @@ namespace KimeraCS
                         case K_AA_SKELETON:
                             // Battle Skeleton (aa)
                             bSkeleton = new BattleSkeleton(strFileName, CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strFileName).ToUpper()),
-                                true, repairPolys);
+                                true, repairPolys, removeTextureCoords);
 
                             // Normally we will have the ??DA file with the Animation Pack.
                             // Location Battle Models has NOT ??DA file.
@@ -189,7 +188,7 @@ namespace KimeraCS
                         case K_AA_SKELETON:
                             // Battle Skeleton (aa)
                             bSkeleton = new BattleSkeleton(strFileName, CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strFileName).ToUpper()),
-                                                           true, repairPolys);
+                                                           true, repairPolys, removeTextureCoords);
 
                             // Normally we will have the ??DA file with the Animation Pack.
                             // Location Battle Models has NOT ??DA file.

@@ -1022,7 +1022,8 @@ namespace KimeraCS
 
                 DrawSkeletonModel(bDListsEnable);
 
-                if (bShowAxesSkeletonWindow) DrawAxes(panelModel, tbCurrentFrameScroll.Value);
+                if (bShowAxesSkeletonWindow) DrawAxes(panelModel, tbCurrentFrameScroll.Value,
+                                                      ianimIndex);
 
                 GL.Flush();
                 panelModel.SwapBuffers();
@@ -7134,26 +7135,89 @@ namespace KimeraCS
             frmStats.Show();
         }
 
-        public static void SelectBattleBoneAndModel(BattleSkeleton bSkeleton, BattleFrame bFrame, BattleFrame wpFrame,
-                                            int weaponIndex, int boneIndex, int partIndex)
+        /// <summary>
+        /// Sets up lighting based on current FrmSkeletonEditor state.
+        /// This is the form-dependent wrapper that creates a LightingConfig from static state.
+        /// </summary>
+        public static void SetLights()
         {
-            int i, jsp;
-
-            if (boneIndex > -1 && boneIndex < bSkeleton.nBones)
+            // Create config from current FrmSkeletonEditor state
+            var config = new LightingConfig
             {
-                jsp = MoveToBattleBone(bSkeleton, bFrame, boneIndex);
-                DrawBattleBoneBoundingBox(bSkeleton.bones[boneIndex]);
+                FrontLightEnabled = bchkFrontLight,
+                RearLightEnabled = bchkRearLight,
+                RightLightEnabled = bchkRightLight,
+                LeftLightEnabled = bchkLeftLight,
+                PosXScroll = fLightPosXScroll,
+                PosYScroll = fLightPosYScroll,
+                PosZScroll = fLightPosZScroll
+            };
 
-                if (partIndex > -1)
-                    DrawBattleBoneModelBoundingBox(bSkeleton.bones[boneIndex], partIndex);
+            // Compute scene diameter based on model type
+            Point3D p_min = new Point3D();
+            Point3D p_max = new Point3D();
 
-                for (i = 0; i <= jsp; i++) GL.PopMatrix();
-            }
-            else
+            switch (modelType)
             {
-                if (boneIndex == bSkeleton.nBones)
-                    DrawBattleWeaponBoundingBox(bSkeleton, wpFrame, weaponIndex);
+                case K_P_FIELD_MODEL:
+                case K_P_BATTLE_MODEL:
+                case K_P_MAGIC_MODEL:
+                case K_3DS_MODEL:
+                    ComputePModelBoundingBox(fPModel, ref p_min, ref p_max);
+                    break;
+
+                case K_HRC_SKELETON:
+                    ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[iCurrentFrameScroll], ref p_min, ref p_max);
+                    break;
+
+                case K_AA_SKELETON:
+                case K_MAGIC_SKELETON:
+                    ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll],
+                                             ref p_min, ref p_max);
+                    break;
             }
+
+            float sceneDiameter = (float)(-2 * ComputeSceneRadius(p_min, p_max));
+
+            Lighting.SetLights(config, sceneDiameter);
+        }
+
+        /// <summary>
+        /// Draws the current skeleton/model using FrmSkeletonEditor static state.
+        /// For decoupled rendering, use ModelDrawing.DrawSkeletonModel(RenderingContext) directly.
+        /// </summary>
+        public static void DrawSkeletonModel(bool bDListsEnable)
+        {
+            // Create context from current FrmSkeletonEditor state and delegate
+            var ctx = RenderingContext.FromSkeletonEditor(
+                modelType,
+                bLoaded,
+                (float)alpha, (float)beta, (float)gamma,
+                (float)DIST,
+                panX, panY, panZ,
+                iCurrentFrameScroll,
+                ianimIndex,
+                ianimWeaponIndex,
+                SelectedBone,
+                SelectedBonePiece,
+                bShowBones,
+                bShowGround,
+                bShowVertexNormals,
+                bShowFaceNormals,
+                bShowLastFrameGhost,
+                bDListsEnable,
+                fNormalsScale,
+                iNormalsColor,
+                bchkFrontLight,
+                bchkRearLight,
+                bchkRightLight,
+                bchkLeftLight,
+                fLightPosXScroll,
+                fLightPosYScroll,
+                fLightPosZScroll);
+
+            ModelDrawing.DrawSkeletonModel(ctx, bShowVertexNormals, bShowFaceNormals, fNormalsScale,
+                                           iNormalsColor);
         }
 
         /// <summary>
