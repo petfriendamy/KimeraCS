@@ -406,28 +406,28 @@ namespace KimeraCS
         //
         // Battle Skeleton functions
         //
-        public static void ComputeBattleBoneBoundingBox(BattleBone bBone, ref Point3D p_min, ref Point3D p_max)
+        public static void ComputeBattleBoneBoundingBox(BattleBone bBone, ref Vector3 p_min, ref Vector3 p_max)
         {
             int mi;
             double[] MV_matrix = new double[16];
 
-            Point3D p_min_aux;
-            Point3D p_max_aux;
-            Point3D p_min_aux_trans = new Point3D();
-            Point3D p_max_aux_trans = new Point3D();
+            Vector3 p_min_aux;
+            Vector3 p_max_aux;
+            Vector3 p_min_aux_trans = new Vector3();
+            Vector3 p_max_aux_trans = new Vector3();
 
             // Build base transform using pure math
             Matrix4 baseMatrix = Matrix4.CreateScale(bBone.resizeX, bBone.resizeY, bBone.resizeZ);
 
             if (bBone.hasModel == 1)
             {
-                p_max.x = (float)-INFINITY_SINGLE;
-                p_max.y = (float)-INFINITY_SINGLE;
-                p_max.z = (float)-INFINITY_SINGLE;
+                p_max.X = float.NegativeInfinity;
+                p_max.Y = float.NegativeInfinity;
+                p_max.Z = float.NegativeInfinity;
 
-                p_min.x = (float)INFINITY_SINGLE;
-                p_min.y = (float)INFINITY_SINGLE;
-                p_min.z = (float)INFINITY_SINGLE;
+                p_min.X = float.PositiveInfinity;
+                p_min.Y = float.PositiveInfinity;
+                p_min.Z = float.PositiveInfinity;
 
                 for (mi = 0; mi < bBone.nModels; mi++)
                 {
@@ -439,48 +439,48 @@ namespace KimeraCS
                     modelMatrix *= Matrix4.CreateRotationZ(MathHelper.DegreesToRadians((float)bBone.Models[mi].rotateGamma));
                     modelMatrix *= Matrix4.CreateScale(bBone.resizeX, bBone.resizeY, bBone.resizeZ);
 
-                    p_min_aux.x = bBone.Models[mi].BoundingBox.min_x;
-                    p_min_aux.y = bBone.Models[mi].BoundingBox.min_y;
-                    p_min_aux.z = bBone.Models[mi].BoundingBox.min_z;
+                    p_min_aux.X = bBone.Models[mi].BoundingBox.min_x;
+                    p_min_aux.Y = bBone.Models[mi].BoundingBox.min_y;
+                    p_min_aux.Z = bBone.Models[mi].BoundingBox.min_z;
 
-                    p_max_aux.x = bBone.Models[mi].BoundingBox.max_x;
-                    p_max_aux.y = bBone.Models[mi].BoundingBox.max_y;
-                    p_max_aux.z = bBone.Models[mi].BoundingBox.max_z;
+                    p_max_aux.X = bBone.Models[mi].BoundingBox.max_x;
+                    p_max_aux.Y = bBone.Models[mi].BoundingBox.max_y;
+                    p_max_aux.Z = bBone.Models[mi].BoundingBox.max_z;
 
                     MV_matrix = Matrix4ToDoubleArray(modelMatrix);
 
                     ComputeTransformedBoxBoundingBox(MV_matrix, ref p_min_aux, ref p_max_aux, ref p_min_aux_trans, ref p_max_aux_trans);
 
-                    if (p_max.x < p_max_aux_trans.x) p_max.x = p_max_aux_trans.x;
-                    if (p_max.y < p_max_aux_trans.y) p_max.y = p_max_aux_trans.y;
-                    if (p_max.z < p_max_aux_trans.z) p_max.z = p_max_aux_trans.z;
+                    if (p_max.X < p_max_aux_trans.X) p_max.X = p_max_aux_trans.X;
+                    if (p_max.Y < p_max_aux_trans.Y) p_max.Y = p_max_aux_trans.Y;
+                    if (p_max.Z < p_max_aux_trans.Z) p_max.Z = p_max_aux_trans.Z;
 
-                    if (p_min.x > p_min_aux_trans.x) p_min.x = p_min_aux_trans.x;
-                    if (p_min.y > p_min_aux_trans.y) p_min.y = p_min_aux_trans.y;
-                    if (p_min.z > p_min_aux_trans.z) p_min.z = p_min_aux_trans.z;
+                    if (p_min.X > p_min_aux_trans.X) p_min.X = p_min_aux_trans.X;
+                    if (p_min.Y > p_min_aux_trans.Y) p_min.Y = p_min_aux_trans.Y;
+                    if (p_min.Z > p_min_aux_trans.Z) p_min.Z = p_min_aux_trans.Z;
                 }
             }
             else
             {
-                p_max.x = 0;
-                p_max.y = 0;
-                p_max.z = 0;
+                p_max.X = 0;
+                p_max.Y = 0;
+                p_max.Z = 0;
 
-                p_min.x = 0;
-                p_min.y = 0;
-                p_min.z = 0;
+                p_min.X = 0;
+                p_min.Y = 0;
+                p_min.Z = 0;
             }
         }
 
-        public static void ComputeBattleBoundingBox(BattleSkeleton bSkeleton, BattleFrame bFrame, ref Point3D p_min, ref Point3D p_max)
+        public static void ComputeBattleBoundingBox(BattleSkeleton bSkeleton, BattleFrame bFrame, ref Vector3 p_min, ref Vector3 p_max)
         {
             double[] rot_mat = new double[16];
             double[] MV_matrix = new double[16];
 
-            Point3D p_max_bone = new Point3D();
-            Point3D p_min_bone = new Point3D();
-            Point3D p_max_bone_trans = new Point3D();
-            Point3D p_min_bone_trans = new Point3D();
+            Vector3 p_max_bone = new Vector3();
+            Vector3 p_min_bone = new Vector3();
+            Vector3 p_max_bone_trans = new Vector3();
+            Vector3 p_min_bone_trans = new Vector3();
 
             int[] joint_stack = new int[bSkeleton.nBones * 4];
             Matrix4[] matrixStack = new Matrix4[bSkeleton.nBones + 2];
@@ -490,12 +490,12 @@ namespace KimeraCS
             jsp = 0;
             joint_stack[jsp] = -1;
 
-            p_max.x = -(float)INFINITY_SINGLE;
-            p_max.y = -(float)INFINITY_SINGLE;
-            p_max.z = -(float)INFINITY_SINGLE;
-            p_min.x = (float)INFINITY_SINGLE;
-            p_min.y = (float)INFINITY_SINGLE;
-            p_min.z = (float)INFINITY_SINGLE;
+            p_max.X = float.NegativeInfinity;
+            p_max.Y = float.NegativeInfinity;
+            p_max.Z = float.NegativeInfinity;
+            p_min.X = float.PositiveInfinity;
+            p_min.Y = float.PositiveInfinity;
+            p_min.Z = float.PositiveInfinity;
 
             // Build initial transform using pure math
             Matrix4 currentMatrix = Matrix4.Identity;
@@ -531,13 +531,13 @@ namespace KimeraCS
 
                 ComputeTransformedBoxBoundingBox(MV_matrix, ref p_min_bone, ref p_max_bone, ref p_min_bone_trans, ref p_max_bone_trans);
 
-                if (p_max.x < p_max_bone_trans.x) p_max.x = p_max_bone_trans.x;
-                if (p_max.y < p_max_bone_trans.y) p_max.y = p_max_bone_trans.y;
-                if (p_max.z < p_max_bone_trans.z) p_max.z = p_max_bone_trans.z;
+                if (p_max.X < p_max_bone_trans.X) p_max.X = p_max_bone_trans.X;
+                if (p_max.Y < p_max_bone_trans.Y) p_max.Y = p_max_bone_trans.Y;
+                if (p_max.Z < p_max_bone_trans.Z) p_max.Z = p_max_bone_trans.Z;
 
-                if (p_min.x > p_min_bone_trans.x) p_min.x = p_min_bone_trans.x;
-                if (p_min.y > p_min_bone_trans.y) p_min.y = p_min_bone_trans.y;
-                if (p_min.z > p_min_bone_trans.z) p_min.z = p_min_bone_trans.z;
+                if (p_min.X > p_min_bone_trans.X) p_min.X = p_min_bone_trans.X;
+                if (p_min.Y > p_min_bone_trans.Y) p_min.Y = p_min_bone_trans.Y;
+                if (p_min.Z > p_min_bone_trans.Z) p_min.Z = p_min_bone_trans.Z;
 
                 currentMatrix *= Matrix4.CreateTranslation(0, 0, bSkeleton.bones[bi].len);
                 jsp++;

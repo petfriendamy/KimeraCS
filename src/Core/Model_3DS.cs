@@ -5,6 +5,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
+using OpenTK.Mathematics;
 
 namespace KimeraCS
 {
@@ -781,17 +782,17 @@ namespace KimeraCS
         //  ---------------------------------------------------------------------------------------------------------
         //  ---------------------------------------- 3Ds => PModel --------------------------------------------------
         //  ---------------------------------------------------------------------------------------------------------
-        private static void GetVerts(Mesh_object_node mesh, out Point3D[] vertsV)
+        private static void GetVerts(Mesh_object_node mesh, out Vector3[] vertsV)
         {
             int i;
 
-            vertsV = new Point3D[mesh.numVerts];
+            vertsV = new Vector3[mesh.numVerts];
 
             for (i = 0; i < mesh.numVerts; i++)
             {
-                vertsV[i].x = mesh.vertsV[i].x;
-                vertsV[i].y = mesh.vertsV[i].y;
-                vertsV[i].z = mesh.vertsV[i].z;
+                vertsV[i].X = mesh.vertsV[i].x;
+                vertsV[i].Y = mesh.vertsV[i].y;
+                vertsV[i].Z = mesh.vertsV[i].z;
             }
         }
 
@@ -816,7 +817,7 @@ namespace KimeraCS
             }
         }
 
-        private static void GetTexCoords(Mesh_object_node mesh, out Point2D[] texCoordsV)
+        private static void GetTexCoords(Mesh_object_node mesh, out Vector2[] texCoordsV)
         {
             int i;
 
@@ -824,12 +825,12 @@ namespace KimeraCS
 
             if (mesh.numMappedVerts > 0)
             {
-                texCoordsV = new Point2D[mesh.numVerts];
+                texCoordsV = new Vector2[mesh.numVerts];
 
                 for (i = 0; i < mesh.numMappedVerts; i++)
                 {
-                    texCoordsV[i].x = mesh.texCoordsV[i].u;
-                    texCoordsV[i].y = mesh.texCoordsV[i].v;
+                    texCoordsV[i].X = mesh.texCoordsV[i].u;
+                    texCoordsV[i].Y = mesh.texCoordsV[i].v;
                 }
             }
         }
@@ -994,9 +995,9 @@ namespace KimeraCS
         private static void ConvertMesh3DSToPModel(Mesh_object_node mesh, Mat_list_node[] materialsV, ref PModel Model)
         {
 
-            GetVerts(mesh, out Point3D[] vertsV);
+            GetVerts(mesh, out Vector3[] vertsV);
             GetFaces(mesh, out PPolygon[] facesV);
-            GetTexCoords(mesh, out Point2D[] texcoordsV);
+            GetTexCoords(mesh, out Vector2[] texcoordsV);
             GetVColors(mesh, materialsV, out Color[] vcolorsV);
             GetPColors(mesh, materialsV, out Color[] pcolorsV);
 
@@ -1076,10 +1077,10 @@ namespace KimeraCS
             outModel.rotateAlpha = 0;
             outModel.rotateBeta = 0;
             outModel.rotateGamma = 0;
-            outModel.rotationQuaternion.x = 0;
-            outModel.rotationQuaternion.y = 0;
-            outModel.rotationQuaternion.z = 0;
-            outModel.rotationQuaternion.w = 1;
+            outModel.rotationQuaternion.X = 0;
+            outModel.rotationQuaternion.Y = 0;
+            outModel.rotationQuaternion.Z = 0;
+            outModel.rotationQuaternion.W = 1;
 
             //ComputeNormals(ref outModel);
             //ComputeBoundingBox(ref outModel);

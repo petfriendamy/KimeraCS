@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using OpenTK.Mathematics;
 
 namespace KimeraCS
 {
@@ -1105,19 +1106,19 @@ namespace KimeraCS
             int bi, jsp;
 
             string[] joint_stack;
-            Quaternion[] rotations_stack_a;
-            Quaternion[] rotations_stack_b;
-            Quaternion[] rotations_stack_acum;
+            Quaterniond[] rotations_stack_a;
+            Quaterniond[] rotations_stack_b;
+            Quaterniond[] rotations_stack_acum;
 
-            Quaternion quat_a;
-            Quaternion quat_b;
-            Quaternion quat_acum_a = new Quaternion();
-            Quaternion quat_acum_b = new Quaternion();
-            Quaternion quat_acum_inverse;
-            Quaternion quat_interp;
-            Quaternion quat_interp_final = new Quaternion();
+            Quaterniond quat_a;
+            Quaterniond quat_b;
+            Quaterniond quat_acum_a = new Quaterniond();
+            Quaterniond quat_acum_b = new Quaterniond();
+            Quaterniond quat_acum_inverse;
+            Quaterniond quat_interp;
+            Quaterniond quat_interp_final = new Quaterniond();
 
-            Point3D euler_res;
+            Vector3 euler_res;
             float alpha_inv;
             int nBones;
             double[] mat = new double[16];
@@ -1130,9 +1131,9 @@ namespace KimeraCS
             BuildMatrixFromQuaternion(quat_interp, ref mat);
             euler_res = GetEulerYXZrFromMatrix(mat);
 
-            fFrameOut.rootRotationAlpha = euler_res.y;
-            fFrameOut.rootRotationBeta = euler_res.x;
-            fFrameOut.rootRotationGamma = euler_res.z;
+            fFrameOut.rootRotationAlpha = euler_res.Y;
+            fFrameOut.rootRotationBeta = euler_res.X;
+            fFrameOut.rootRotationGamma = euler_res.Z;
 
             alpha_inv = 1f - alpha;
 
@@ -1145,9 +1146,9 @@ namespace KimeraCS
             nBones = fSkeleton.bones.Count + 1;
 
             joint_stack = new string[nBones + 1];
-            rotations_stack_a = new Quaternion[nBones];
-            rotations_stack_b = new Quaternion[nBones];
-            rotations_stack_acum = new Quaternion[nBones];
+            rotations_stack_a = new Quaterniond[nBones];
+            rotations_stack_b = new Quaterniond[nBones];
+            rotations_stack_acum = new Quaterniond[nBones];
             fFrameOut.rotations = new List<FieldRotation>();
 
             jsp = 1;
@@ -1181,7 +1182,7 @@ namespace KimeraCS
                 BuildMatrixFromQuaternion(quat_interp_final, ref mat);
                 euler_res = GetEulerYXZrFromMatrix(mat);
 
-                fFrameOut.rotations.Add(new FieldRotation(euler_res.y, euler_res.x, euler_res.z));
+                fFrameOut.rotations.Add(new FieldRotation(euler_res.Y, euler_res.X, euler_res.Z));
 
                 jsp++;
                 joint_stack[jsp] = fSkeleton.bones[bi].joint_i;

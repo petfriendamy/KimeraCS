@@ -4,8 +4,8 @@ namespace KimeraCS.Core
     using static FF7FieldSkeleton;
     using static FF7FieldAnimation;
     using static FF7BattleSkeleton;
-    using static FF7BattleAnimation;
     using static FF7BattleAnimationsPack;
+    using static ModelDrawing;
 
     /// <summary>
     /// Camera state for 3D viewport rendering.
@@ -62,8 +62,7 @@ namespace KimeraCS.Core
     {
         public bool ShowBones;
         public bool ShowGround;
-        public bool ShowVertexNormals;
-        public bool ShowFaceNormals;
+        public NormalsDisplayMode NormalsDisplayMode;
         public bool ShowLastFrameGhost;
         public bool EnableDisplayLists;
         public float NormalsScale;
@@ -73,12 +72,11 @@ namespace KimeraCS.Core
         {
             ShowBones = false,
             ShowGround = false,
-            ShowVertexNormals = false,
-            ShowFaceNormals = false,
+            NormalsDisplayMode = NormalsDisplayMode.None,
             ShowLastFrameGhost = false,
             EnableDisplayLists = true,
-            NormalsScale = 1.0f,
-            NormalsColor = 0
+            NormalsScale = DEFAULT_NORMAL_SCALE,
+            NormalsColor = DEFAULT_NORMAL_COLOR
         };
     }
 
@@ -204,8 +202,7 @@ namespace KimeraCS.Core
             int selectedBonePiece,
             bool showBones,
             bool showGround,
-            bool showVertexNormals,
-            bool showFaceNormals,
+            NormalsDisplayMode normalsViewMode,
             bool showLastFrameGhost,
             bool enableDisplayLists,
             float normalsScale,
@@ -247,8 +244,7 @@ namespace KimeraCS.Core
                 {
                     ShowBones = showBones,
                     ShowGround = showGround,
-                    ShowVertexNormals = showVertexNormals,
-                    ShowFaceNormals = showFaceNormals,
+                    NormalsDisplayMode = normalsViewMode,
                     ShowLastFrameGhost = showLastFrameGhost,
                     EnableDisplayLists = enableDisplayLists,
                     NormalsScale = normalsScale,

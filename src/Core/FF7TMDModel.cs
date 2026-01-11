@@ -1,5 +1,5 @@
 ﻿// Info of this comes from:
-// https://wiki.xentax.com/index.php/Playstation_TMD
+// https://wiki.Xentax.com/index.php/Playstation_TMD
 
 //Specific info about some fields of the structures:
 
@@ -75,6 +75,7 @@ using System.IO;
 using System.Drawing;
 using System.Text;
 using System.Globalization;
+using OpenTK.Mathematics;
 
 namespace KimeraCS
 {
@@ -630,7 +631,7 @@ namespace KimeraCS
         //  -------------------------------------------------------------------------------------------------
         private static int FindVertexIdxByColorVArray(byte inR, byte inG, byte inB, Color[] vcolorsV,
                                                       short inX, short inY, short inZ,
-                                                      Point3D[] vertsV, int mode)
+                                                      Vector3[] vertsV, int mode)
         {
             int iVertexIdx = -1, iCountColor;
             bool bFound = false;
@@ -645,9 +646,9 @@ namespace KimeraCS
                         if (inR == vcolorsV[iCountColor].R &&
                             inG == vcolorsV[iCountColor].G &&
                             inB == vcolorsV[iCountColor].B &&
-                            vertsV[iCountColor].x == inX &&
-                            vertsV[iCountColor].y == inY &&
-                            vertsV[iCountColor].z == inZ)
+                            vertsV[iCountColor].X == inX &&
+                            vertsV[iCountColor].Y == inY &&
+                            vertsV[iCountColor].Z == inZ)
                         {
                             bFound = true;
                             iVertexIdx = iCountColor;
@@ -667,7 +668,7 @@ namespace KimeraCS
 
         private static int FindVertexIdxByColorVArrayf(byte inR, byte inG, byte inB, Color[] vcolorsV,
                                                        float inX, float inY, float inZ,
-                                                       Point3D[] vertsV, int mode)
+                                                       Vector3[] vertsV, int mode)
         {
             int iVertexIdx = -1, iCountColor;
             bool bFound = false;
@@ -682,9 +683,9 @@ namespace KimeraCS
                         if (inR == vcolorsV[iCountColor].R &&
                             inG == vcolorsV[iCountColor].G &&
                             inB == vcolorsV[iCountColor].B &&
-                            vertsV[iCountColor].x == inX &&
-                            vertsV[iCountColor].y == inY &&
-                            vertsV[iCountColor].z == inZ)
+                            vertsV[iCountColor].X == inX &&
+                            vertsV[iCountColor].Y == inY &&
+                            vertsV[iCountColor].Z == inZ)
                         {
                             bFound = true;
                             iVertexIdx = iCountColor;
@@ -719,33 +720,33 @@ namespace KimeraCS
         private static void PopulatePModel(TMD_VERTEX[] TMDVertices,
                                            TMD_PRIMITIVE_HEADER[] TMDPrimitiveHeaders,
                                            TMD_PRIMITIVE_PACKET[] TMDPrimitivePackets,
-                                           out Point3D[] vertsV, out PPolygon[] facesV,
+                                           out Vector3[] vertsV, out PPolygon[] facesV,
                                            out Color[] vcolorsV, out Color[] pcolorsV, 
-                                           out Point2D[] TexCoords)
+                                           out Vector2[] TexCoords)
         {
             int iPolyIdx, iVertIdx, iVColorIdx, iFoundColorVArray;
             ushort usVertex;
 
             // Let's populate vertices
-            vertsV = new Point3D[TMDVertices.Length];
+            vertsV = new Vector3[TMDVertices.Length];
             vcolorsV = new Color[TMDVertices.Length];
 
             if (bConverted2Float)
             {
                 for (iVertIdx = 0; iVertIdx < TMDVertices.Length; iVertIdx++)
                 {
-                    vertsV[iVertIdx].x = TMDVertices[iVertIdx].fvx;
-                    vertsV[iVertIdx].y = TMDVertices[iVertIdx].fvy;
-                    vertsV[iVertIdx].z = TMDVertices[iVertIdx].fvz;
+                    vertsV[iVertIdx].X = TMDVertices[iVertIdx].fvx;
+                    vertsV[iVertIdx].Y = TMDVertices[iVertIdx].fvy;
+                    vertsV[iVertIdx].Z = TMDVertices[iVertIdx].fvz;
                 }
             }
             else
             {
                 for (iVertIdx = 0; iVertIdx < TMDVertices.Length; iVertIdx++)
                 {
-                    vertsV[iVertIdx].x = TMDVertices[iVertIdx].vx;
-                    vertsV[iVertIdx].y = TMDVertices[iVertIdx].vy;
-                    vertsV[iVertIdx].z = TMDVertices[iVertIdx].vz;
+                    vertsV[iVertIdx].X = TMDVertices[iVertIdx].vx;
+                    vertsV[iVertIdx].Y = TMDVertices[iVertIdx].vy;
+                    vertsV[iVertIdx].Z = TMDVertices[iVertIdx].vz;
                 }
             }
 
@@ -762,7 +763,7 @@ namespace KimeraCS
             // Let's prepare for TextureCoordinates if it has any
             if (TMDHasTextureUVs(TMDPrimitiveHeaders[0]))
             {
-                TexCoords = new Point2D[TMDVertices.Length];
+                TexCoords = new Vector2[TMDVertices.Length];
             }
             else TexCoords = null;
 
@@ -808,19 +809,19 @@ namespace KimeraCS
                                            TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.G,
                                            TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.B);
 
-                        TexCoords[TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.Vertex0].x =
+                        TexCoords[TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.Vertex0].X =
                             TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.U0 / 64f;
-                        TexCoords[TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.Vertex0].y =
+                        TexCoords[TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.Vertex0].Y =
                             TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.V0 / 64f;
 
-                        TexCoords[TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.Vertex1].x =
+                        TexCoords[TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.Vertex1].X =
                             TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.U1 / 64f;
-                        TexCoords[TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.Vertex1].y =
+                        TexCoords[TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.Vertex1].Y =
                             TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.V1 / 64f;
 
-                        TexCoords[TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.Vertex2].x =
+                        TexCoords[TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.Vertex2].X =
                             TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.U2 / 64f;
-                        TexCoords[TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.Vertex2].y =
+                        TexCoords[TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.Vertex2].Y =
                             TMDPrimitivePackets[iPolyIdx].tmd3txnsfp.V2 / 64f;
 
                         break;
@@ -889,20 +890,20 @@ namespace KimeraCS
 
                                     if (bConverted2Float)
                                     {
-                                        vertsV[vertsV.Length - 1].x =
+                                        vertsV[vertsV.Length - 1].X =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex0].fvx;
-                                        vertsV[vertsV.Length - 1].y =
+                                        vertsV[vertsV.Length - 1].Y =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex0].fvy;
-                                        vertsV[vertsV.Length - 1].z =
+                                        vertsV[vertsV.Length - 1].Z =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex0].fvz;
                                     }
                                     else
                                     {
-                                        vertsV[vertsV.Length - 1].x =
+                                        vertsV[vertsV.Length - 1].X =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex0].vx;
-                                        vertsV[vertsV.Length - 1].y =
+                                        vertsV[vertsV.Length - 1].Y =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex0].vy;
-                                        vertsV[vertsV.Length - 1].z =
+                                        vertsV[vertsV.Length - 1].Z =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex0].vz;
                                     }
 
@@ -984,20 +985,20 @@ namespace KimeraCS
                                     Array.Resize(ref vertsV, vertsV.Length + 1);
                                     if (bConverted2Float)
                                     {
-                                        vertsV[vertsV.Length - 1].x =
+                                        vertsV[vertsV.Length - 1].X =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex1].fvx;
-                                        vertsV[vertsV.Length - 1].y =
+                                        vertsV[vertsV.Length - 1].Y =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex1].fvy;
-                                        vertsV[vertsV.Length - 1].z =
+                                        vertsV[vertsV.Length - 1].Z =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex1].fvz;
                                     }
                                     else
                                     {
-                                        vertsV[vertsV.Length - 1].x =
+                                        vertsV[vertsV.Length - 1].X =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex1].vx;
-                                        vertsV[vertsV.Length - 1].y =
+                                        vertsV[vertsV.Length - 1].Y =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex1].vy;
-                                        vertsV[vertsV.Length - 1].z =
+                                        vertsV[vertsV.Length - 1].Z =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex1].vz;
                                     }
 
@@ -1079,20 +1080,20 @@ namespace KimeraCS
                                     Array.Resize(ref vertsV, vertsV.Length + 1);
                                     if (bConverted2Float)
                                     {
-                                        vertsV[vertsV.Length - 1].x =
+                                        vertsV[vertsV.Length - 1].X =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex2].fvx;
-                                        vertsV[vertsV.Length - 1].y =
+                                        vertsV[vertsV.Length - 1].Y =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex2].fvy;
-                                        vertsV[vertsV.Length - 1].z =
+                                        vertsV[vertsV.Length - 1].Z =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex2].fvz;
                                     }
                                     else
                                     {
-                                        vertsV[vertsV.Length - 1].x =
+                                        vertsV[vertsV.Length - 1].X =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex2].vx;
-                                        vertsV[vertsV.Length - 1].y =
+                                        vertsV[vertsV.Length - 1].Y =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex2].vy;
-                                        vertsV[vertsV.Length - 1].z =
+                                        vertsV[vertsV.Length - 1].Z =
                                             TMDVertices[TMDPrimitivePackets[iPolyIdx].tmd3nsgp.Vertex2].vz;
                                     }
 
@@ -1146,8 +1147,8 @@ namespace KimeraCS
             PopulatePModel(inTMDModel.TMDObjectList[iModelIdx].TMDVertexList,
                            inTMDModel.TMDObjectList[iModelIdx].TMDPrimitiveList,
                            inTMDModel.TMDObjectList[iModelIdx].TMDPrimitiveListPacket,
-                           out Point3D[] vertsV, out PPolygon[] facesV, out Color[] vcolorsV, 
-                           out Color[] pcolorsV, out Point2D[]  texcoordsV);
+                           out Vector3[] vertsV, out PPolygon[] facesV, out Color[] vcolorsV, 
+                           out Color[] pcolorsV, out Vector2[]  texcoordsV);
 
             //texcoordsV = null;
             //texcoordsV = new Point2D[vertsV.Length];
@@ -1165,17 +1166,17 @@ namespace KimeraCS
             outPModel.rotateAlpha = 0;
             outPModel.rotateBeta = 0;
             outPModel.rotateGamma = 0;
-            outPModel.rotationQuaternion.x = 0;
-            outPModel.rotationQuaternion.y = 0;
-            outPModel.rotationQuaternion.z = 0;
-            outPModel.rotationQuaternion.w = 1;
+            outPModel.rotationQuaternion.X = 0;
+            outPModel.rotationQuaternion.Y = 0;
+            outPModel.rotationQuaternion.Z = 0;
+            outPModel.rotationQuaternion.W = 1;
 
             ComputeNormals(ref outPModel);
             ComputeBoundingBox(ref outPModel);
             ComputeEdges(ref outPModel);
         }
 
-        public static int IsVertexDuplicated(Point3D tmpP3D, TMD_VERTEX[] inVertex)
+        public static int IsVertexDuplicated(Vector3 tmpP3D, TMD_VERTEX[] inVertex)
         {
             bool bIsVertexDuplicated = false;
             int iCounter = 0;
@@ -1184,9 +1185,9 @@ namespace KimeraCS
             {
                 while (iCounter < inVertex.Length && !bIsVertexDuplicated)
                 {
-                    if (inVertex[iCounter].fvx == tmpP3D.x &&
-                        inVertex[iCounter].fvy == tmpP3D.y &&
-                        inVertex[iCounter].fvz == tmpP3D.z)
+                    if (inVertex[iCounter].fvx == tmpP3D.X &&
+                        inVertex[iCounter].fvy == tmpP3D.Y &&
+                        inVertex[iCounter].fvz == tmpP3D.Z)
                         bIsVertexDuplicated = true;
                     else iCounter++;
                 }
@@ -1195,9 +1196,9 @@ namespace KimeraCS
             {
                 while (iCounter < inVertex.Length && !bIsVertexDuplicated)
                 {
-                    if (inVertex[iCounter].vx == (short)Math.Round(tmpP3D.x) &&
-                        inVertex[iCounter].vy == (short)Math.Round(tmpP3D.y) &&
-                        inVertex[iCounter].vz == (short)Math.Round(tmpP3D.z))
+                    if (inVertex[iCounter].vx == (short)Math.Round(tmpP3D.X) &&
+                        inVertex[iCounter].vy == (short)Math.Round(tmpP3D.Y) &&
+                        inVertex[iCounter].vz == (short)Math.Round(tmpP3D.Z))
                         bIsVertexDuplicated = true;
                     else iCounter++;
                 }
@@ -1207,7 +1208,7 @@ namespace KimeraCS
             return iCounter;
         }
 
-        public static ushort GetVertexIdx(TMD_VERTEX[] inVertex, Point3D inP3D)
+        public static ushort GetVertexIdx(TMD_VERTEX[] inVertex, Vector3 inP3D)
         {
             ushort iGetVertexIndexResult = 0;
             bool bFound = false;
@@ -1216,9 +1217,9 @@ namespace KimeraCS
             {
                 while (iGetVertexIndexResult < inVertex.Length && !bFound)
                 {
-                    if (inVertex[iGetVertexIndexResult].fvx == inP3D.x &&
-                        inVertex[iGetVertexIndexResult].fvy == inP3D.y &&
-                        inVertex[iGetVertexIndexResult].fvz == inP3D.z)
+                    if (inVertex[iGetVertexIndexResult].fvx == inP3D.X &&
+                        inVertex[iGetVertexIndexResult].fvy == inP3D.Y &&
+                        inVertex[iGetVertexIndexResult].fvz == inP3D.Z)
                         bFound = true;
                     else iGetVertexIndexResult++;
                 }
@@ -1227,9 +1228,9 @@ namespace KimeraCS
             {
                 while (iGetVertexIndexResult < inVertex.Length && !bFound)
                 {
-                    if (inVertex[iGetVertexIndexResult].vx == (short)Math.Round(inP3D.x) &&
-                        inVertex[iGetVertexIndexResult].vy == (short)Math.Round(inP3D.y) &&
-                        inVertex[iGetVertexIndexResult].vz == (short)Math.Round(inP3D.z))
+                    if (inVertex[iGetVertexIndexResult].vx == (short)Math.Round(inP3D.X) &&
+                        inVertex[iGetVertexIndexResult].vy == (short)Math.Round(inP3D.Y) &&
+                        inVertex[iGetVertexIndexResult].vz == (short)Math.Round(inP3D.Z))
                         bFound = true;
                     else iGetVertexIndexResult++;
                 }
@@ -1277,7 +1278,7 @@ namespace KimeraCS
             iCounter = 0;
 
             newTMDObj.TMDVertexList = new TMD_VERTEX[0];
-            foreach (Point3D itmP3D in inPModel.Verts)
+            foreach (Vector3 itmP3D in inPModel.Verts)
             {
                 iVertexIndexDuplicated = IsVertexDuplicated(itmP3D, newTMDObj.TMDVertexList);
 
@@ -1285,14 +1286,14 @@ namespace KimeraCS
                 {
                     Array.Resize(ref newTMDObj.TMDVertexList, newTMDObj.TMDVertexList.Length + 1);
 
-                    newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].vx = (short)Math.Round(itmP3D.x);
-                    newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].vy = (short)Math.Round(itmP3D.y);
-                    newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].vz = (short)Math.Round(itmP3D.z);                   
+                    newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].vx = (short)Math.Round(itmP3D.X);
+                    newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].vy = (short)Math.Round(itmP3D.Y);
+                    newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].vz = (short)Math.Round(itmP3D.Z);                   
                     newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].pad = 0;
 
-                    newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].fvx = itmP3D.x;
-                    newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].fvy = itmP3D.y;
-                    newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].fvz = itmP3D.z;
+                    newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].fvx = itmP3D.X;
+                    newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].fvy = itmP3D.Y;
+                    newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].fvz = itmP3D.Z;
                     newTMDObj.TMDVertexList[newTMDObj.TMDVertexList.Length - 1].fpad = 0;
                 }
                 //else

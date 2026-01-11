@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using OpenTK.Graphics.OpenGL.Compatibility;
+using OpenTK.Mathematics;
 
 namespace KimeraCS
 {
@@ -955,11 +956,11 @@ namespace KimeraCS
         {
             //BattleFrameBone tmpbFrameBone;
 
-            Quaternion quat_a;
-            Quaternion quat_b;
-            Quaternion quat_interp;
+            Quaterniond quat_a;
+            Quaterniond quat_b;
+            Quaterniond quat_interp;
 
-            Point3D euler_res;
+            Vector3 euler_res;
             float alpha_inv;
             double[] mat = new double[16];
 
@@ -984,7 +985,7 @@ namespace KimeraCS
             euler_res = GetEulerYXZrFromMatrix(mat);
 
             //  NormalizeEulerAngles(euler_res);
-            bFrameOut.bones.Add(new BattleFrameBone(euler_res.y, euler_res.x, euler_res.z));
+            bFrameOut.bones.Add(new BattleFrameBone(euler_res.Y, euler_res.X, euler_res.Z));
         }
 
         public static void GetTwoBattleFramesInterpolation(BattleSkeleton bSkeleton, BattleFrame bFrameA, BattleFrame bFrameB,
@@ -994,19 +995,19 @@ namespace KimeraCS
             BattleFrameBone tmpbFrameBone;
 
             int[] joint_stack;
-            Quaternion[] rotations_stack_a;
-            Quaternion[] rotations_stack_b;
-            Quaternion[] rotations_stack_acum;
+            Quaterniond[] rotations_stack_a;
+            Quaterniond[] rotations_stack_b;
+            Quaterniond[] rotations_stack_acum;
 
-            Quaternion quat_a;
-            Quaternion quat_b;
-            Quaternion quat_acum_a = new Quaternion();
-            Quaternion quat_acum_b = new Quaternion();
-            Quaternion quat_acum_inverse;
-            Quaternion quat_interp;
-            Quaternion quat_interp_final = new Quaternion();
+            Quaterniond quat_a;
+            Quaterniond quat_b;
+            Quaterniond quat_acum_a = new Quaterniond();
+            Quaterniond quat_acum_b = new Quaterniond();
+            Quaterniond quat_acum_inverse;
+            Quaterniond quat_interp;
+            Quaterniond quat_interp_final = new Quaterniond();
 
-            Point3D euler_res;
+            Vector3 euler_res;
             float alpha_inv;
             int numBones;
             double[] mat = new double[16];
@@ -1033,9 +1034,9 @@ namespace KimeraCS
                 bFrameOut.bones = new List<BattleFrameBone>();
 
                 joint_stack = new int[numBones + 1];
-                rotations_stack_a = new Quaternion[numBones + 1];
-                rotations_stack_b = new Quaternion[numBones + 1];
-                rotations_stack_acum = new Quaternion[numBones + 1];
+                rotations_stack_a = new Quaterniond[numBones + 1];
+                rotations_stack_b = new Quaterniond[numBones + 1];
+                rotations_stack_acum = new Quaterniond[numBones + 1];
 
                 rotations_stack_a[0] = GetQuaternionFromEulerYXZr(bFrameA.bones[0].alpha, bFrameA.bones[0].beta, bFrameA.bones[0].gamma);
                 NormalizeQuaternion(ref rotations_stack_a[0]);
@@ -1076,7 +1077,7 @@ namespace KimeraCS
                     BuildMatrixFromQuaternion(quat_interp_final, ref mat);
                     euler_res = GetEulerYXZrFromMatrix(mat);
 
-                    bFrameOut.bones.Add(new BattleFrameBone(euler_res.y, euler_res.x, euler_res.z));
+                    bFrameOut.bones.Add(new BattleFrameBone(euler_res.Y, euler_res.X, euler_res.Z));
 
                     jsp++;
                     joint_stack[jsp] = bi;
@@ -1086,9 +1087,9 @@ namespace KimeraCS
                 euler_res = GetEulerYXZrFromMatrix(mat);
 
                 tmpbFrameBone = bFrameOut.bones[0];
-                tmpbFrameBone.alpha = euler_res.y;
-                tmpbFrameBone.beta = euler_res.x;
-                tmpbFrameBone.gamma = euler_res.z;
+                tmpbFrameBone.alpha = euler_res.Y;
+                tmpbFrameBone.beta = euler_res.X;
+                tmpbFrameBone.gamma = euler_res.Z;
                 bFrameOut.bones[0] = tmpbFrameBone;
             }
         }

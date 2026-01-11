@@ -129,7 +129,8 @@ namespace KimeraCS
         public decimal dDPIScaleFactor;
 
         // Show Normals
-        private static bool bShowVertexNormals, bShowFaceNormals;
+        //private static bool bShowVertexNormals, bShowFaceNormals;
+        private static NormalsDisplayMode normalsViewMode;
         private static int iNormalsColor;
         private static float fNormalsScale;
 
@@ -417,10 +418,10 @@ namespace KimeraCS
             showNormalsToolStripMenuItem.ShortcutKeyDisplayString = "N";
 
             greenToolStripMenuItem.Checked = true;
-            iNormalsColor = 2;     // 1 - Red, 2 - Green, 3 - Blue
+            iNormalsColor = DEFAULT_NORMAL_COLOR;     // 1 - Red, 2 - Green, 3 - Blue
 
             oneftoolStripMenuItem.Checked = true;
-            fNormalsScale = 1.0f;
+            fNormalsScale = DEFAULT_NORMAL_SCALE;
 
 
             // Activate MouseWheel events for panelModel PictureBox;
@@ -1061,7 +1062,7 @@ namespace KimeraCS
         //    }
         //}
 
-        public void PostLoadModelPreparations(ref Point3D p_min, ref Point3D p_max)
+        public void PostLoadModelPreparations(ref Vector3 p_min, ref Vector3 p_max)
         {
             // Fill combobox with list of bones
             FillBoneSelector(cbBoneSelector);
@@ -1441,8 +1442,8 @@ namespace KimeraCS
             int iBoneIdx, iPolyIdx;
             bool bWindowPEOpened;
 
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             BattleFrame wpFrame;
 
@@ -1594,11 +1595,11 @@ namespace KimeraCS
         {
             if (pbMouseIsDown)
             {
-                Point3D p_min = new Point3D();
-                Point3D p_max = new Point3D();
+                Vector3 p_min = new Vector3();
+                Vector3 p_max = new Vector3();
 
-                Point3D p_temp;
-                Point3D p_temp2;
+                Vector3 p_temp;
+                Vector3 p_temp2;
 
                 float aux_alpha, aux_y, aux_dist;
                 bool wasValidQ;
@@ -1669,23 +1670,23 @@ namespace KimeraCS
 
                             aux_y = panY;
 
-                            p_temp2 = new Point3D();
-                            p_temp = new Point3D(e.X, e.Y, GetDepthZ(p_temp2));
+                            p_temp2 = new Vector3();
+                            p_temp = new Vector3(e.X, e.Y, GetDepthZ(p_temp2));
 
                             p_temp = GetUnProjectedCoords(p_temp);
 
-                            panX += p_temp.x;
-                            panY += p_temp.y;
-                            panZ += p_temp.z;
+                            panX += p_temp.X;
+                            panY += p_temp.Y;
+                            panZ += p_temp.Z;
 
-                            p_temp.x = x_last;
-                            p_temp.y = y_last;
-                            p_temp.z = GetDepthZ(p_temp2);
+                            p_temp.X = x_last;
+                            p_temp.Y = y_last;
+                            p_temp.Z = GetDepthZ(p_temp2);
                             p_temp = GetUnProjectedCoords(p_temp);
 
-                            panX -= p_temp.x;
-                            panY -= p_temp.y;
-                            panZ -= p_temp.z;
+                            panX -= p_temp.X;
+                            panY -= p_temp.Y;
+                            panZ -= p_temp.Z;
 
                             SetCameraModelView(panX, panY, (float)(panZ + DIST), (float)alpha, (float)beta, (float)gamma, 1, 1, 1);
 
@@ -1705,8 +1706,8 @@ namespace KimeraCS
 
         private void PanelModel_MouseWheel(object sender, MouseEventArgs e)
         {
-            Point3D p_temp;
-            Point3D p_temp2;
+            Vector3 p_temp;
+            Vector3 p_temp2;
 
             float aux_y;
             float tmpDIST;
@@ -1736,23 +1737,23 @@ namespace KimeraCS
 
                 aux_y = panY;
 
-                p_temp2 = new Point3D();
-                p_temp = new Point3D(x_last, y_last, GetDepthZ(p_temp2));
+                p_temp2 = new Vector3();
+                p_temp = new Vector3(x_last, y_last, GetDepthZ(p_temp2));
 
                 p_temp = GetUnProjectedCoords(p_temp);
 
-                panX += p_temp.x;
-                panY += p_temp.y;
-                panZ += p_temp.z;
+                panX += p_temp.X;
+                panY += p_temp.Y;
+                panZ += p_temp.Z;
 
-                p_temp.x = x_last;
-                p_temp.y = y_last;
-                p_temp.z = GetDepthZ(p_temp2);
+                p_temp.X = x_last;
+                p_temp.Y = y_last;
+                p_temp.Z = GetDepthZ(p_temp2);
                 p_temp = GetUnProjectedCoords(p_temp);
 
-                panX -= p_temp.x;
-                panY -= p_temp.y;
-                panZ -= p_temp.z;
+                panX -= p_temp.X;
+                panY -= p_temp.Y;
+                panZ -= p_temp.Z;
 
                 SetCameraModelView(panX, panY, (float)(panZ + DIST), (float)alpha, (float)beta, (float)gamma, 1, 1, 1);
 
@@ -1903,8 +1904,8 @@ namespace KimeraCS
         private void LoadFieldSkeletonToolStripMenuItem_Click(object sender, EventArgs e)
         {
             int iLoadResult;
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             // Check if changes has been commited in PEditor
             if (CheckChangesCommittedPEditor()) return;
@@ -2000,8 +2001,8 @@ namespace KimeraCS
         private void LoadBattleMagicSkeletonToolStripMenuItem_Click(object sender, EventArgs e)
         {
             int iLoadResult; //, animIndex;
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             // Check if changes has been commited in PEditor
             if (CheckChangesCommittedPEditor()) return;
@@ -2112,8 +2113,8 @@ namespace KimeraCS
 
         private void LoadRSDResourceToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             // Check if changes has been commited in PEditor
             if (CheckChangesCommittedPEditor()) return;
@@ -2205,8 +2206,8 @@ namespace KimeraCS
 
         private void LoadPModelToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             // Check if changes has been commited in PEditor
             if (CheckChangesCommittedPEditor()) return;
@@ -2307,8 +2308,8 @@ namespace KimeraCS
 
         private void Load3DSToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             // Check if changes has been commited in PEditor
             if (CheckChangesCommittedPEditor()) return;
@@ -2406,8 +2407,8 @@ namespace KimeraCS
 
         private void LoadTMDToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             // Check if changes has been commited in PEditor
             if (CheckChangesCommittedPEditor()) return;
@@ -3309,7 +3310,7 @@ namespace KimeraCS
                 // Set filter options and filter index.
                 openFile.Title = "Add Texture";
 
-                openFile.Filter = "Any Image file|*.bmp;*.jpg;*.gif;*.png;*.ico;*.rle;*.wmf;*.emf|TEX texture|*.TEX;*AC;*AD;*AE;*AF;*AG;*AH;*AI;*AJ;AK*;AL*;*.T??|All files|*.*";
+                openFile.Filter = "Any Image file|*.bmp;*.jpg;*.gif;*.png;*.ico;*.rle;*.Wmf;*.emf|TEX texture|*.TEX;*AC;*AD;*AE;*AF;*AG;*AH;*AI;*AJ;AK*;AL*;*.T??|All files|*.*";
 
                 openFile.FilterIndex = 1;
                 openFile.FileName = null;
@@ -3484,7 +3485,7 @@ namespace KimeraCS
                 // Set filter options and filter index.
                 openFile.Title = "Change Texture";
 
-                openFile.Filter = "Any Image file|*.bmp;*.jpg;*.gif;*.png;*.ico;*.rle;*.wmf;*.emf|TEX texture|*.TEX;*AC;*AD;*AE;*AF;*AG;*AH;*AI;*AJ;AK*;AL*;*.T??|All files|*.*";
+                openFile.Filter = "Any Image file|*.bmp;*.jpg;*.gif;*.png;*.ico;*.rle;*.Wmf;*.emf|TEX texture|*.TEX;*AC;*AD;*AE;*AF;*AG;*AH;*AI;*AJ;AK*;AL*;*.T??|All files|*.*";
 
                 openFile.FilterIndex = 1;
                 openFile.FileName = null;
@@ -3603,8 +3604,8 @@ namespace KimeraCS
 
         private void BtnComputeGroundHeight_Click(object sender, EventArgs e)
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             FieldFrame tmpfFrame;
             BattleFrame tmpbFrame;
@@ -3615,7 +3616,7 @@ namespace KimeraCS
 
             AddStateToBuffer(this);
 
-            maxDiff = (float)INFINITY_SINGLE;
+            maxDiff = float.PositiveInfinity;
 
             switch (modelType)
             {
@@ -3627,7 +3628,7 @@ namespace KimeraCS
                         ComputeFieldBoundingBox(fSkeleton, tmpfFrame, ref p_min, ref p_max);
                         fAnimation.frames[fi] = tmpfFrame;
 
-                        if (maxDiff > p_max.y) maxDiff = p_max.y;
+                        if (maxDiff > p_max.Y) maxDiff = p_max.Y;
                     }
 
                     for (fi = 0; fi < fAnimation.nFrames; fi++)
@@ -3645,7 +3646,7 @@ namespace KimeraCS
                     {
                         ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi], ref p_min, ref p_max);
 
-                        if (maxDiff > p_max.y) maxDiff = p_max.y;
+                        if (maxDiff > p_max.Y) maxDiff = p_max.Y;
                     }
 
                     if (maxDiff != 0)
@@ -6403,8 +6404,8 @@ namespace KimeraCS
 
         private void LoadSkeletonFromDB()
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             int iLoadResult;
 
@@ -6463,8 +6464,8 @@ namespace KimeraCS
 
         private void LoadSkeletonFromBattleDB(string strfileNameModel, string strfileNameAnim)
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             int iLoadResult;
 
@@ -6746,15 +6747,13 @@ namespace KimeraCS
         {
             if (showVertexNormalsToolStripMenuItem.Checked)
             {
-                bShowVertexNormals = true;
+                normalsViewMode = NormalsDisplayMode.Vertices;
                 showVertexNormalsToolStripMenuItem.Checked = true;
-
-                bShowFaceNormals = false;
                 showFaceNormalsToolStripMenuItem.Checked = false;
             }
             else
             {
-                bShowVertexNormals = false;
+                normalsViewMode = NormalsDisplayMode.None;
                 showVertexNormalsToolStripMenuItem.Checked = false;
             }
 
@@ -6765,15 +6764,13 @@ namespace KimeraCS
         {
             if (showFaceNormalsToolStripMenuItem.Checked)
             {
-                bShowVertexNormals = false;
+                normalsViewMode = NormalsDisplayMode.Faces;
                 showVertexNormalsToolStripMenuItem.Checked = false;
-
-                bShowFaceNormals = true;
                 showFaceNormalsToolStripMenuItem.Checked = true;
             }
             else
             {
-                bShowFaceNormals = false;
+                normalsViewMode = NormalsDisplayMode.None;
                 showFaceNormalsToolStripMenuItem.Checked = false;
             }
 
@@ -7155,8 +7152,8 @@ namespace KimeraCS
             };
 
             // Compute scene diameter based on model type
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             switch (modelType)
             {
@@ -7203,8 +7200,7 @@ namespace KimeraCS
                 SelectedBonePiece,
                 bShowBones,
                 bShowGround,
-                bShowVertexNormals,
-                bShowFaceNormals,
+                normalsViewMode,
                 bShowLastFrameGhost,
                 bDListsEnable,
                 fNormalsScale,
@@ -7217,50 +7213,49 @@ namespace KimeraCS
                 fLightPosYScroll,
                 fLightPosZScroll);
 
-            ModelDrawing.DrawSkeletonModel(ctx, bShowVertexNormals, bShowFaceNormals, fNormalsScale,
-                                           iNormalsColor);
+            ModelDrawing.DrawSkeletonModel(ctx);
         }
 
         /// <summary>
         /// M�ller�Trumbore ray-triangle intersection algorithm.
         /// </summary>
-        private bool RayTriangleIntersect(Vector3 rayOrigin, Vector3 rayDir,
-                                                  Vector3 v0, Vector3 v1, Vector3 v2,
+        private bool RayTriangleIntersect(OpenTK.Mathematics.Vector3 rayOrigin, OpenTK.Mathematics.Vector3 rayDir,
+                                                  OpenTK.Mathematics.Vector3 v0, OpenTK.Mathematics.Vector3 v1, OpenTK.Mathematics.Vector3 v2,
                                                   out float distance)
         {
             distance = 0;
             const float EPSILON = 0.0000001f;
 
-            Vector3 edge1 = v1 - v0;
-            Vector3 edge2 = v2 - v0;
-            Vector3 h = Vector3.Cross(rayDir, edge2);
-            float a = Vector3.Dot(edge1, h);
+            OpenTK.Mathematics.Vector3 edge1 = v1 - v0;
+            OpenTK.Mathematics.Vector3 edge2 = v2 - v0;
+            OpenTK.Mathematics.Vector3 h = OpenTK.Mathematics.Vector3.Cross(rayDir, edge2);
+            float a = OpenTK.Mathematics.Vector3.Dot(edge1, h);
 
             if (a > -EPSILON && a < EPSILON)
                 return false; // Ray is parallel to triangle
 
             float f = 1.0f / a;
-            Vector3 s = rayOrigin - v0;
-            float u = f * Vector3.Dot(s, h);
+            OpenTK.Mathematics.Vector3 s = rayOrigin - v0;
+            float u = f * OpenTK.Mathematics.Vector3.Dot(s, h);
 
             if (u < 0.0f || u > 1.0f)
                 return false;
 
-            Vector3 q = Vector3.Cross(s, edge1);
-            float v = f * Vector3.Dot(rayDir, q);
+            OpenTK.Mathematics.Vector3 q = OpenTK.Mathematics.Vector3.Cross(s, edge1);
+            float v = f * OpenTK.Mathematics.Vector3.Dot(rayDir, q);
 
             if (v < 0.0f || u + v > 1.0f)
                 return false;
 
             // Compute distance to intersection point
-            distance = f * Vector3.Dot(edge2, q);
+            distance = f * OpenTK.Mathematics.Vector3.Dot(edge2, q);
             return distance > EPSILON;
         }
 
         /// <summary>
         /// Tests ray intersection with a PModel's geometry.
         /// </summary>
-        private bool RayIntersectsModel(Vector3 rayOrigin, Vector3 rayDir,
+        private bool RayIntersectsModel(OpenTK.Mathematics.Vector3 rayOrigin, OpenTK.Mathematics.Vector3 rayDir,
                                                 PModel model, Matrix4 modelTransform,
                                                 out float minDist)
         {
@@ -7281,21 +7276,21 @@ namespace KimeraCS
                 {
                     // Transform vertices by the model transform
                     Vector4 v0h = new Vector4(
-                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].x,
-                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].y,
-                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].z, 1.0f) * modelTransform;
+                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].X,
+                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].Y,
+                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].Z, 1.0f) * modelTransform;
                     Vector4 v1h = new Vector4(
-                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].x,
-                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].y,
-                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].z, 1.0f) * modelTransform;
+                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].X,
+                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].Y,
+                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].Z, 1.0f) * modelTransform;
                     Vector4 v2h = new Vector4(
-                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].x,
-                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].y,
-                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].z, 1.0f) * modelTransform;
+                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].X,
+                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].Y,
+                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].Z, 1.0f) * modelTransform;
 
-                    Vector3 v0 = v0h.Xyz / v0h.W;
-                    Vector3 v1 = v1h.Xyz / v1h.W;
-                    Vector3 v2 = v2h.Xyz / v2h.W;
+                    OpenTK.Mathematics.Vector3 v0 = v0h.Xyz / v0h.W;
+                    OpenTK.Mathematics.Vector3 v1 = v1h.Xyz / v1h.W;
+                    OpenTK.Mathematics.Vector3 v2 = v2h.Xyz / v2h.W;
 
                     if (RayTriangleIntersect(rayOrigin, rayDir, v0, v1, v2, out float dist))
                     {
@@ -7328,7 +7323,7 @@ namespace KimeraCS
             // Build root transform (pre-multiply to match OpenGL)
             BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma, ref rot_mat);
             Matrix4 currentMatrix = DoubleArrayToMatrix4(rot_mat)
-                * Matrix4.CreateTranslation((float)bFrame.startX, (float)bFrame.startY, (float)bFrame.startZ);
+                * Matrix4.CreateTranslation(bFrame.startX, bFrame.startY, bFrame.startZ);
 
             matrixStack[matrixStackPtr++] = currentMatrix;
 
@@ -7378,10 +7373,10 @@ namespace KimeraCS
             float screenY = height - py;
 
             // Unproject to create ray
-            Vector3 nearPoint = Unproject(new Vector3(px, screenY, 0.0f), Matrix4.Identity, view, projection, viewport);
-            Vector3 farPoint = Unproject(new Vector3(px, screenY, 1.0f), Matrix4.Identity, view, projection, viewport);
-            Vector3 rayOrigin = nearPoint;
-            Vector3 rayDir = Vector3.Normalize(farPoint - nearPoint);
+            OpenTK.Mathematics.Vector3 nearPoint = Unproject(new OpenTK.Mathematics.Vector3(px, screenY, 0.0f), Matrix4.Identity, view, projection, viewport);
+            OpenTK.Mathematics.Vector3 farPoint = Unproject(new OpenTK.Mathematics.Vector3(px, screenY, 1.0f), Matrix4.Identity, view, projection, viewport);
+            OpenTK.Mathematics.Vector3 rayOrigin = nearPoint;
+            OpenTK.Mathematics.Vector3 rayDir = OpenTK.Mathematics.Vector3.Normalize(farPoint - nearPoint);
 
             // Compute bone transform
             Matrix4 boneTransform = ComputeBoneTransform(bSkeleton, bFrame, boneIndex);
@@ -7397,9 +7392,9 @@ namespace KimeraCS
                 // Build model transform (pre-multiply to match OpenGL)
                 // Scale, then rotation (ZXY order reversed), then translation, then bone transform
                 Matrix4 modelTransform = Matrix4.CreateScale(model.resizeX, model.resizeY, model.resizeZ)
-                    * Matrix4.CreateRotationZ(MathHelper.DegreesToRadians((float)model.rotateGamma))
-                    * Matrix4.CreateRotationX(MathHelper.DegreesToRadians((float)model.rotateAlpha))
-                    * Matrix4.CreateRotationY(MathHelper.DegreesToRadians((float)model.rotateBeta))
+                    * Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(model.rotateGamma))
+                    * Matrix4.CreateRotationX(MathHelper.DegreesToRadians(model.rotateAlpha))
+                    * Matrix4.CreateRotationY(MathHelper.DegreesToRadians(model.rotateBeta))
                     * Matrix4.CreateTranslation(model.repositionX, model.repositionY, model.repositionZ)
                     * boneTransform;
 
@@ -7419,7 +7414,7 @@ namespace KimeraCS
         /// <summary>
         /// Tests ray intersection with all models in a battle bone.
         /// </summary>
-        private bool RayIntersectsBattleBone(Vector3 rayOrigin, Vector3 rayDir,
+        private bool RayIntersectsBattleBone(OpenTK.Mathematics.Vector3 rayOrigin, OpenTK.Mathematics.Vector3 rayDir,
                                                      BattleBone bone, Matrix4 boneTransform,
                                                      out float minDist)
         {
@@ -7470,10 +7465,10 @@ namespace KimeraCS
             float screenY = height - py;
 
             // Unproject to create ray
-            Vector3 nearPoint = Unproject(new Vector3(px, screenY, 0.0f), Matrix4.Identity, view, projection, viewport);
-            Vector3 farPoint = Unproject(new Vector3(px, screenY, 1.0f), Matrix4.Identity, view, projection, viewport);
-            Vector3 rayOrigin = nearPoint;
-            Vector3 rayDir = Vector3.Normalize(farPoint - nearPoint);
+            OpenTK.Mathematics.Vector3 nearPoint = Unproject(new OpenTK.Mathematics.Vector3(px, screenY, 0.0f), Matrix4.Identity, view, projection, viewport);
+            OpenTK.Mathematics.Vector3 farPoint = Unproject(new OpenTK.Mathematics.Vector3(px, screenY, 1.0f), Matrix4.Identity, view, projection, viewport);
+            OpenTK.Mathematics.Vector3 rayOrigin = nearPoint;
+            OpenTK.Mathematics.Vector3 rayDir = OpenTK.Mathematics.Vector3.Normalize(farPoint - nearPoint);
 
             double[] rot_mat = new double[16];
             int[] joint_stack = new int[bSkeleton.nBones + 1];
@@ -7576,8 +7571,8 @@ namespace KimeraCS
 
         private static int WriteSkeleton(string strFileName, bool compileMultiPBones)
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
             BattleFrame tmpwpFrame;
 
             int isaveSkeletonResult = 0;
@@ -7650,8 +7645,8 @@ namespace KimeraCS
 
         private static int WritePModel(string strFileName)
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             int isaveModelResult = 0;
 

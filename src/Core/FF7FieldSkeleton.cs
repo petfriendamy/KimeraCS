@@ -207,50 +207,50 @@ namespace KimeraCS
         //
         // Field Skeleton functions
         //
-        public static void ComputeFieldBoneBoundingBox(FieldBone bone, ref Point3D p_min, ref Point3D p_max)
+        public static void ComputeFieldBoneBoundingBox(FieldBone bone, ref Vector3 p_min, ref Vector3 p_max)
         {
             short ri;
-            Point3D p_min_part = new Point3D();
-            Point3D p_max_part = new Point3D();
+            Vector3 p_min_part = new Vector3();
+            Vector3 p_max_part = new Vector3();
 
             if (bone.nResources == 0)
             {
-                p_max.x = 0;
-                p_max.y = 0;
-                p_max.z = 0;
+                p_max.X = 0;
+                p_max.Y = 0;
+                p_max.Z = 0;
 
-                p_min.x = 0;
-                p_min.y = 0;
-                p_min.z = 0;
+                p_min.X = 0;
+                p_min.Y = 0;
+                p_min.Z = 0;
             }
             else
             {
-                p_max.x = -(float)INFINITY_SINGLE;
-                p_max.y = -(float)INFINITY_SINGLE;
-                p_max.z = -(float)INFINITY_SINGLE;
+                p_max.X = float.NegativeInfinity;
+                p_max.Y = float.NegativeInfinity;
+                p_max.Z = float.NegativeInfinity;
 
-                p_min.x = (float)INFINITY_SINGLE;
-                p_min.y = (float)INFINITY_SINGLE;
-                p_min.z = (float)INFINITY_SINGLE;
+                p_min.X = float.PositiveInfinity;
+                p_min.Y = float.PositiveInfinity;
+                p_min.Z = float.PositiveInfinity;
 
                 for (ri = 0; ri < bone.nResources; ri++)
                 {
                     ComputePModelBoundingBox(bone.fRSDResources[ri].Model, ref p_min_part, ref p_max_part);
 
-                    if (p_max.x < p_max_part.x) p_max.x = p_max_part.x;
-                    if (p_max.y < p_max_part.y) p_max.y = p_max_part.y;
-                    if (p_max.z < p_max_part.z) p_max.z = p_max_part.z;
+                    if (p_max.X < p_max_part.X) p_max.X = p_max_part.X;
+                    if (p_max.Y < p_max_part.Y) p_max.Y = p_max_part.Y;
+                    if (p_max.Z < p_max_part.Z) p_max.Z = p_max_part.Z;
 
-                    if (p_min.x > p_min_part.x) p_min.x = p_min_part.x;
-                    if (p_min.y > p_min_part.y) p_min.y = p_min_part.y;
-                    if (p_min.z > p_min_part.z) p_min.z = p_min_part.z;
+                    if (p_min.X > p_min_part.X) p_min.X = p_min_part.X;
+                    if (p_min.Y > p_min_part.Y) p_min.Y = p_min_part.Y;
+                    if (p_min.Z > p_min_part.Z) p_min.Z = p_min_part.Z;
 
                 }
             }
         }
 
         public static void ComputeFieldBoundingBox(FieldSkeleton fSkeleton, FieldFrame fFrame,
-                                                   ref Point3D p_min_field, ref Point3D p_max_field)
+                                                   ref Vector3 p_min_field, ref Vector3 p_max_field)
         {
             string[] joint_stack;
             int jsp;
@@ -258,11 +258,11 @@ namespace KimeraCS
             double[] MV_matrix = new double[16];
             int bi;
 
-            Point3D p_max_bone = new Point3D();
-            Point3D p_min_bone = new Point3D();
+            Vector3 p_max_bone = new Vector3();
+            Vector3 p_min_bone = new Vector3();
 
-            Point3D p_max_bone_trans = new Point3D();
-            Point3D p_min_bone_trans = new Point3D();
+            Vector3 p_max_bone_trans = new Vector3();
+            Vector3 p_min_bone_trans = new Vector3();
 
             joint_stack = new string[fSkeleton.bones.Count + 1];
             Matrix4[] matrixStack = new Matrix4[fSkeleton.bones.Count + 2];
@@ -271,13 +271,13 @@ namespace KimeraCS
 
             joint_stack[jsp] = fSkeleton.bones[0].joint_f;
 
-            p_max_field.x = -(float)INFINITY_SINGLE;
-            p_max_field.y = -(float)INFINITY_SINGLE;
-            p_max_field.z = -(float)INFINITY_SINGLE;
+            p_max_field.X = float.NegativeInfinity;
+            p_max_field.Y = float.NegativeInfinity;
+            p_max_field.Z = float.NegativeInfinity;
 
-            p_min_field.x = (float)INFINITY_SINGLE;
-            p_min_field.y = (float)INFINITY_SINGLE;
-            p_min_field.z = (float)INFINITY_SINGLE;
+            p_min_field.X = float.PositiveInfinity;
+            p_min_field.Y = float.PositiveInfinity;
+            p_min_field.Z = float.PositiveInfinity;
 
             // Build initial transform
             Matrix4 currentMatrix = Matrix4.Identity;
@@ -312,13 +312,13 @@ namespace KimeraCS
 
                 ComputeTransformedBoxBoundingBox(MV_matrix, ref p_min_bone, ref p_max_bone, ref p_min_bone_trans, ref p_max_bone_trans);
 
-                if (p_max_field.x < p_max_bone_trans.x) p_max_field.x = p_max_bone_trans.x;
-                if (p_max_field.y < p_max_bone_trans.y) p_max_field.y = p_max_bone_trans.y;
-                if (p_max_field.z < p_max_bone_trans.z) p_max_field.z = p_max_bone_trans.z;
+                if (p_max_field.X < p_max_bone_trans.X) p_max_field.X = p_max_bone_trans.X;
+                if (p_max_field.Y < p_max_bone_trans.Y) p_max_field.Y = p_max_bone_trans.Y;
+                if (p_max_field.Z < p_max_bone_trans.Z) p_max_field.Z = p_max_bone_trans.Z;
 
-                if (p_min_field.x > p_min_bone_trans.x) p_min_field.x = p_min_bone_trans.x;
-                if (p_min_field.y > p_min_bone_trans.y) p_min_field.y = p_min_bone_trans.y;
-                if (p_min_field.z > p_min_bone_trans.z) p_min_field.z = p_min_bone_trans.z;
+                if (p_min_field.X > p_min_bone_trans.X) p_min_field.X = p_min_bone_trans.X;
+                if (p_min_field.Y > p_min_bone_trans.Y) p_min_field.Y = p_min_bone_trans.Y;
+                if (p_min_field.Z > p_min_bone_trans.Z) p_min_field.Z = p_min_bone_trans.Z;
 
                 currentMatrix *= Matrix4.CreateTranslation(0, 0, (float)(-fSkeleton.bones[bi].len));
 
@@ -332,34 +332,34 @@ namespace KimeraCS
             int iResourceIdx;
             float computeDiameter = 0;
 
-            Point3D p_max = new Point3D();
-            Point3D p_min = new Point3D();
+            Vector3 p_max = new Vector3();
+            Vector3 p_min = new Vector3();
 
             if (bone.nResources > 0)
             {
-                p_max.x = -(float)INFINITY_SINGLE;
-                p_max.y = -(float)INFINITY_SINGLE;
-                p_max.z = -(float)INFINITY_SINGLE;
+                p_max.X = float.NegativeInfinity;
+                p_max.Y = float.NegativeInfinity;
+                p_max.Z = float.NegativeInfinity;
 
-                p_min.x = (float)INFINITY_SINGLE;
-                p_min.y = (float)INFINITY_SINGLE;
-                p_min.z = (float)INFINITY_SINGLE;
+                p_min.X = float.PositiveInfinity;
+                p_min.Y = float.PositiveInfinity;
+                p_min.Z = float.PositiveInfinity;
 
                 for (iResourceIdx = 0; iResourceIdx < bone.nResources; iResourceIdx++)
                 {
-                    if (p_max.x < bone.fRSDResources[iResourceIdx].Model.BoundingBox.max_x)
-                        p_max.x = bone.fRSDResources[iResourceIdx].Model.BoundingBox.max_x;
-                    if (p_max.y < bone.fRSDResources[iResourceIdx].Model.BoundingBox.max_y)
-                        p_max.y = bone.fRSDResources[iResourceIdx].Model.BoundingBox.max_y;
-                    if (p_max.z < bone.fRSDResources[iResourceIdx].Model.BoundingBox.max_z)
-                        p_max.z = bone.fRSDResources[iResourceIdx].Model.BoundingBox.max_z;
+                    if (p_max.X < bone.fRSDResources[iResourceIdx].Model.BoundingBox.max_x)
+                        p_max.X = bone.fRSDResources[iResourceIdx].Model.BoundingBox.max_x;
+                    if (p_max.Y < bone.fRSDResources[iResourceIdx].Model.BoundingBox.max_y)
+                        p_max.Y = bone.fRSDResources[iResourceIdx].Model.BoundingBox.max_y;
+                    if (p_max.Z < bone.fRSDResources[iResourceIdx].Model.BoundingBox.max_z)
+                        p_max.Z = bone.fRSDResources[iResourceIdx].Model.BoundingBox.max_z;
 
-                    if (p_min.x > bone.fRSDResources[iResourceIdx].Model.BoundingBox.min_x)
-                        p_min.x = bone.fRSDResources[iResourceIdx].Model.BoundingBox.min_x;
-                    if (p_min.y > bone.fRSDResources[iResourceIdx].Model.BoundingBox.min_y)
-                        p_min.y = bone.fRSDResources[iResourceIdx].Model.BoundingBox.min_y;
-                    if (p_min.z > bone.fRSDResources[iResourceIdx].Model.BoundingBox.min_z)
-                        p_min.z = bone.fRSDResources[iResourceIdx].Model.BoundingBox.min_z;
+                    if (p_min.X > bone.fRSDResources[iResourceIdx].Model.BoundingBox.min_x)
+                        p_min.X = bone.fRSDResources[iResourceIdx].Model.BoundingBox.min_x;
+                    if (p_min.Y > bone.fRSDResources[iResourceIdx].Model.BoundingBox.min_y)
+                        p_min.Y = bone.fRSDResources[iResourceIdx].Model.BoundingBox.min_y;
+                    if (p_min.Z > bone.fRSDResources[iResourceIdx].Model.BoundingBox.min_z)
+                        p_min.Z = bone.fRSDResources[iResourceIdx].Model.BoundingBox.min_z;
                 }
 
                 computeDiameter = CalculateDistance(p_max, p_min);
@@ -469,8 +469,8 @@ namespace KimeraCS
                 // OpenGL does: Push bone matrix, Translate, Rotate, Scale, Draw
                 // For row-vectors: v * Scale * Rotate * Translate * Bone
                 var openTkQuat = new OpenTK.Mathematics.Quaternion(
-                    (float)model.rotationQuaternion.x, (float)model.rotationQuaternion.y,
-                    (float)model.rotationQuaternion.z, (float)model.rotationQuaternion.w);
+                    (float)model.rotationQuaternion.X, (float)model.rotationQuaternion.Y,
+                    (float)model.rotationQuaternion.Z, (float)model.rotationQuaternion.W);
 
                 Matrix4 fullTransform = Matrix4.CreateScale(model.resizeX, model.resizeY, model.resizeZ)
                     * Matrix4.CreateFromQuaternion(openTkQuat)
@@ -489,17 +489,17 @@ namespace KimeraCS
                     {
                         // Transform vertices by the full transform
                         Vector4 v0h = new Vector4(
-                            model.Verts[model.Polys[pi].Verts[0] + offsetVert].x,
-                            model.Verts[model.Polys[pi].Verts[0] + offsetVert].y,
-                            model.Verts[model.Polys[pi].Verts[0] + offsetVert].z, 1.0f) * fullTransform;
+                            model.Verts[model.Polys[pi].Verts[0] + offsetVert].X,
+                            model.Verts[model.Polys[pi].Verts[0] + offsetVert].Y,
+                            model.Verts[model.Polys[pi].Verts[0] + offsetVert].Z, 1.0f) * fullTransform;
                         Vector4 v1h = new Vector4(
-                            model.Verts[model.Polys[pi].Verts[1] + offsetVert].x,
-                            model.Verts[model.Polys[pi].Verts[1] + offsetVert].y,
-                            model.Verts[model.Polys[pi].Verts[1] + offsetVert].z, 1.0f) * fullTransform;
+                            model.Verts[model.Polys[pi].Verts[1] + offsetVert].X,
+                            model.Verts[model.Polys[pi].Verts[1] + offsetVert].Y,
+                            model.Verts[model.Polys[pi].Verts[1] + offsetVert].Z, 1.0f) * fullTransform;
                         Vector4 v2h = new Vector4(
-                            model.Verts[model.Polys[pi].Verts[2] + offsetVert].x,
-                            model.Verts[model.Polys[pi].Verts[2] + offsetVert].y,
-                            model.Verts[model.Polys[pi].Verts[2] + offsetVert].z, 1.0f) * fullTransform;
+                            model.Verts[model.Polys[pi].Verts[2] + offsetVert].X,
+                            model.Verts[model.Polys[pi].Verts[2] + offsetVert].Y,
+                            model.Verts[model.Polys[pi].Verts[2] + offsetVert].Z, 1.0f) * fullTransform;
 
                         Vector3 v0 = v0h.Xyz / v0h.W;
                         Vector3 v1 = v1h.Xyz / v1h.W;
@@ -620,8 +620,8 @@ namespace KimeraCS
             // OpenGL does: Push bone matrix, Translate, Rotate, Scale, Draw
             // For row-vectors: v * Scale * Rotate * Translate * Bone
             var openTkQuat = new OpenTK.Mathematics.Quaternion(
-                (float)model.rotationQuaternion.x, (float)model.rotationQuaternion.y,
-                (float)model.rotationQuaternion.z, (float)model.rotationQuaternion.w);
+                (float)model.rotationQuaternion.X, (float)model.rotationQuaternion.Y,
+                (float)model.rotationQuaternion.Z, (float)model.rotationQuaternion.W);
 
             Matrix4 fullTransform = Matrix4.CreateScale(model.resizeX, model.resizeY, model.resizeZ)
                 * Matrix4.CreateFromQuaternion(openTkQuat)
@@ -640,17 +640,17 @@ namespace KimeraCS
                 {
                     // Transform vertices by the full transform
                     Vector4 v0h = new Vector4(
-                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].x,
-                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].y,
-                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].z, 1.0f) * fullTransform;
+                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].X,
+                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].Y,
+                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].Z, 1.0f) * fullTransform;
                     Vector4 v1h = new Vector4(
-                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].x,
-                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].y,
-                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].z, 1.0f) * fullTransform;
+                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].X,
+                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].Y,
+                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].Z, 1.0f) * fullTransform;
                     Vector4 v2h = new Vector4(
-                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].x,
-                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].y,
-                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].z, 1.0f) * fullTransform;
+                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].X,
+                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].Y,
+                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].Z, 1.0f) * fullTransform;
 
                     Vector3 v0 = v0h.Xyz / v0h.W;
                     Vector3 v1 = v1h.Xyz / v1h.W;

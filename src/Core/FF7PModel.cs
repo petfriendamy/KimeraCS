@@ -177,7 +177,7 @@ namespace KimeraCS
             public float repGroupX, repGroupY, repGroupZ;
             public float rszGroupX, rszGroupY, rszGroupZ;
             public float rotGroupAlpha, rotGroupBeta, rotGroupGamma;
-            public Quaternion rotationQuaternionGroup;
+            public Quaterniond rotationQuaternionGroup;
             public int DListNum;
             public bool HiddenQ;           // Hidden groups aren't rendered and can't be changed _
                                            // save for the basic geometrical transformations(rotation, scaling and panning),
@@ -202,10 +202,10 @@ namespace KimeraCS
         {
             public string fileName;
             public PHeader Header;
-            public Point3D[] Verts;
-            public Point3D[] Normals;
-            public Point3D[] XYZ;
-            public Point2D[] TexCoords;
+            public Vector3[] Verts;
+            public Vector3[] Normals;
+            public Vector3[] XYZ;
+            public Vector2[] TexCoords;
             public Color[] Vcolors;
             public Color[] Pcolors;
             public PEdge[] Edges;
@@ -218,7 +218,7 @@ namespace KimeraCS
             public float repositionX, repositionY, repositionZ;
             public float resizeX, resizeY, resizeZ;
             public float rotateAlpha, rotateBeta, rotateGamma;
-            public Quaternion rotationQuaternion;
+            public Quaterniond rotationQuaternion;
             public float diameter;
             public int DListNum;
 
@@ -260,17 +260,17 @@ namespace KimeraCS
             }
 
             // Verts
-            Model.Verts = new Point3D[Model.Header.numVerts];
+            Model.Verts = new Vector3[Model.Header.numVerts];
             ReadPVerts(fileBuffer, ref fileBufferPos, Model.Header.numVerts, ref Model.Verts);
 
             // Normals
-            Model.Normals = new Point3D[Model.Header.numNormals];
+            Model.Normals = new Vector3[Model.Header.numNormals];
             ReadPNormals(fileBuffer, ref fileBufferPos, Model.Header.numNormals, ref Model.Normals);
 
             // TryVerts
             if (Model.Header.numXYZ > 0)
             {
-                Model.XYZ = new Point3D[Model.Header.numXYZ];
+                Model.XYZ = new Vector3[Model.Header.numXYZ];
                 ReadPXYZ(fileBuffer, ref fileBufferPos, Model.Header.numXYZ, ref Model.XYZ);
             }
             //else
@@ -280,7 +280,7 @@ namespace KimeraCS
             //}
 
             // Texture Coordinates
-            Model.TexCoords = new Point2D[Model.Header.numTexCs];
+            Model.TexCoords = new Vector2[Model.Header.numTexCs];
             ReadPTexCoords(fileBuffer, ref fileBufferPos, Model.Header.numTexCs, ref Model.TexCoords);
 
             //  Vertex Colors
@@ -323,10 +323,10 @@ namespace KimeraCS
             Model.rotateBeta = 0;
             Model.rotateGamma = 0;
 
-            Model.rotationQuaternion.x = 0;
-            Model.rotationQuaternion.y = 0;
-            Model.rotationQuaternion.z = 0;
-            Model.rotationQuaternion.w = 1;
+            Model.rotationQuaternion.X = 0;
+            Model.rotationQuaternion.Y = 0;
+            Model.rotationQuaternion.Z = 0;
+            Model.rotationQuaternion.W = 1;
 
             Model.repositionX = 0;
             Model.repositionY = 0;
@@ -398,7 +398,7 @@ namespace KimeraCS
             return 1;
         }
 
-        public static void ReadPVerts(byte[] fileBuffer, ref long pos, long numVerts, ref Point3D[] Verts)
+        public static void ReadPVerts(byte[] fileBuffer, ref long pos, long numVerts, ref Vector3[] Verts)
         {
             using (var fileMemory = new MemoryStream(fileBuffer))
             {
@@ -408,9 +408,9 @@ namespace KimeraCS
 
                     for (var i = 0; i < numVerts; i++)
                     {
-                        Verts[i].x = memReader.ReadSingle();
-                        Verts[i].y = memReader.ReadSingle();
-                        Verts[i].z = memReader.ReadSingle();
+                        Verts[i].X = memReader.ReadSingle();
+                        Verts[i].Y = memReader.ReadSingle();
+                        Verts[i].Z = memReader.ReadSingle();
                     }
 
                     pos = memReader.BaseStream.Position;
@@ -418,7 +418,7 @@ namespace KimeraCS
             }
         }
 
-        public static void ReadPNormals(byte[] fileBuffer, ref long pos, long numNormals, ref Point3D[] Normals)
+        public static void ReadPNormals(byte[] fileBuffer, ref long pos, long numNormals, ref Vector3[] Normals)
         {
             using (var fileMemory = new MemoryStream(fileBuffer))
             {
@@ -430,9 +430,9 @@ namespace KimeraCS
                     {
                         for (var i = 0; i < numNormals; i++)
                         {
-                            Normals[i].x = memReader.ReadSingle();
-                            Normals[i].y = memReader.ReadSingle();
-                            Normals[i].z = memReader.ReadSingle();
+                            Normals[i].X = memReader.ReadSingle();
+                            Normals[i].Y = memReader.ReadSingle();
+                            Normals[i].Z = memReader.ReadSingle();
                         }
                     }
 
@@ -441,7 +441,7 @@ namespace KimeraCS
             }
         }
 
-        public static void ReadPXYZ(byte[] fileBuffer, ref long pos, long numTryVerts, ref Point3D[] TryVerts)
+        public static void ReadPXYZ(byte[] fileBuffer, ref long pos, long numTryVerts, ref Vector3[] TryVerts)
         {
             using (var fileMemory = new MemoryStream(fileBuffer))
             {
@@ -451,9 +451,9 @@ namespace KimeraCS
 
                     for (var i = 0; i < numTryVerts; i++)
                     {
-                        TryVerts[i].x = memReader.ReadSingle();
-                        TryVerts[i].y = memReader.ReadSingle();
-                        TryVerts[i].z = memReader.ReadSingle();
+                        TryVerts[i].X = memReader.ReadSingle();
+                        TryVerts[i].Y = memReader.ReadSingle();
+                        TryVerts[i].Z = memReader.ReadSingle();
                     }
 
                     pos = memReader.BaseStream.Position;
@@ -461,7 +461,7 @@ namespace KimeraCS
             }
         }
 
-        public static void ReadPTexCoords(byte[] fileBuffer, ref long pos, long numTexCs, ref Point2D[] TexCoordinates)
+        public static void ReadPTexCoords(byte[] fileBuffer, ref long pos, long numTexCs, ref Vector2[] TexCoordinates)
         {
             using (var fileMemory = new MemoryStream(fileBuffer))
             {
@@ -473,8 +473,8 @@ namespace KimeraCS
                     {
                         for (var i = 0; i < numTexCs; i++)
                         {
-                            TexCoordinates[i].x = memReader.ReadSingle();
-                            TexCoordinates[i].y = memReader.ReadSingle();
+                            TexCoordinates[i].X = memReader.ReadSingle();
+                            TexCoordinates[i].Y = memReader.ReadSingle();
                         }
 
                         pos = memReader.BaseStream.Position;
@@ -641,7 +641,7 @@ namespace KimeraCS
                         Groups[i].rotGroupBeta = 0;
                         Groups[i].rotGroupGamma = 0;
 
-                        Groups[i].rotationQuaternionGroup = new Quaternion() { x = 0, y = 0, z = 0, w = 1 };
+                        Groups[i].rotationQuaternionGroup = new Quaterniond(0, 0, 0, 1);
 
                         Groups[i].DListNum = -1;
                         Groups[i].HiddenQ = false;
@@ -915,7 +915,7 @@ namespace KimeraCS
             outPModel.Header.vertexColor = inPModel.Header.vertexColor;
 
             outPModel.Header.numVerts = inPModel.Header.numVerts;
-            outPModel.Verts = new Point3D[inPModel.Header.numVerts];
+            outPModel.Verts = new Vector3[inPModel.Header.numVerts];
             Array.Copy(inPModel.Verts, outPModel.Verts, inPModel.Header.numVerts);
 
             outPModel.Header.numPolys = inPModel.Header.numPolys;
@@ -933,7 +933,7 @@ namespace KimeraCS
             {
                 // We will avoid Texture Coordinates
                 outPModel.Header.numTexCs = inPModel.Header.numTexCs;
-                outPModel.TexCoords = new Point2D[inPModel.Header.numTexCs];
+                outPModel.TexCoords = new Vector2[inPModel.Header.numTexCs];
                 Array.Copy(inPModel.TexCoords, outPModel.TexCoords, inPModel.Header.numTexCs);
 
                 outPModel.Groups[0].polyType = 2;
@@ -1041,18 +1041,18 @@ namespace KimeraCS
             }
         }
 
-        public static void ComputePModelBoundingBox(PModel Model, ref Point3D p_min, ref Point3D p_max)
+        public static void ComputePModelBoundingBox(PModel Model, ref Vector3 p_min, ref Vector3 p_max)
         {
-            Point3D p_min_aux = new Point3D();
-            Point3D p_max_aux = new Point3D();
+            Vector3 p_min_aux = new Vector3();
+            Vector3 p_max_aux = new Vector3();
 
-            p_min_aux.x = Model.BoundingBox.min_x;
-            p_min_aux.y = Model.BoundingBox.min_y;
-            p_min_aux.z = Model.BoundingBox.min_z;
+            p_min_aux.X = Model.BoundingBox.min_x;
+            p_min_aux.Y = Model.BoundingBox.min_y;
+            p_min_aux.Z = Model.BoundingBox.min_z;
 
-            p_max_aux.x = Model.BoundingBox.max_x;
-            p_max_aux.y = Model.BoundingBox.max_y;
-            p_max_aux.z = Model.BoundingBox.max_z;
+            p_max_aux.X = Model.BoundingBox.max_x;
+            p_max_aux.Y = Model.BoundingBox.max_y;
+            p_max_aux.Z = Model.BoundingBox.max_z;
 
             // Build transformation matrix using pure math (no GL state)
             Matrix4 modelMatrix = CreateModelViewMatrix(
@@ -1394,8 +1394,8 @@ namespace KimeraCS
         {
 
             float diff_alpha, diff_beta, diff_gamma;
-            Quaternion aux_quat = new Quaternion();
-            Quaternion res_quat = new Quaternion();
+            Quaterniond aux_quat = new Quaterniond();
+            Quaterniond res_quat = new Quaterniond();
 
             if (alpha == 0 || beta == 0 || gamma == 0)
             {
@@ -1425,8 +1425,8 @@ namespace KimeraCS
         {
 
             float diff_alpha, diff_beta, diff_gamma;
-            Quaternion aux_quat = new Quaternion();
-            Quaternion res_quat = new Quaternion();
+            Quaterniond aux_quat = new Quaterniond();
+            Quaterniond res_quat = new Quaterniond();
 
             if (alpha == 0 || beta == 0 || gamma == 0)
             {
@@ -1496,8 +1496,8 @@ namespace KimeraCS
         //  --------------------------------------------------SETTERS------------------------------------------------
         //  ---------------------------------------------------------------------------------------------------------
         public static void AddGroup(ref PModel Model, 
-                                    Point3D[] aVerts, PPolygon[] aPolys,
-                                    Point2D[] aTexCoords, Color[] aVColors, Color[] aPColors,
+                                    Vector3[] aVerts, PPolygon[] aPolys,
+                                    Vector2[] aTexCoords, Color[] aVColors, Color[] aPColors,
                                     int iTextureID)
         {
             //  ------------------- Warning! Causes the Normals to be inconsistent.------------------------------
@@ -1567,9 +1567,9 @@ namespace KimeraCS
             //Array.Resize(ref Model.NormalIndex, Model.Header.numNormIdx);
             for (iVertIdx = 0; iVertIdx < iNumVerts; iVertIdx++)
             {
-                Model.Verts[iMainModelNum + iVertIdx].x = aVerts[iVertIdx].x;
-                Model.Verts[iMainModelNum + iVertIdx].y = aVerts[iVertIdx].y;
-                Model.Verts[iMainModelNum + iVertIdx].z = aVerts[iVertIdx].z;
+                Model.Verts[iMainModelNum + iVertIdx].X = aVerts[iVertIdx].X;
+                Model.Verts[iMainModelNum + iVertIdx].Y = aVerts[iVertIdx].Y;
+                Model.Verts[iMainModelNum + iVertIdx].Z = aVerts[iVertIdx].Z;
 
                 //  Add new Vertex Colors to the Group
                 Model.Vcolors[iMainModelNum + iVertIdx] = aVColors[iVertIdx];
@@ -1605,8 +1605,8 @@ namespace KimeraCS
                 Array.Resize(ref Model.TexCoords, Model.Header.numTexCs);
                 for (iTexCoordIdx = 0; iTexCoordIdx < iNumTexCoords; iTexCoordIdx++)
                 {
-                    Model.TexCoords[iMainModelNum + iTexCoordIdx].x = aTexCoords[iTexCoordIdx].x;
-                    Model.TexCoords[iMainModelNum + iTexCoordIdx].y = aTexCoords[iTexCoordIdx].y;
+                    Model.TexCoords[iMainModelNum + iTexCoordIdx].X = aTexCoords[iTexCoordIdx].X;
+                    Model.TexCoords[iMainModelNum + iTexCoordIdx].Y = aTexCoords[iTexCoordIdx].Y;
                 }
             }
 
@@ -1635,7 +1635,7 @@ namespace KimeraCS
             Model.Groups[iGroupIdx].rotGroupBeta = 0;
             Model.Groups[iGroupIdx].rotGroupGamma = 0;
 
-            Model.Groups[iGroupIdx].rotationQuaternionGroup = new Quaternion() { x = 0, y = 0, z = 0, w = 1 };
+            Model.Groups[iGroupIdx].rotationQuaternionGroup = new Quaterniond(0, 0, 0, 1);
         }
 
         public static void ApplyCurrentVColors(ref PModel Model)
@@ -1663,12 +1663,12 @@ namespace KimeraCS
         {
             int iGroupIdx, iPolyIdx, iVertIdx;
 
-            Model.BoundingBox.max_x = (float)-INFINITY_SINGLE;
-            Model.BoundingBox.max_y = (float)-INFINITY_SINGLE;
-            Model.BoundingBox.max_z = (float)-INFINITY_SINGLE;
-            Model.BoundingBox.min_x = (float)INFINITY_SINGLE;
-            Model.BoundingBox.min_y = (float)INFINITY_SINGLE;
-            Model.BoundingBox.min_z = (float)INFINITY_SINGLE;
+            Model.BoundingBox.max_x = float.NegativeInfinity;
+            Model.BoundingBox.max_y = float.NegativeInfinity;
+            Model.BoundingBox.max_z = float.NegativeInfinity;
+            Model.BoundingBox.min_x = float.PositiveInfinity;
+            Model.BoundingBox.min_y = float.PositiveInfinity;
+            Model.BoundingBox.min_z = float.PositiveInfinity;
 
             try
             {
@@ -1680,19 +1680,19 @@ namespace KimeraCS
                     {
                         for (iVertIdx = 0; iVertIdx < 3; iVertIdx++)
                         {
-                            if (Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].x > Model.BoundingBox.max_x)
-                                Model.BoundingBox.max_x = Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].x;
-                            if (Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].y > Model.BoundingBox.max_y)
-                                Model.BoundingBox.max_y = Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].y;
-                            if (Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].z > Model.BoundingBox.max_z)
-                                Model.BoundingBox.max_z = Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].z;
+                            if (Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].X > Model.BoundingBox.max_x)
+                                Model.BoundingBox.max_x = Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].X;
+                            if (Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].Y > Model.BoundingBox.max_y)
+                                Model.BoundingBox.max_y = Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].Y;
+                            if (Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].Z > Model.BoundingBox.max_z)
+                                Model.BoundingBox.max_z = Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].Z;
 
-                            if (Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].x < Model.BoundingBox.min_x)
-                                Model.BoundingBox.min_x = Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].x;
-                            if (Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].y < Model.BoundingBox.min_y)
-                                Model.BoundingBox.min_y = Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].y;
-                            if (Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].z < Model.BoundingBox.min_z)
-                                Model.BoundingBox.min_z = Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].z;
+                            if (Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].X < Model.BoundingBox.min_x)
+                                Model.BoundingBox.min_x = Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].X;
+                            if (Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].Y < Model.BoundingBox.min_y)
+                                Model.BoundingBox.min_y = Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].Y;
+                            if (Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].Z < Model.BoundingBox.min_z)
+                                Model.BoundingBox.min_z = Model.Verts[Model.Polys[iPolyIdx].Verts[iVertIdx] + Model.Groups[iGroupIdx].offsetVert].Z;
                         }
                     }
                 }
@@ -1710,26 +1710,26 @@ namespace KimeraCS
 
         public static void ComputeCurrentBoundingBox(ref PModel Model)
         {
-            Point3D p3DTemp;
+            Vector3 p3DTemp;
 
             ComputeBoundingBox(ref Model);
 
             p3DTemp = 
-                new Point3D(Model.BoundingBox.max_x, Model.BoundingBox.max_y, Model.BoundingBox.max_z);
+                new Vector3(Model.BoundingBox.max_x, Model.BoundingBox.max_y, Model.BoundingBox.max_z);
 
             p3DTemp = GetEyeSpaceCoords(p3DTemp);
-            Model.BoundingBox.max_x = p3DTemp.x;
-            Model.BoundingBox.max_y = p3DTemp.y;
-            Model.BoundingBox.max_z = p3DTemp.z;
+            Model.BoundingBox.max_x = p3DTemp.X;
+            Model.BoundingBox.max_y = p3DTemp.Y;
+            Model.BoundingBox.max_z = p3DTemp.Z;
 
-            p3DTemp.x = Model.BoundingBox.min_x;
-            p3DTemp.y = Model.BoundingBox.min_y;
-            p3DTemp.z = Model.BoundingBox.min_z;
+            p3DTemp.X = Model.BoundingBox.min_x;
+            p3DTemp.Y = Model.BoundingBox.min_y;
+            p3DTemp.Z = Model.BoundingBox.min_z;
 
             p3DTemp = GetEyeSpaceCoords(p3DTemp);
-            Model.BoundingBox.min_x = p3DTemp.x;
-            Model.BoundingBox.min_y = p3DTemp.y;
-            Model.BoundingBox.min_z = p3DTemp.z;
+            Model.BoundingBox.min_x = p3DTemp.X;
+            Model.BoundingBox.min_y = p3DTemp.Y;
+            Model.BoundingBox.min_z = p3DTemp.Z;
         }
 
 
@@ -1737,8 +1737,8 @@ namespace KimeraCS
         public struct STVertexNormals
         {
             public int iVertexNormalsCounter;
-            public Point3D p3DVertex;
-            public Point3D p3DNormal;
+            public Vector3 p3DVertex;
+            public Vector3 p3DNormal;
             public HashSet<int> hsActualVertex;
 
         }
@@ -1749,7 +1749,7 @@ namespace KimeraCS
         {
             int iGroupIdx, iPolyIdx, iVertIdx, iActualVertex, iVertexNormalsIdx;
             STVertexNormals stTmpVertexNormals;
-            Point3D p3DNormal;
+            Vector3 p3DNormal;
 
             stVertexNormals = new List<STVertexNormals>();
 
@@ -1776,16 +1776,16 @@ namespace KimeraCS
                         Model.NormalIndex[iActualVertex] = iActualVertex;
 
                         iVertexNormalsIdx = stVertexNormals.
-                                FindIndex(x => x.p3DVertex.x == Model.Verts[iActualVertex].x &&
-                                               x.p3DVertex.y == Model.Verts[iActualVertex].y &&
-                                               x.p3DVertex.z == Model.Verts[iActualVertex].z);
+                                FindIndex(x => x.p3DVertex.X == Model.Verts[iActualVertex].X &&
+                                               x.p3DVertex.Y == Model.Verts[iActualVertex].Y &&
+                                               x.p3DVertex.Z == Model.Verts[iActualVertex].Z);
 
                         if (iVertexNormalsIdx == -1)
                         {
                             stTmpVertexNormals = new STVertexNormals()
                             {
                                 p3DVertex = Model.Verts[iActualVertex],
-                                p3DNormal = new Point3D(p3DNormal.x, p3DNormal.y, p3DNormal.z),
+                                p3DNormal = new Vector3(p3DNormal.X, p3DNormal.Y, p3DNormal.Z),
 
                                 hsActualVertex = new HashSet<int>(),
                                 iVertexNormalsCounter = 1,
@@ -1812,10 +1812,10 @@ namespace KimeraCS
 
         public static void ComputeNormals4MoreVerticesThanPolys(ref PModel Model)
         {
-            Point3D p3DTempNormal;
+            Vector3 p3DTempNormal;
             int iVertexNormalIdx;
 
-            Model.Normals = new Point3D[Model.Header.numVerts];
+            Model.Normals = new Vector3[Model.Header.numVerts];
             Model.NormalIndex = new int[Model.Header.numVerts];
 
             Model.Header.numNormals = Model.Header.numVerts;
@@ -1827,14 +1827,14 @@ namespace KimeraCS
             {
                 if (stVertexNormals[iVertexNormalIdx].iVertexNormalsCounter > 0)
                 {
-                    p3DTempNormal = Normalize(new Point3D(
-                        -stVertexNormals[iVertexNormalIdx].p3DNormal.x / stVertexNormals[iVertexNormalIdx].iVertexNormalsCounter,
-                        -stVertexNormals[iVertexNormalIdx].p3DNormal.y / stVertexNormals[iVertexNormalIdx].iVertexNormalsCounter,
-                        -stVertexNormals[iVertexNormalIdx].p3DNormal.z / stVertexNormals[iVertexNormalIdx].iVertexNormalsCounter));
+                    p3DTempNormal = Normalize(new Vector3(
+                        -stVertexNormals[iVertexNormalIdx].p3DNormal.X / stVertexNormals[iVertexNormalIdx].iVertexNormalsCounter,
+                        -stVertexNormals[iVertexNormalIdx].p3DNormal.Y / stVertexNormals[iVertexNormalIdx].iVertexNormalsCounter,
+                        -stVertexNormals[iVertexNormalIdx].p3DNormal.Z / stVertexNormals[iVertexNormalIdx].iVertexNormalsCounter));
                 }
                 else
                 {
-                    p3DTempNormal = new Point3D(0, 0, 0);
+                    p3DTempNormal = new Vector3(0, 0, 0);
                 }
 
                 foreach (int itmInt in stVertexNormals[iVertexNormalIdx].hsActualVertex)
@@ -1849,12 +1849,12 @@ namespace KimeraCS
         {
             int iGroupIdx, iPolyIdx, iVertIdx, iActualVertIdx, iVertIdxNext;
 
-            Point3D p3DTempNorm;
+            Vector3 p3DTempNorm;
 
-            Point3D[] sumNorms = new Point3D[Model.Header.numVerts];
+            Vector3[] sumNorms = new Vector3[Model.Header.numVerts];
             int[] polys_per_vert = new int[Model.Header.numVerts];
 
-            Model.Normals = new Point3D[Model.Header.numVerts];
+            Model.Normals = new Vector3[Model.Header.numVerts];
             Model.NormalIndex = new int[Model.Header.numVerts];
 
             Model.Header.numNormals = Model.Header.numVerts;
@@ -1905,9 +1905,9 @@ namespace KimeraCS
                     {
                         if (ComparePoints3D(Model.Verts[iVertIdx], Model.Verts[iVertIdxNext]))
                         {
-                            sumNorms[iVertIdx].x += sumNorms[iVertIdxNext].x;
-                            sumNorms[iVertIdx].y += sumNorms[iVertIdxNext].y;
-                            sumNorms[iVertIdx].z += sumNorms[iVertIdxNext].z;
+                            sumNorms[iVertIdx].X += sumNorms[iVertIdxNext].X;
+                            sumNorms[iVertIdx].Y += sumNorms[iVertIdxNext].Y;
+                            sumNorms[iVertIdx].Z += sumNorms[iVertIdxNext].Z;
 
                             sumNorms[iVertIdxNext] = sumNorms[iVertIdx];
 
@@ -1935,15 +1935,15 @@ namespace KimeraCS
             {
                 if (polys_per_vert[iVertIdx] > 0)
                 {
-                    sumNorms[iVertIdx].x = -sumNorms[iVertIdx].x / polys_per_vert[iVertIdx];
-                    sumNorms[iVertIdx].y = -sumNorms[iVertIdx].y / polys_per_vert[iVertIdx];
-                    sumNorms[iVertIdx].z = -sumNorms[iVertIdx].z / polys_per_vert[iVertIdx];
+                    sumNorms[iVertIdx].X = -sumNorms[iVertIdx].X / polys_per_vert[iVertIdx];
+                    sumNorms[iVertIdx].Y = -sumNorms[iVertIdx].Y / polys_per_vert[iVertIdx];
+                    sumNorms[iVertIdx].Z = -sumNorms[iVertIdx].Z / polys_per_vert[iVertIdx];
                 }
                 else
                 {
-                    sumNorms[iVertIdx].x = 0;
-                    sumNorms[iVertIdx].y = 0;
-                    sumNorms[iVertIdx].z = 0;
+                    sumNorms[iVertIdx].X = 0;
+                    sumNorms[iVertIdx].Y = 0;
+                    sumNorms[iVertIdx].Z = 0;
                 }
 
                 Model.Normals[iVertIdx] = Normalize(sumNorms[iVertIdx]);
@@ -1975,7 +1975,7 @@ namespace KimeraCS
         {
             int iGroupIdx, iPolyIdx, iVertIdx, iNormalIdx;
 
-            Model.Normals = new Point3D[0];
+            Model.Normals = new Vector3[0];
             Model.NormalIndex[0] = 0;
 
             for (iPolyIdx = 0; iPolyIdx < Model.Header.numPolys; iPolyIdx++)
@@ -2003,8 +2003,8 @@ namespace KimeraCS
         {
             int iGroupIdx, iPolyIdx, iNumPolys, iOffsetVert;
 
-            Point3D p3DCurrentNormal;
-            Point3D p3DAccumNormal = new Point3D();
+            Vector3 p3DCurrentNormal;
+            Vector3 p3DAccumNormal = new Vector3();
 
             if (lstAdjacentPolysIdxs == null) return;
 
@@ -2020,14 +2020,14 @@ namespace KimeraCS
                     Model.Verts[Model.Polys[lstAdjacentPolysIdxs[iPolyIdx]].Verts[1] + iOffsetVert],
                     Model.Verts[Model.Polys[lstAdjacentPolysIdxs[iPolyIdx]].Verts[0] + iOffsetVert]);
 
-                p3DAccumNormal.x += p3DCurrentNormal.x;
-                p3DAccumNormal.y += p3DCurrentNormal.y;
-                p3DAccumNormal.z += p3DCurrentNormal.z;
+                p3DAccumNormal.X += p3DCurrentNormal.X;
+                p3DAccumNormal.Y += p3DCurrentNormal.Y;
+                p3DAccumNormal.Z += p3DCurrentNormal.Z;
             }
 
-            p3DAccumNormal.x /= iNumPolys;
-            p3DAccumNormal.y /= iNumPolys;
-            p3DAccumNormal.z /= iNumPolys;
+            p3DAccumNormal.X /= iNumPolys;
+            p3DAccumNormal.Y /= iNumPolys;
+            p3DAccumNormal.Z /= iNumPolys;
 
             p3DAccumNormal = Normalize(p3DAccumNormal);
 
@@ -2182,9 +2182,9 @@ namespace KimeraCS
                      iVertIdx < Model.Groups[iActualGroup].offsetVert + Model.Groups[iActualGroup].numVert;
                      iVertIdx++)
                 {
-                    Vector4 v = new Vector4(Model.Verts[iVertIdx].x, Model.Verts[iVertIdx].y, Model.Verts[iVertIdx].z, 1.0f);
+                    Vector4 v = new Vector4(Model.Verts[iVertIdx].X, Model.Verts[iVertIdx].Y, Model.Verts[iVertIdx].Z, 1.0f);
                     Vector4 transformed = v * combinedMatrix;
-                    Model.Verts[iVertIdx] = new Point3D(transformed.X, transformed.Y, transformed.Z);
+                    Model.Verts[iVertIdx] = new Vector3(transformed.X, transformed.Y, transformed.Z);
                 }
 
                 iActualGroup = GetNextGroup(Model, iActualGroup);
@@ -2251,10 +2251,10 @@ namespace KimeraCS
                     Model.Groups[iGroupIdx].rotGroupAlpha = 0;
                     Model.Groups[iGroupIdx].rotGroupBeta = 0;
                     Model.Groups[iGroupIdx].rotGroupGamma = 0;
-                    Model.Groups[iGroupIdx].rotationQuaternionGroup.x = 0;
-                    Model.Groups[iGroupIdx].rotationQuaternionGroup.y = 0;
-                    Model.Groups[iGroupIdx].rotationQuaternionGroup.z = 0;
-                    Model.Groups[iGroupIdx].rotationQuaternionGroup.w = 1;
+                    Model.Groups[iGroupIdx].rotationQuaternionGroup.X = 0;
+                    Model.Groups[iGroupIdx].rotationQuaternionGroup.Y = 0;
+                    Model.Groups[iGroupIdx].rotationQuaternionGroup.Z = 0;
+                    Model.Groups[iGroupIdx].rotationQuaternionGroup.W = 1;
                 }
 
                 Model.resizeX = 1;
@@ -2306,10 +2306,10 @@ namespace KimeraCS
                 Model.rotateAlpha = 0;
                 Model.rotateBeta = 0;
                 Model.rotateGamma = 0;
-                Model.rotationQuaternion.x = 0;
-                Model.rotationQuaternion.y = 0;
-                Model.rotationQuaternion.z = 0;
-                Model.rotationQuaternion.w = 1;
+                Model.rotationQuaternion.X = 0;
+                Model.rotationQuaternion.Y = 0;
+                Model.rotationQuaternion.Z = 0;
+                Model.rotationQuaternion.W = 1;
 
             }
             catch (Exception ex)
@@ -2368,20 +2368,20 @@ namespace KimeraCS
                         foreach (int intItem in Model.Header.unknown) fileWriter.Write(intItem);
 
                         // Write Verts
-                        foreach (Point3D up3DVert in Model.Verts)
+                        foreach (Vector3 up3DVert in Model.Verts)
                         {
-                            fileWriter.Write(up3DVert.x);
-                            fileWriter.Write(up3DVert.y);
-                            fileWriter.Write(up3DVert.z);
+                            fileWriter.Write(up3DVert.X);
+                            fileWriter.Write(up3DVert.Y);
+                            fileWriter.Write(up3DVert.Z);
                         }
 
                         // Write Normals
                         if (Model.Normals.Length > 0)
-                            foreach (Point3D up3DNormal in Model.Normals)
+                            foreach (Vector3 up3DNormal in Model.Normals)
                             {
-                                fileWriter.Write(up3DNormal.x);
-                                fileWriter.Write(up3DNormal.y);
-                                fileWriter.Write(up3DNormal.z);
+                                fileWriter.Write(up3DNormal.X);
+                                fileWriter.Write(up3DNormal.Y);
+                                fileWriter.Write(up3DNormal.Z);
                             }
 
                         // Write TryVerts
@@ -2390,26 +2390,26 @@ namespace KimeraCS
 
                             //for (int i = 0; i < Model.XYZ.Length; i++)
                             //{
-                            //    Model.XYZ[i].x = 0.5f;
-                            //    Model.XYZ[i].y = 0.5f;
-                            //    Model.XYZ[i].z = 0.5f;
+                            //    Model.XYZ[i].X = 0.5f;
+                            //    Model.XYZ[i].Y = 0.5f;
+                            //    Model.XYZ[i].Z = 0.5f;
                             //}
 
-                            foreach (Point3D up3DXYZ in Model.XYZ)
+                            foreach (Vector3 up3DXYZ in Model.XYZ)
                             {
-                                fileWriter.Write(up3DXYZ.x);
-                                fileWriter.Write(up3DXYZ.y);
-                                fileWriter.Write(up3DXYZ.z);
+                                fileWriter.Write(up3DXYZ.X);
+                                fileWriter.Write(up3DXYZ.Y);
+                                fileWriter.Write(up3DXYZ.Z);
                             }
                         }
 
                         // Write Texture Coords
                         if (Model.TexCoords != null)
                         {
-                            foreach (Point2D up2DTexCoord in Model.TexCoords)
+                            foreach (Vector2 up2DTexCoord in Model.TexCoords)
                             {
-                                fileWriter.Write(up2DTexCoord.x);
-                                fileWriter.Write(up2DTexCoord.y);
+                                fileWriter.Write(up2DTexCoord.X);
+                                fileWriter.Write(up2DTexCoord.Y);
                             }
                         }
 
@@ -2594,7 +2594,7 @@ namespace KimeraCS
             {
                 fileName = modelIn.fileName,
                 Header = modelIn.Header,
-                Verts = new Point3D[modelIn.Verts.Length],
+                Verts = new Vector3[modelIn.Verts.Length],
             };
 
             for (iCounter = 0; iCounter < modelIn.Verts.Length; iCounter++)
@@ -2610,7 +2610,7 @@ namespace KimeraCS
 
             if (modelIn.Normals != null)
             {
-                modelOut.Normals = new Point3D[modelIn.Normals.Length];
+                modelOut.Normals = new Vector3[modelIn.Normals.Length];
                 for (iCounter = 0; iCounter < modelIn.Normals.Length; iCounter++)
                     modelOut.Normals[iCounter] = modelIn.Normals[iCounter];
             }
@@ -2619,7 +2619,7 @@ namespace KimeraCS
             {
                 if (modelIn.TexCoords.Length > 0)
                 {
-                    modelOut.TexCoords = new Point2D[modelIn.TexCoords.Length];
+                    modelOut.TexCoords = new Vector2[modelIn.TexCoords.Length];
                     for (iCounter = 0; iCounter < modelIn.TexCoords.Length; iCounter++)
                         modelOut.TexCoords[iCounter] = modelIn.TexCoords[iCounter];
                 }
@@ -3148,16 +3148,16 @@ namespace KimeraCS
             CopyVPColors(Model.Pcolors, ref pcolorsOut);
         }
 
-        public static Point3D GetPointMirroredRelativeToPlane(Point3D tmpUP3D, float pA, float pB, float pC, float pD)
+        public static Vector3 GetPointMirroredRelativeToPlane(Vector3 tmpUP3D, float pA, float pB, float pC, float pD)
         {
-            Point3D iGetPointMirroredRelativeToPlaneResult = new Point3D();
+            Vector3 iGetPointMirroredRelativeToPlaneResult = new Vector3();
             float alpha;
 
-            alpha = (-pA * tmpUP3D.x - pB * tmpUP3D.y - pC * tmpUP3D.z - pD) / (pA * pA + pB * pB + pC * pC);
+            alpha = (-pA * tmpUP3D.X - pB * tmpUP3D.Y - pC * tmpUP3D.Z - pD) / (pA * pA + pB * pB + pC * pC);
 
-            iGetPointMirroredRelativeToPlaneResult.x = tmpUP3D.x + 2 * alpha * pA;
-            iGetPointMirroredRelativeToPlaneResult.y = tmpUP3D.y + 2 * alpha * pB;
-            iGetPointMirroredRelativeToPlaneResult.z = tmpUP3D.z + 2 * alpha * pC;
+            iGetPointMirroredRelativeToPlaneResult.X = tmpUP3D.X + 2 * alpha * pA;
+            iGetPointMirroredRelativeToPlaneResult.Y = tmpUP3D.Y + 2 * alpha * pB;
+            iGetPointMirroredRelativeToPlaneResult.Z = tmpUP3D.Z + 2 * alpha * pC;
 
             return iGetPointMirroredRelativeToPlaneResult;
         }
@@ -3165,7 +3165,7 @@ namespace KimeraCS
         public static void MirrorGroupRelativeToPlane(ref PModel Model, int iGroupIdx, float pA, float pB, float pC, float pD)
         {
             int iVertIdx, iPolyIdx, iTmp;
-            Point3D tmpP3D;
+            Vector3 tmpP3D;
 
             for (iVertIdx = Model.Groups[iGroupIdx].offsetVert; 
                  iVertIdx < Model.Groups[iGroupIdx].offsetVert + Model.Groups[iGroupIdx].numVert; 
@@ -3206,16 +3206,16 @@ namespace KimeraCS
             bool iDuplicateGroupResult = false;
             int iPolyIdx, iVertIdx, iTexCoordIdx;
 
-            Point3D[] aVerts;
+            Vector3[] aVerts;
             PPolygon[] aPolys;
-            Point2D[] aTexCoords = null;
+            Vector2[] aTexCoords = null;
             Color[] aVColors;
             Color[] aPColors;
 
             //  Don't duplicate empty groups
             if (Model.Groups[iGroupIdx].numVert > 0 && Model.Groups[iGroupIdx].numPoly > 0)
             {
-                aVerts = new Point3D[Model.Groups[iGroupIdx].numVert];
+                aVerts = new Vector3[Model.Groups[iGroupIdx].numVert];
                 aVColors = new Color[Model.Groups[iGroupIdx].numVert];
                 for (iVertIdx = 0;
                      iVertIdx < Model.Groups[iGroupIdx].numVert;
@@ -3239,7 +3239,7 @@ namespace KimeraCS
 
                 if (Model.Groups[iGroupIdx].texFlag == 1)
                 {
-                    aTexCoords = new Point2D[Model.Groups[iGroupIdx].numVert];
+                    aTexCoords = new Vector2[Model.Groups[iGroupIdx].numVert];
                     for (iTexCoordIdx = 0; 
                          iTexCoordIdx < Model.Groups[iGroupIdx].numVert; 
                          iTexCoordIdx++)
@@ -3280,17 +3280,17 @@ namespace KimeraCS
             }
         }
 
-        public static Point3D GetPointInLine(Point3D p1, Point3D p2, float alpha)
+        public static Vector3 GetPointInLine(Vector3 p1, Vector3 p2, float alpha)
         {
-            return new Point3D(p1.x + (p2.x - p1.x) * alpha,
-                               p1.y + (p2.y - p1.y) * alpha,
-                               p1.z + (p2.z - p1.z) * alpha);
+            return new Vector3(p1.X + (p2.X - p1.X) * alpha,
+                               p1.Y + (p2.Y - p1.Y) * alpha,
+                               p1.Z + (p2.Z - p1.Z) * alpha);
         }
 
-        public static Point2D GetPointInLine2D(Point2D p1, Point2D p2, float alpha)
+        public static Vector2 GetPointInLine2D(Vector2 p1, Vector2 p2, float alpha)
         {
-            return new Point2D(p1.x + (p2.x - p1.x) * alpha,
-                               p1.y + (p2.y - p1.y) * alpha);
+            return new Vector2(p1.X + (p2.X - p1.X) * alpha,
+                               p1.Y + (p2.Y - p1.Y) * alpha);
         }
 
         public static Color CombineColor(Color colA, Color colB)
@@ -3301,7 +3301,7 @@ namespace KimeraCS
                                   (colA.B + colB.B) / 2);
         }
 
-        public static int FindVertexInGroup(PModel Model, Point3D vPoint3D, int iGroupIdx)
+        public static int FindVertexInGroup(PModel Model, Vector3 vPoint3D, int iGroupIdx)
         {
             int iVertIdx;
             int iFindVertexInGroupResult;
@@ -3312,9 +3312,9 @@ namespace KimeraCS
             while (iVertIdx < Model.Groups[iGroupIdx].offsetVert + Model.Groups[iGroupIdx].numVert &&
                    !bFound)
             {
-                if (Model.Verts[iVertIdx].x == vPoint3D.x &&
-                    Model.Verts[iVertIdx].y == vPoint3D.y &&
-                    Model.Verts[iVertIdx].z == vPoint3D.z)
+                if (Model.Verts[iVertIdx].X == vPoint3D.X &&
+                    Model.Verts[iVertIdx].Y == vPoint3D.Y &&
+                    Model.Verts[iVertIdx].Z == vPoint3D.Z)
                 {
                     bFound = true;
                 }
@@ -3328,7 +3328,7 @@ namespace KimeraCS
         }
 
         public static int AddVertex(ref PModel Model, int iGroupIdx, int iInputVertIdx, 
-                                    Point3D vPoint3D, Color vColor)
+                                    Vector3 vPoint3D, Color vColor)
         {
             //  -------- Warning! Causes the Normals to be inconsistent if lights are disabled.------------------
             //  --------------------------------Must call ComputeNormals ----------------------------------------
@@ -3416,13 +3416,13 @@ namespace KimeraCS
 
          public static void MoveVertex(ref PModel Model, int iVertIdx, float x, float y, float z)
         {
-            Point3D tmpUP3D = new Point3D(x, y, z);
+            Vector3 tmpUP3D = new Vector3(x, y, z);
 
             tmpUP3D = GetUnProjectedCoords(tmpUP3D);
 
-            Model.Verts[iVertIdx].x = tmpUP3D.x;
-            Model.Verts[iVertIdx].y = tmpUP3D.y;
-            Model.Verts[iVertIdx].z = tmpUP3D.z;
+            Model.Verts[iVertIdx].X = tmpUP3D.X;
+            Model.Verts[iVertIdx].Y = tmpUP3D.Y;
+            Model.Verts[iVertIdx].Z = tmpUP3D.Z;
         }
 
         public static int GetVertexGroup(PModel Model, int iVertIdx)
@@ -3568,9 +3568,9 @@ namespace KimeraCS
         }
 
         //public static void OrderVertices(PModel Model, ref int[] vertBuff)
-        public static void OrderVertices(Point3D[] inP3DVertexArray, ref ushort[] iPolyIndices)
+        public static void OrderVertices(Vector3[] inP3DVertexArray, ref ushort[] iPolyIndices)
         {
-            Point3D v1, v2, v3;
+            Vector3 v1, v2, v3;
             ushort iTmpPolyIdx;
 
             // -- Commented in KimeraVB6
@@ -3586,31 +3586,31 @@ namespace KimeraCS
             v2 = GetVertexProjectedCoords(inP3DVertexArray, iPolyIndices[1]);
             v3 = GetVertexProjectedCoords(inP3DVertexArray, iPolyIndices[2]);
 
-            if (CalculateNormal(v1, v2, v3).z > 0)
+            if (CalculateNormal(v1, v2, v3).Z > 0)
             {
                 iTmpPolyIdx = iPolyIndices[0];
                 iPolyIndices[0] = iPolyIndices[1];
                 iPolyIndices[1] = iTmpPolyIdx;
 
-                if (CalculateNormal(v2, v1, v3).z > 0)
+                if (CalculateNormal(v2, v1, v3).Z > 0)
                 {
                     iTmpPolyIdx = iPolyIndices[1];
                     iPolyIndices[1] = iPolyIndices[2];
                     iPolyIndices[2] = iTmpPolyIdx;
 
-                    if (CalculateNormal(v2, v3, v1).z > 0)
+                    if (CalculateNormal(v2, v3, v1).Z > 0)
                     {
                         iTmpPolyIdx = iPolyIndices[0];
                         iPolyIndices[0] = iPolyIndices[1];
                         iPolyIndices[1] = iTmpPolyIdx;
 
-                        if (CalculateNormal(v3, v2, v1).z > 0)
+                        if (CalculateNormal(v3, v2, v1).Z > 0)
                         {
                             iTmpPolyIdx = iPolyIndices[1];
                             iPolyIndices[1] = iPolyIndices[2];
                             iPolyIndices[2] = iTmpPolyIdx;
 
-                            if (CalculateNormal(v3, v1, v2).z > 0)
+                            if (CalculateNormal(v3, v1, v2).Z > 0)
                             {
                                 iTmpPolyIdx = iPolyIndices[0];
                                 iPolyIndices[0] = iPolyIndices[1];
@@ -3627,7 +3627,7 @@ namespace KimeraCS
         }
 
         public static bool CutEdgeAtPoint(ref PModel Model, int iPolyIdx, int iEdgeIdx, 
-                                          Point3D intersectionPoint, Point2D intersectionTexCoord)
+                                          Vector3 intersectionPoint, Vector2 intersectionTexCoord)
         {
             int iGroupIdx, iVertIdx0, iVertIdx1, iVertIdx2, iVertIdxNew;
             ushort[] vBuff1 = new ushort[3];
@@ -3711,18 +3711,18 @@ namespace KimeraCS
 
             if (Model.Groups[iGroupIdx].texFlag == 1)
             {
-                Model.TexCoords[Model.Groups[iGroupIdx].offsetTex + iVertIdxNew - Model.Groups[iGroupIdx].offsetVert].x = 
-                    intersectionTexCoord.x;
+                Model.TexCoords[Model.Groups[iGroupIdx].offsetTex + iVertIdxNew - Model.Groups[iGroupIdx].offsetVert].X = 
+                    intersectionTexCoord.X;
 
-                Model.TexCoords[Model.Groups[iGroupIdx].offsetTex + iVertIdxNew - Model.Groups[iGroupIdx].offsetVert].y = 
-                    intersectionTexCoord.y;
+                Model.TexCoords[Model.Groups[iGroupIdx].offsetTex + iVertIdxNew - Model.Groups[iGroupIdx].offsetVert].Y = 
+                    intersectionTexCoord.Y;
             }
 
             return true;
         }
         
         //  Find the first edge between v1 and v2 (poly and edge id)
-        public static bool FindNextAdjacentPolyEdge(PModel Model, Point3D v1Point3D, Point3D v2Point3D,
+        public static bool FindNextAdjacentPolyEdge(PModel Model, Vector3 v1Point3D, Vector3 v2Point3D,
                                                     ref int iFromPolyIdx, ref int iEdgeIdx)
         {
             int iPolyIdx, iGroupIdx, offsetVert;
@@ -3781,7 +3781,7 @@ namespace KimeraCS
         }
 
         //  This version of the function find the next matching edge after the one given as parameter
-        public static bool FindNextAdjacentPolyEdgeForward(PModel Model, Point3D v1Point3D, Point3D v2Point3D, 
+        public static bool FindNextAdjacentPolyEdgeForward(PModel Model, Vector3 v1Point3D, Vector3 v2Point3D, 
                                                            ref int iGroupIdx, ref int iFromPolyIdx, ref int iEdgeIdx)
         {
             int iPolyIdx, offsetVert;
@@ -3845,7 +3845,7 @@ namespace KimeraCS
         public static int GetEqualVertices(PModel Model, int iMatchVertIdx, ref List<int> lstVerts)
         {
             int iVertIdx, iGroupIdx;
-            Point3D tmpVPoint3D;
+            Vector3 tmpVPoint3D;
             HashSet<int> lstVertsUnique = new HashSet<int>();
 
             tmpVPoint3D = Model.Verts[iMatchVertIdx];
@@ -3872,15 +3872,15 @@ namespace KimeraCS
 
         public static bool CutPolygonThroughPlane(ref PModel Model, int iInputPolyIdx, int iGroupIdx,
                                                   float pA, float pB, float pC, float pD,
-                                                  ref List<Point3D> knownPlaneVPoints)
+                                                  ref List<Vector3> knownPlaneVPoints)
         {
             int iPolyIdx, iEdgeIdx, offsetTex, offsetVert, numKnownPlaneVPoints;
-            Point3D up3DPolyNormal;
+            Vector3 up3DPolyNormal;
             bool isPararlelQ, equalityValidQ, cutQ;
             float fEquality, fLambdaMultPlane, kPlane, alphaPlane;
             int p1Idx, p2Idx, t1Idx, t2Idx, iOldGroupIdx;
-            Point3D intersectionPoint;
-            Point2D intersectionTexCoord = new Point2D();
+            Vector3 intersectionPoint;
+            Vector2 intersectionTexCoord = new Vector2();
             int vIndexRectify;
             List<int> vEqualVIndices = new List<int>();
             bool p1IsContainedQ, p2IsContainedQ;
@@ -3904,42 +3904,42 @@ namespace KimeraCS
             equalityValidQ = false;
             fEquality = 0;
 
-            if (up3DPolyNormal.x == 0 || pA == 0)
+            if (up3DPolyNormal.X == 0 || pA == 0)
             {
-                isPararlelQ = Math.Abs(up3DPolyNormal.x - pA) < 0.0001f;
+                isPararlelQ = Math.Abs(up3DPolyNormal.X - pA) < 0.0001f;
             }
             else
             {
                 equalityValidQ = true;
-                fEquality = pA / up3DPolyNormal.x;
+                fEquality = pA / up3DPolyNormal.X;
             }
 
-            if (up3DPolyNormal.y == 0 || pB == 0)
+            if (up3DPolyNormal.Y == 0 || pB == 0)
             {
-                isPararlelQ = isPararlelQ && (Math.Abs(up3DPolyNormal.y - pB) < 0.0001f);
+                isPararlelQ = isPararlelQ && (Math.Abs(up3DPolyNormal.Y - pB) < 0.0001f);
             }
             else
             {
                 if (equalityValidQ)
                 {
-                    isPararlelQ = isPararlelQ && (Math.Abs((pB / up3DPolyNormal.y) - fEquality) < 0.0001f);
+                    isPararlelQ = isPararlelQ && (Math.Abs((pB / up3DPolyNormal.Y) - fEquality) < 0.0001f);
                 }
                 else
                 {
                     equalityValidQ = true;
-                    fEquality = pB / up3DPolyNormal.y;
+                    fEquality = pB / up3DPolyNormal.Y;
                 }
             }
 
-            if (up3DPolyNormal.z == 0 || pC == 0)
+            if (up3DPolyNormal.Z == 0 || pC == 0)
             {
-                isPararlelQ = isPararlelQ && (up3DPolyNormal.z == pC);
+                isPararlelQ = isPararlelQ && (up3DPolyNormal.Z == pC);
             }
             else
             {
                 if (equalityValidQ)
                 {
-                    isPararlelQ = isPararlelQ && (Math.Abs((pC / up3DPolyNormal.z) - fEquality) < 0.0001f);
+                    isPararlelQ = isPararlelQ && (Math.Abs((pC / up3DPolyNormal.Z) - fEquality) < 0.0001f);
                 }
             }
 
@@ -3976,10 +3976,10 @@ namespace KimeraCS
                     }
 
                     //  If they aren't, find the cut point.
-                    fLambdaMultPlane = -pA * Model.Verts[p1Idx].x - pB * Model.Verts[p1Idx].y - pC * Model.Verts[p1Idx].z;
+                    fLambdaMultPlane = -pA * Model.Verts[p1Idx].X - pB * Model.Verts[p1Idx].Y - pC * Model.Verts[p1Idx].Z;
                     kPlane = fLambdaMultPlane - pD;
 
-                    fLambdaMultPlane = fLambdaMultPlane + pA * Model.Verts[p2Idx].x + pB * Model.Verts[p2Idx].y + pC * Model.Verts[p2Idx].z;
+                    fLambdaMultPlane = fLambdaMultPlane + pA * Model.Verts[p2Idx].X + pB * Model.Verts[p2Idx].Y + pC * Model.Verts[p2Idx].Z;
 
                     if (Math.Abs(fLambdaMultPlane) > 0.0000001f && kPlane != 0)
                     {
@@ -4064,7 +4064,7 @@ namespace KimeraCS
 
         public static void CutPModelThroughPlane(ref PModel Model, 
                                                  float pA, float pB, float pC, float pD,
-                                                 ref List<Point3D> knownPlaneVPoints)
+                                                 ref List<Vector3> knownPlaneVPoints)
         {
             int iGroupIdx, iPolyIdx;
             int offsetPoly;
@@ -4089,60 +4089,60 @@ namespace KimeraCS
             }
         }
 
-        public static Point3D GetPoint3DOrthogonalProjection(Point3D uPoint3D, float pA, float pB, float pC, float pD)
+        public static Vector3 GetPoint3DOrthogonalProjection(Vector3 uPoint3D, float pA, float pB, float pC, float pD)
         {
             float alpha;
 
-            alpha = (-pA * uPoint3D.x - pB * uPoint3D.y - pC * uPoint3D.z - pD) / (pA * pA + pB + pB + pC * pC);
+            alpha = (-pA * uPoint3D.X - pB * uPoint3D.Y - pC * uPoint3D.Z - pD) / (pA * pA + pB + pB + pC * pC);
 
-            return new Point3D(uPoint3D.x + alpha * pA,
-                               uPoint3D.y + alpha * pB,
-                               uPoint3D.z + alpha * pC);
+            return new Vector3(uPoint3D.X + alpha * pA,
+                               uPoint3D.Y + alpha * pB,
+                               uPoint3D.Z + alpha * pC);
         }
 
-        public static bool IsPoint3DUnderPlane(Point3D uPoint3D, float pA, float pB, float pC, float pD)
+        public static bool IsPoint3DUnderPlane(Vector3 uPoint3D, float pA, float pB, float pC, float pD)
         {
-            Point3D orthogonalProjectionP3D;
-            Point3D vectP3D;
-            Point3D vectNormP3D;
+            Vector3 orthogonalProjectionP3D;
+            Vector3 vectP3D;
+            Vector3 vectNormP3D;
 
             orthogonalProjectionP3D = GetPoint3DOrthogonalProjection(uPoint3D, pA, pB, pC, pD);
 
-            vectP3D = new Point3D(orthogonalProjectionP3D.x - uPoint3D.x,
-                                  orthogonalProjectionP3D.y - uPoint3D.y,
-                                  orthogonalProjectionP3D.z - uPoint3D.z);
+            vectP3D = new Vector3(orthogonalProjectionP3D.X - uPoint3D.X,
+                                  orthogonalProjectionP3D.Y - uPoint3D.Y,
+                                  orthogonalProjectionP3D.Z - uPoint3D.Z);
 
             vectNormP3D = Normalize(vectP3D);
 
-            return !(Math.Abs(pA - vectNormP3D.x) < 0.0001f &&
-                     Math.Abs(pB - vectNormP3D.y) < 0.0001f &&
-                     Math.Abs(pC - vectNormP3D.z) < 0.0001f &&
+            return !(Math.Abs(pA - vectNormP3D.X) < 0.0001f &&
+                     Math.Abs(pB - vectNormP3D.Y) < 0.0001f &&
+                     Math.Abs(pC - vectNormP3D.Z) < 0.0001f &&
                      !(CalculateDistance(uPoint3D, orthogonalProjectionP3D) < 0.0001f));
         }
 
-        public static bool IsPoint3DAbovePlane(Point3D uPoint3D, float pA, float pB, float pC, float pD)
+        public static bool IsPoint3DAbovePlane(Vector3 uPoint3D, float pA, float pB, float pC, float pD)
         {
-            Point3D orthogonalProjectionP3D;
-            Point3D vectP3D;
-            Point3D vectNormP3D;
+            Vector3 orthogonalProjectionP3D;
+            Vector3 vectP3D;
+            Vector3 vectNormP3D;
 
             orthogonalProjectionP3D = GetPoint3DOrthogonalProjection(uPoint3D, pA, pB, pC, pD);
 
-            vectP3D = new Point3D(orthogonalProjectionP3D.x - uPoint3D.x,
-                                  orthogonalProjectionP3D.y - uPoint3D.y,
-                                  orthogonalProjectionP3D.z - uPoint3D.z);
+            vectP3D = new Vector3(orthogonalProjectionP3D.X - uPoint3D.X,
+                                  orthogonalProjectionP3D.Y - uPoint3D.Y,
+                                  orthogonalProjectionP3D.Z - uPoint3D.Z);
 
             vectNormP3D = Normalize(vectP3D);
 
-            return  (Math.Abs(pA - vectNormP3D.x) < 0.0001f &&
-                     Math.Abs(pB - vectNormP3D.y) < 0.0001f &&
-                     Math.Abs(pC - vectNormP3D.z) < 0.0001f &&
+            return  (Math.Abs(pA - vectNormP3D.X) < 0.0001f &&
+                     Math.Abs(pB - vectNormP3D.Y) < 0.0001f &&
+                     Math.Abs(pC - vectNormP3D.Z) < 0.0001f &&
                      !(CalculateDistance(uPoint3D, orthogonalProjectionP3D) < 0.0001f));
 
         }
 
         public static int EraseHemisphereVertices(ref PModel Model, float pA, float pB, float pC, float pD,
-                                                   bool underPlaneQ, ref List<Point3D> knownPlaneVPoints,
+                                                   bool underPlaneQ, ref List<Vector3> knownPlaneVPoints,
                                                    bool removeTextureCoords)
         {
             int iGroupIdx, iPolyIdx, iVertIdx, offsetVert, offsetPoly, iActualVertIdx, kppi,
@@ -4214,7 +4214,7 @@ namespace KimeraCS
 
         public static void ApplyPModelTransformation(ref PModel Model, double[] transMatrix)
         {
-            Point3D tmpPoint3D = new Point3D();
+            Vector3 tmpPoint3D = new Vector3();
             int iVertIdx;
 
             for (iVertIdx = 0; iVertIdx < Model.Header.numVerts; iVertIdx++)
@@ -4235,19 +4235,19 @@ namespace KimeraCS
 
             for (iVertIdx = 0; iVertIdx < Model.Header.numVerts; iVertIdx++)
             {
-                if (Model.Verts[iVertIdx].z > fCentralZ)
+                if (Model.Verts[iVertIdx].Z > fCentralZ)
                 {
                     if (fMaxDiff == 0) fFactor = 1;
-                    else fFactor = (float)(1 + (1 - Math.Abs(Model.Verts[iVertIdx].z - fCentralZ) / fMaxDiff) * 0.1);
+                    else fFactor = (float)(1 + (1 - Math.Abs(Model.Verts[iVertIdx].Z - fCentralZ) / fMaxDiff) * 0.1);
                 }
                 else
                 {
                     if (fMinDiff == 0) fFactor = 1;
-                    else fFactor = (float)(1 + (1 - Math.Abs(fCentralZ - Model.Verts[iVertIdx].z) / fMinDiff) * 0.1);
+                    else fFactor = (float)(1 + (1 - Math.Abs(fCentralZ - Model.Verts[iVertIdx].Z) / fMinDiff) * 0.1);
                 }
 
-                Model.Verts[iVertIdx].x *= fFactor;
-                Model.Verts[iVertIdx].y *= fFactor;
+                Model.Verts[iVertIdx].X *= fFactor;
+                Model.Verts[iVertIdx].Y *= fFactor;
             }
         }
 
@@ -4262,19 +4262,19 @@ namespace KimeraCS
 
             for (iVertIdx = 0; iVertIdx < Model.Header.numVerts; iVertIdx++)
             {
-                if (Model.Verts[iVertIdx].z > fCentralZ)
+                if (Model.Verts[iVertIdx].Z > fCentralZ)
                 {
                     if (fMaxDiff == 0) fFactor = 1;
-                    else fFactor = (float)(1 + (1 - Math.Abs(Model.Verts[iVertIdx].z - fCentralZ) / fMaxDiff) * 0.1);
+                    else fFactor = (float)(1 + (1 - Math.Abs(Model.Verts[iVertIdx].Z - fCentralZ) / fMaxDiff) * 0.1);
                 }
                 else
                 {
                     if (fMinDiff == 0) fFactor = 1;
-                    else fFactor = (float)(1 + (1 - Math.Abs(fCentralZ - Model.Verts[iVertIdx].z) / fMinDiff) * 0.1);
+                    else fFactor = (float)(1 + (1 - Math.Abs(fCentralZ - Model.Verts[iVertIdx].Z) / fMinDiff) * 0.1);
                 }
 
-                Model.Verts[iVertIdx].x /= fFactor;
-                Model.Verts[iVertIdx].y /= fFactor;
+                Model.Verts[iVertIdx].X /= fFactor;
+                Model.Verts[iVertIdx].Y /= fFactor;
             }
         }
 
@@ -4309,7 +4309,7 @@ namespace KimeraCS
             return iNumPolys;
         }
 
-        public static float GetVertexProjectedDepth(ref Point3D[] lstVerts, int iVertIdx)
+        public static float GetVertexProjectedDepth(ref Vector3[] lstVerts, int iVertIdx)
         {
             GL.Clear(ClearBufferMask.DepthBufferBit);
             return (float)GetDepthZ(lstVerts[iVertIdx]);
@@ -4461,9 +4461,9 @@ namespace KimeraCS
 //                                Model.Groups[iGroupIdx].offsetVert;
 
 //                iVertexNormalsIdx = stVertexNormals.
-//                        FindIndex(x => x.p3DVertex.x == Model.Verts[iActualVertex].x &&
-//                                       x.p3DVertex.y == Model.Verts[iActualVertex].y &&
-//                                       x.p3DVertex.z == Model.Verts[iActualVertex].z);
+//                        FindIndex(x => x.p3DVertex.X == Model.Verts[iActualVertex].X &&
+//                                       x.p3DVertex.Y == Model.Verts[iActualVertex].Y &&
+//                                       x.p3DVertex.Z == Model.Verts[iActualVertex].Z);
 
 //                if (iVertexNormalsIdx == -1)
 //                {
@@ -4471,7 +4471,7 @@ namespace KimeraCS
 
 
 //                    stTmpVertexNormals.p3DVertex = Model.Verts[iActualVertex];
-//                    stTmpVertexNormals.p3DNormal = new Point3D(p3DNormal.x, p3DNormal.y, p3DNormal.z);
+//                    stTmpVertexNormals.p3DNormal = new Point3D(p3DNormal.X, p3DNormal.Y, p3DNormal.Z);
 
 //                    stTmpVertexNormals.lstVertexIndexData = new List<STVertexIndexData>();
 
@@ -4540,12 +4540,12 @@ namespace KimeraCS
 
 //            Model.NormalIndex[itmVertexIndexData.ActualVertex] = itmVertexIndexData.ActualVertex;
 
-//            Model.Normals[itmVertexIndexData.ActualVertex].x =
-//                -itmVertexNormal.p3DNormal.x / itmVertexNormal.lstVertexIndexData.Count;
-//            Model.Normals[itmVertexIndexData.ActualVertex].y =
-//                -itmVertexNormal.p3DNormal.y / itmVertexNormal.lstVertexIndexData.Count;
-//            Model.Normals[itmVertexIndexData.ActualVertex].z =
-//                -itmVertexNormal.p3DNormal.z / itmVertexNormal.lstVertexIndexData.Count;
+//            Model.Normals[itmVertexIndexData.ActualVertex].X =
+//                -itmVertexNormal.p3DNormal.X / itmVertexNormal.lstVertexIndexData.Count;
+//            Model.Normals[itmVertexIndexData.ActualVertex].Y =
+//                -itmVertexNormal.p3DNormal.Y / itmVertexNormal.lstVertexIndexData.Count;
+//            Model.Normals[itmVertexIndexData.ActualVertex].Z =
+//                -itmVertexNormal.p3DNormal.Z / itmVertexNormal.lstVertexIndexData.Count;
 
 //            Model.Normals[itmVertexIndexData.ActualVertex] =
 //                                Normalize(Model.Normals[itmVertexIndexData.ActualVertex]);

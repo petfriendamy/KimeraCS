@@ -6,11 +6,11 @@ using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using OpenTK.Mathematics;
 
 namespace KimeraCS
 {
     using Core;
-    using OpenTK.Mathematics;
     using Rendering;
     using static FF7BattleSkeleton;
     using static FF7FieldRSDResource;
@@ -76,15 +76,15 @@ namespace KimeraCS
         private float planeOriginalA, planeOriginalB, planeOriginalC, planeOriginalD;
         private float oldAlphaPlane, oldBetaPlane, oldGammaPlane;
 
-        public Point3D planeOriginalPoint = new Point3D();
-        private Point3D planePoint = new Point3D();
-        private Utils.Quaternion planeRotationQuat = new Utils.Quaternion();
+        public Vector3 planeOriginalPoint = new Vector3();
+        private Vector3 planePoint = new Vector3();
+        private Quaterniond planeRotationQuat = new Quaterniond();
         private static double[] planeTransformation = new double[16];
 
-        private static Point3D planeOriginalPoint1 = new Point3D();
-        private static Point3D planeOriginalPoint2 = new Point3D();
-        private static Point3D planeOriginalPoint3 = new Point3D();
-        private static Point3D planeOriginalPoint4 = new Point3D();
+        private static Vector3 planeOriginalPoint1 = new Vector3();
+        private static Vector3 planeOriginalPoint2 = new Vector3();
+        private static Vector3 planeOriginalPoint3 = new Vector3();
+        private static Vector3 planeOriginalPoint4 = new Vector3();
 
         public static float rszXPE, rszYPE, rszZPE;
         public static float repXPE, repYPE, repZPE;
@@ -530,8 +530,8 @@ namespace KimeraCS
         private void NudAlphaPlane_ValueChanged(object sender, EventArgs e)
         {
             float fDiff;
-            Utils.Quaternion tmpQuat = new Utils.Quaternion();
-            Utils.Quaternion resQuat = new Utils.Quaternion();
+            Quaterniond tmpQuat = new Quaterniond();
+            Quaterniond resQuat = new Quaterniond();
 
             fDiff = (float)nudAlphaPlane.Value - oldAlphaPlane;
             oldAlphaPlane = (float)nudAlphaPlane.Value;
@@ -557,8 +557,8 @@ namespace KimeraCS
         private void NudBetaPlane_ValueChanged(object sender, EventArgs e)
         {
             float fDiff;
-            Utils.Quaternion tmpQuat = new Utils.Quaternion();
-            Utils.Quaternion resQuat = new Utils.Quaternion();
+            Quaterniond tmpQuat = new Quaterniond();
+            Quaterniond resQuat = new Quaterniond();
 
             fDiff = (float)nudBetaPlane.Value - oldBetaPlane;
             oldBetaPlane = (float)nudBetaPlane.Value;
@@ -1789,7 +1789,7 @@ namespace KimeraCS
 
         private void MakeModelSymmetricToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            List<Point3D> knownPlaneVPoints = new List<Point3D>();
+            List<Vector3> knownPlaneVPoints = new List<Vector3>();
 
             if (loadedPModel)
             {
@@ -2478,7 +2478,7 @@ namespace KimeraCS
 
         private void CutModelToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            List<Point3D> knownPlaneVPoints = new List<Point3D>();
+            List<Vector3> knownPlaneVPoints = new List<Vector3>();
 
             if (loadedPModel)
             {
@@ -2503,7 +2503,7 @@ namespace KimeraCS
 
         private void EraseLowerEmisphereToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            List<Point3D> knownPlaneVPoints = new List<Point3D>();
+            List<Vector3> knownPlaneVPoints = new List<Vector3>();
 
             if (loadedPModel)
             {
@@ -2785,8 +2785,8 @@ namespace KimeraCS
 
         private void InitializeEditorPModelDataControls()
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             //rszXPE = 1;
             //rszYPE = 1;
@@ -2921,8 +2921,8 @@ namespace KimeraCS
 
         private void ResetCameraPE()
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             if (loadedPModel)
             {
@@ -2941,12 +2941,12 @@ namespace KimeraCS
 
         private void ComputeCurrentEquations()
         {
-            Point3D normal = new Point3D();
-            Point3D tmpNormal = new Point3D(planeOriginalA, planeOriginalB, planeOriginalC);
+            Vector3 normal = new Vector3();
+            Vector3 tmpNormal = new Vector3(planeOriginalA, planeOriginalB, planeOriginalC);
 
-            planePoint.x = (float)planeTransformation[12];
-            planePoint.y = (float)planeTransformation[13];
-            planePoint.z = (float)planeTransformation[14];
+            planePoint.X = (float)planeTransformation[12];
+            planePoint.Y = (float)planeTransformation[13];
+            planePoint.Z = (float)planeTransformation[14];
 
             planeTransformation[12] = 0;
             planeTransformation[13] = 0;
@@ -2955,15 +2955,15 @@ namespace KimeraCS
             MultiplyPoint3DByOGLMatrix(planeTransformation, tmpNormal, ref normal);
             normal = Normalize(normal);
 
-            planeA = normal.x;
-            planeB = normal.y;
-            planeC = normal.z;
+            planeA = normal.X;
+            planeB = normal.Y;
+            planeC = normal.Z;
 
-            planeTransformation[12] = planePoint.x;
-            planeTransformation[13] = planePoint.y;
-            planeTransformation[14] = planePoint.z;
+            planeTransformation[12] = planePoint.X;
+            planeTransformation[13] = planePoint.Y;
+            planeTransformation[14] = planePoint.Z;
 
-            planeD = -planeA * planePoint.x - planeB * planePoint.y - planeC * planePoint.z;
+            planeD = -planeA * planePoint.X - planeB * planePoint.Y - planeC * planePoint.Z;
         }
 
         private void ResetPlane()
@@ -2984,40 +2984,40 @@ namespace KimeraCS
             planeC = planeOriginalC = 1;
             planeD = planeOriginalD = 0;
 
-            planeOriginalPoint.x = 0;
-            planeOriginalPoint.y = 0;
-            planeOriginalPoint.z = 0;
+            planeOriginalPoint.X = 0;
+            planeOriginalPoint.Y = 0;
+            planeOriginalPoint.Z = 0;
 
-            planeRotationQuat.x = 0;
-            planeRotationQuat.y = 0;
-            planeRotationQuat.z = 0;
-            planeRotationQuat.w = 1;
+            planeRotationQuat.X = 0;
+            planeRotationQuat.Y = 0;
+            planeRotationQuat.Z = 0;
+            planeRotationQuat.W = 1;
 
             BuildMatrixFromQuaternion(planeRotationQuat, ref planeTransformation);
 
-            planeOriginalPoint1.x = EditedPModel.diameter;
-            planeOriginalPoint1.y = EditedPModel.diameter;
-            planeOriginalPoint1.z = 0;
+            planeOriginalPoint1.X = EditedPModel.diameter;
+            planeOriginalPoint1.Y = EditedPModel.diameter;
+            planeOriginalPoint1.Z = 0;
 
-            planeOriginalPoint2.x = -EditedPModel.diameter;
-            planeOriginalPoint2.y = EditedPModel.diameter;
-            planeOriginalPoint2.z = 0;
+            planeOriginalPoint2.X = -EditedPModel.diameter;
+            planeOriginalPoint2.Y = EditedPModel.diameter;
+            planeOriginalPoint2.Z = 0;
 
-            planeOriginalPoint3.x = -EditedPModel.diameter;
-            planeOriginalPoint3.y = -EditedPModel.diameter;
-            planeOriginalPoint3.z = 0;
+            planeOriginalPoint3.X = -EditedPModel.diameter;
+            planeOriginalPoint3.Y = -EditedPModel.diameter;
+            planeOriginalPoint3.Z = 0;
 
-            planeOriginalPoint4.x = EditedPModel.diameter;
-            planeOriginalPoint4.y = -EditedPModel.diameter;
-            planeOriginalPoint4.z = 0;
+            planeOriginalPoint4.X = EditedPModel.diameter;
+            planeOriginalPoint4.Y = -EditedPModel.diameter;
+            planeOriginalPoint4.Z = 0;
 
             ComputeCurrentEquations();
         }
 
         private void CommitContextualizedPChanges(bool bDNormals)
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             float tmpDist, modelDiameterNormalized;
 
@@ -3090,10 +3090,10 @@ namespace KimeraCS
             txtRotateBeta.Text = "0";
             txtRotateGamma.Text = "0";
 
-            EditedPModel.rotationQuaternion.x = 0;
-            EditedPModel.rotationQuaternion.y = 0;
-            EditedPModel.rotationQuaternion.z = 0;
-            EditedPModel.rotationQuaternion.w = 1;
+            EditedPModel.rotationQuaternion.X = 0;
+            EditedPModel.rotationQuaternion.Y = 0;
+            EditedPModel.rotationQuaternion.Z = 0;
+            EditedPModel.rotationQuaternion.W = 1;
 
             rszXPE = 1;
             rszYPE = 1;
@@ -3638,18 +3638,18 @@ namespace KimeraCS
         //  Main DoFunction procedure
         private void DoFunction(EditMode nFunc, Event iEvent, int x, int y)
         {
-            Point3D tmpPoint3D = new Point3D();
-            Point3D tmpPoint3D_2 = new Point3D();
+            Vector3 tmpPoint3D = new Vector3();
+            Vector3 tmpPoint3D_2 = new Vector3();
             Color tmpColor;
             float fLocalAlpha = 0;
 
-            Point3D p1;
-            Point3D p2;
-            Point2D tc1 = new Point2D();
-            Point2D tc2 = new Point2D();
+            Vector3 p1;
+            Vector3 p2;
+            Vector2 tc1 = new Vector2();
+            Vector2 tc2 = new Vector2();
 
-            Point3D intersectionPoint;
-            Point2D intersectionTexCoord;
+            Vector3 intersectionPoint;
+            Vector2 intersectionTexCoord;
 
             int vi1, vi2; 
             int iGroupIdx, tmpGroupIdx, iPolyIdx, iVertIdx, iEdgeIdx;
@@ -3997,23 +3997,23 @@ namespace KimeraCS
                     {
                         SetCameraPModel(EditedPModel, 0, 0, DISTPE, 0, 0, 0, rszXPE, rszYPE, rszZPE);
 
-                        tmpPoint3D.x = x;
-                        tmpPoint3D.y = y;
-                        tmpPoint3D.z = GetDepthZ(tmpPoint3D_2);
+                        tmpPoint3D.X = x;
+                        tmpPoint3D.Y = y;
+                        tmpPoint3D.Z = GetDepthZ(tmpPoint3D_2);
                         tmpPoint3D = GetUnProjectedCoords(tmpPoint3D);
 
-                        panXPE += tmpPoint3D.x;
-                        panYPE += tmpPoint3D.y;
-                        panZPE += tmpPoint3D.z;
+                        panXPE += tmpPoint3D.X;
+                        panYPE += tmpPoint3D.Y;
+                        panZPE += tmpPoint3D.Z;
 
-                        tmpPoint3D.x = x_lastPE;
-                        tmpPoint3D.y = y_lastPE;
-                        tmpPoint3D.z = GetDepthZ(tmpPoint3D_2);
+                        tmpPoint3D.X = x_lastPE;
+                        tmpPoint3D.Y = y_lastPE;
+                        tmpPoint3D.Z = GetDepthZ(tmpPoint3D_2);
                         tmpPoint3D = GetUnProjectedCoords(tmpPoint3D);
 
-                        panXPE -= tmpPoint3D.x;
-                        panYPE -= tmpPoint3D.y;
-                        panZPE -= tmpPoint3D.z;
+                        panXPE -= tmpPoint3D.X;
+                        panYPE -= tmpPoint3D.Y;
+                        panZPE -= tmpPoint3D.Z;
                     }
 
                     break;
@@ -4052,17 +4052,17 @@ namespace KimeraCS
         {
             int iGetClosestVertexResult = -1;
 
-            Point3D pUP3D = new Point3D();
-            Point3D vpUP3D;
+            Vector3 pUP3D = new Vector3();
+            Vector3 vpUP3D;
             int iGroupIdx, iPolyIdx, iVertIdx, iHeight;
             int[] vp = new int[4];
 
             float[] DIST = new float[3];
             float minDist;
 
-            pUP3D.x = px;
-            pUP3D.y = py;
-            pUP3D.z = 0;
+            pUP3D.X = px;
+            pUP3D.Y = py;
+            pUP3D.Z = 0;
 
             GL.GetInteger(GetPName.Viewport, vp);
             iHeight = vp[3];
@@ -4073,7 +4073,7 @@ namespace KimeraCS
             {
                 iGroupIdx = GetPolygonGroup(Model, iPolyIdx);
 
-                pUP3D.y = iHeight - py;
+                pUP3D.Y = iHeight - py;
                 for (iVertIdx = 0; iVertIdx < 3; iVertIdx++)
                 {
                     vpUP3D =
@@ -4107,8 +4107,8 @@ namespace KimeraCS
             float panX, float panY, float panZ, float cameraDist,
             float alpha, float beta, float gamma)
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             // Set up camera (this also syncs GLRenderer matrices)
             ComputePModelBoundingBox(Model, ref p_min, ref p_max);
@@ -4159,17 +4159,17 @@ namespace KimeraCS
                 {
                     // Get triangle vertices
                     Vector3 v0 = new Vector3(
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].x,
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].y,
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].z);
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].X,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].Y,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[0] + offsetVert].Z);
                     Vector3 v1 = new Vector3(
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].x,
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].y,
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].z);
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].X,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].Y,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[1] + offsetVert].Z);
                     Vector3 v2 = new Vector3(
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].x,
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].y,
-                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].z);
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].X,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].Y,
+                        Model.Verts[Model.Polys[iPolyIdx].Verts[2] + offsetVert].Z);
 
                     // Test ray-triangle intersection (Möller–Trumbore algorithm)
                     if (RayTriangleIntersect(rayOrigin, rayDir, v0, v1, v2, out float dist))
@@ -4226,9 +4226,9 @@ namespace KimeraCS
         {
             int iGetClosestEdgeReturn;
 
-            Point3D tmpUP3D = new Point3D();
-            Point3D p1Proj, p2Proj, p3Proj;
-            Point3D p1, p2, p3;
+            Vector3 tmpUP3D = new Vector3();
+            Vector3 p1Proj, p2Proj, p3Proj;
+            Vector3 p1, p2, p3;
 
             float d1, d2, d3;
 
@@ -4238,9 +4238,9 @@ namespace KimeraCS
             GL.GetInteger(GetPName.Viewport, vp);
             height = vp[3];
 
-            tmpUP3D.x = px;
-            tmpUP3D.y = height - py;
-            tmpUP3D.z = 0;
+            tmpUP3D.X = px;
+            tmpUP3D.Y = height - py;
+            tmpUP3D.Z = 0;
 
             offsetVerts = Model.Groups[GetPolygonGroup(Model, iPolyIdx)].offsetVert;
 

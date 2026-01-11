@@ -96,8 +96,8 @@ namespace KimeraCS
                  iVertCounter < TexViewModel.Groups[iGroupIdx].offsetTex +
                                 TexViewModel.Groups[iGroupIdx].numVert; iVertCounter++)
             {
-                if (TexViewModel.TexCoords[iVertCounter].x > 1.0f || TexViewModel.TexCoords[iVertCounter].x < 0.0f ||
-                    TexViewModel.TexCoords[iVertCounter].y > 1.0f || TexViewModel.TexCoords[iVertCounter].y < 0.0f)
+                if (TexViewModel.TexCoords[iVertCounter].X > 1.0f || TexViewModel.TexCoords[iVertCounter].X < 0.0f ||
+                    TexViewModel.TexCoords[iVertCounter].Y > 1.0f || TexViewModel.TexCoords[iVertCounter].Y < 0.0f)
                     return true;
             }
 
@@ -141,8 +141,8 @@ namespace KimeraCS
                              iVertCounter < TexViewModel.Groups[iGroupIdx].offsetTex +
                                             TexViewModel.Groups[iGroupIdx].numVert; iVertCounter++)
                         {
-                            fU = TexViewModel.TexCoords[iVertCounter].x;
-                            fV = TexViewModel.TexCoords[iVertCounter].y;
+                            fU = TexViewModel.TexCoords[iVertCounter].X;
+                            fV = TexViewModel.TexCoords[iVertCounter].Y;
 
                             if (bNeedNormalize)
                             {
@@ -265,14 +265,14 @@ namespace KimeraCS
                 //    {
                 //        hTmpBMP = bSkeleton.textures[bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].HBMP;
 
-                //        iTCWidth = bSkeleton.textures[bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].width;
+                //        iTCWidth = bSkeleton.textures[bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].Width;
                 //        iTCHeight = bSkeleton.textures[bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].height;
                 //    }
                 //    else
                 //    {
                 //        hTmpBMP = bSkeleton.textures[iTexID].HBMP;
 
-                //        iTCWidth = bSkeleton.textures[iTexID].width;
+                //        iTCWidth = bSkeleton.textures[iTexID].Width;
                 //        iTCHeight = bSkeleton.textures[iTexID].height;
                 //    }
 
@@ -282,7 +282,7 @@ namespace KimeraCS
                 //case K_MAGIC_SKELETON:
                 //    hTmpBMP = bSkeleton.textures[iTexID].HBMP;
 
-                //    iTCWidth = bSkeleton.textures[iTexID].width;
+                //    iTCWidth = bSkeleton.textures[iTexID].Width;
                 //    iTCHeight = bSkeleton.textures[iTexID].height;
                 //    break;
             }
@@ -579,19 +579,19 @@ namespace KimeraCS
                     //case K_AA_SKELETON:
                     //    if (bSkeleton.wpModels.Count > 0 && SelectedBone == bSkeleton.nBones)
                     //    {
-                    //        iWidth = bSkeleton.textures[bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].width;
+                    //        iWidth = bSkeleton.textures[bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].Width;
                     //        iHeight = bSkeleton.textures[bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].height;
                     //    }
                     //    else
                     //    {
-                    //        iWidth = bSkeleton.textures[iTexID].width;
+                    //        iWidth = bSkeleton.textures[iTexID].Width;
                     //        iHeight = bSkeleton.textures[iTexID].height;
                     //    }
 
                     //    break;
 
                     //case K_MAGIC_SKELETON:
-                    //    iWidth = bSkeleton.textures[iTexID].width;
+                    //    iWidth = bSkeleton.textures[iTexID].Width;
                     //    iHeight = bSkeleton.textures[iTexID].height;
                     //    break;
             }
@@ -738,9 +738,9 @@ namespace KimeraCS
                 {
                     for (iVertCounter = 0; iVertCounter < TexViewModel.Groups[iGroupIdx].numVert; iVertCounter++)
                     {
-                        TexViewModel.TexCoords[TexViewModel.Groups[iGroupIdx].offsetTex + iVertCounter].x =
+                        TexViewModel.TexCoords[TexViewModel.Groups[iGroupIdx].offsetTex + iVertCounter].X =
                                        lstUVXYCoords[iGroupIdx].XYCoords[iVertCounter].x / iWidth;
-                        TexViewModel.TexCoords[TexViewModel.Groups[iGroupIdx].offsetTex + iVertCounter].y =
+                        TexViewModel.TexCoords[TexViewModel.Groups[iGroupIdx].offsetTex + iVertCounter].Y =
                                        lstUVXYCoords[iGroupIdx].XYCoords[iVertCounter].y / iHeight;
                     }
                 }

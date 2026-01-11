@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using KimeraCS.Core;
 using OpenTK.Mathematics;
 
 namespace KimeraCS.Rendering
 {
     using static FF7PModel;
+    using static ModelDrawing;
     using static Utils;
 
     /// <summary>
@@ -16,10 +18,11 @@ namespace KimeraCS.Rendering
         /// <summary>
         /// Create a LineMesh for displaying vertex or face normals.
         /// </summary>
-        public static LineMesh CreateNormalsMesh(PGroup group, PPolygon[] polys, Point3D[] verts,
-                                                   Point3D[] normals, int[] normalsIndex,
-                                                   bool showVertexNormals, bool showFaceNormals,
-                                                   float normalsScale, int normalsColor)
+        public static LineMesh CreateNormalsMesh(PGroup group, PPolygon[] polys, Vector3[] verts,
+                                                   Vector3[] normals, int[] normalsIndex,
+                                                   NormalsDisplayMode showNormals = NormalsDisplayMode.None,
+                                                   float normalsScale = DEFAULT_NORMAL_SCALE,
+                                                   int normalsColor = DEFAULT_NORMAL_COLOR)
         {
             if (group.HiddenQ || normals == null || normals.Length == 0)
                 return null;
@@ -33,48 +36,48 @@ namespace KimeraCS.Rendering
 
             for (int iPolyIdx = group.offsetPoly; iPolyIdx < group.offsetPoly + group.numPoly; iPolyIdx++)
             {
-                if (showVertexNormals)
+                if (showNormals == NormalsDisplayMode.Vertices)
                 {
                     for (int iVertIdx = 0; iVertIdx < 3; iVertIdx++)
                     {
                         int vertIdx = polys[iPolyIdx].Verts[iVertIdx] + group.offsetVert;
-                        float x = verts[vertIdx].x;
-                        float y = verts[vertIdx].y;
-                        float z = verts[vertIdx].z;
+                        float x = verts[vertIdx].X;
+                        float y = verts[vertIdx].Y;
+                        float z = verts[vertIdx].Z;
 
                         int normIdx = normalsIndex[vertIdx];
                         if (normIdx >= 0 && normIdx < normals.Length)
                         {
-                            float xn = x + normals[normIdx].x * normalsScale;
-                            float yn = y + normals[normIdx].y * normalsScale;
-                            float zn = z + normals[normIdx].z * normalsScale;
+                            float xn = x + normals[normIdx].X * normalsScale;
+                            float yn = y + normals[normIdx].Y * normalsScale;
+                            float zn = z + normals[normIdx].Z * normalsScale;
 
                             vertices.Add(new LineVertex { Position = new Vector3(x, y, z), Color = color });
                             vertices.Add(new LineVertex { Position = new Vector3(xn, yn, zn), Color = color });
                         }
                     }
                 }
-                else if (showFaceNormals)
+                else if (showNormals == NormalsDisplayMode.Faces)
                 {
-                    Point3D v0 = verts[polys[iPolyIdx].Verts[0] + group.offsetVert];
-                    Point3D v1 = verts[polys[iPolyIdx].Verts[1] + group.offsetVert];
-                    Point3D v2 = verts[polys[iPolyIdx].Verts[2] + group.offsetVert];
+                    Vector3 v0 = verts[polys[iPolyIdx].Verts[0] + group.offsetVert];
+                    Vector3 v1 = verts[polys[iPolyIdx].Verts[1] + group.offsetVert];
+                    Vector3 v2 = verts[polys[iPolyIdx].Verts[2] + group.offsetVert];
 
-                    Point3D centroid = CalculateCenteroid(v0, v1, v2);
-                    Point3D normal = CalculateNormal(v0, v1, v2);
+                    Vector3 centroid = CalculateCenteroid(v0, v1, v2);
+                    Vector3 normal = CalculateNormal(v0, v1, v2);
                     normal = Normalize(normal);
 
                     vertices.Add(new LineVertex
                     {
-                        Position = new Vector3(centroid.x, centroid.y, centroid.z),
+                        Position = new Vector3(centroid.X, centroid.Y, centroid.Z),
                         Color = color
                     });
                     vertices.Add(new LineVertex
                     {
                         Position = new Vector3(
-                            centroid.x + (-normal.x * normalsScale),
-                            centroid.y + (-normal.y * normalsScale),
-                            centroid.z + (-normal.z * normalsScale)),
+                            centroid.X + (-normal.X * normalsScale),
+                            centroid.Y + (-normal.Y * normalsScale),
+                            centroid.Z + (-normal.Z * normalsScale)),
                         Color = color
                     });
                 }
@@ -256,15 +259,15 @@ namespace KimeraCS.Rendering
         /// <summary>
         /// Create a mesh for the shadow (triangle fan as triangles).
         /// </summary>
-        public static GroupMesh CreateShadowMesh(Point3D pMin, Point3D pMax, int numSegments = 20)
+        public static GroupMesh CreateShadowMesh(Vector3 pMin, Vector3 pMax, int numSegments = 20)
         {
-            float cx = (pMin.x + pMax.x) / 2;
-            float cz = (pMin.z + pMax.z) / 2;
+            float cx = (pMin.X + pMax.X) / 2;
+            float cz = (pMin.Z + pMax.Z) / 2;
 
-            Point3D pMinAux = pMin;
-            Point3D pMaxAux = pMax;
-            pMinAux.y = 0;
-            pMaxAux.y = 0;
+            Vector3 pMinAux = pMin;
+            Vector3 pMaxAux = pMax;
+            pMinAux.Y = 0;
+            pMaxAux.Y = 0;
             float radius = CalculateDistance(pMinAux, pMaxAux) / 2;
 
             var vertices = new List<Vertex>();
@@ -327,9 +330,9 @@ namespace KimeraCS.Rendering
                     int v1 = model.Polys[iPolyIdx].Verts[1] + model.Groups[iGroupIdx].offsetVert;
                     int v2 = model.Polys[iPolyIdx].Verts[2] + model.Groups[iGroupIdx].offsetVert;
 
-                    Vector3 p0 = new Vector3(model.Verts[v0].x, model.Verts[v0].y, model.Verts[v0].z);
-                    Vector3 p1 = new Vector3(model.Verts[v1].x, model.Verts[v1].y, model.Verts[v1].z);
-                    Vector3 p2 = new Vector3(model.Verts[v2].x, model.Verts[v2].y, model.Verts[v2].z);
+                    Vector3 p0 = new Vector3(model.Verts[v0].X, model.Verts[v0].Y, model.Verts[v0].Z);
+                    Vector3 p1 = new Vector3(model.Verts[v1].X, model.Verts[v1].Y, model.Verts[v1].Z);
+                    Vector3 p2 = new Vector3(model.Verts[v2].X, model.Verts[v2].Y, model.Verts[v2].Z);
 
                     // Three edges per triangle
                     vertices.Add(new LineVertex { Position = p0, Color = color });

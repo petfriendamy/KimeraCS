@@ -168,9 +168,9 @@ namespace KimeraCS.Rendering
 
                         // Position
                         Vector3 position = new Vector3(
-                            model.Verts[vertIdx].x,
-                            model.Verts[vertIdx].y,
-                            model.Verts[vertIdx].z);
+                            model.Verts[vertIdx].X,
+                            model.Verts[vertIdx].Y,
+                            model.Verts[vertIdx].Z);
 
                         // Normal
                         Vector3 normal = Vector3.UnitY;
@@ -181,9 +181,9 @@ namespace KimeraCS.Rendering
                             if (normIdx >= 0 && normIdx < model.Normals.Length)
                             {
                                 normal = new Vector3(
-                                    model.Normals[normIdx].x,
-                                    model.Normals[normIdx].y,
-                                    model.Normals[normIdx].z);
+                                    model.Normals[normIdx].X,
+                                    model.Normals[normIdx].Y,
+                                    model.Normals[normIdx].Z);
                             }
                         }
 
@@ -195,8 +195,8 @@ namespace KimeraCS.Rendering
                             if (texIdx >= 0 && texIdx < model.TexCoords.Length)
                             {
                                 texCoord = new Vector2(
-                                    model.TexCoords[texIdx].x,
-                                    model.TexCoords[texIdx].y);
+                                    model.TexCoords[texIdx].X,
+                                    model.TexCoords[texIdx].Y);
                             }
                         }
 
@@ -264,16 +264,16 @@ namespace KimeraCS.Rendering
 
             // Rotation from quaternion
             Matrix4 rotation;
-            if (group.rotationQuaternionGroup.w != 0 ||
-                group.rotationQuaternionGroup.x != 0 ||
-                group.rotationQuaternionGroup.y != 0 ||
-                group.rotationQuaternionGroup.z != 0)
+            if (group.rotationQuaternionGroup.W != 0 ||
+                group.rotationQuaternionGroup.X != 0 ||
+                group.rotationQuaternionGroup.Y != 0 ||
+                group.rotationQuaternionGroup.Z != 0)
             {
                 var q = new OpenTK.Mathematics.Quaternion(
-                    (float)group.rotationQuaternionGroup.x,
-                    (float)group.rotationQuaternionGroup.y,
-                    (float)group.rotationQuaternionGroup.z,
-                    (float)group.rotationQuaternionGroup.w);
+                    (float)group.rotationQuaternionGroup.X,
+                    (float)group.rotationQuaternionGroup.Y,
+                    (float)group.rotationQuaternionGroup.Z,
+                    (float)group.rotationQuaternionGroup.W);
                 rotation = Matrix4.CreateFromQuaternion(q);
             }
             else

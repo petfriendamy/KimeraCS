@@ -2,7 +2,7 @@
 using System.IO;
 using System.Drawing;
 using System.Windows.Forms;
-
+using OpenTK.Mathematics;
 
 namespace KimeraCS
 {
@@ -71,8 +71,8 @@ namespace KimeraCS
 
         private void LbTMDObjectList_DoubleClick(object sender, EventArgs e)
         {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
+            Vector3 p_min = new Vector3();
+            Vector3 p_max = new Vector3();
 
             if (lbTMDObjectList.SelectedIndex > -1)
             {
