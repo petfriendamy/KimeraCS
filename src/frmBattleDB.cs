@@ -16,14 +16,14 @@ namespace KimeraCS
     {
 
         public static string strBattleFile = "", strBattleAnimFile = "";
-        public static string strLocalEnemyModelName = "", 
+        private static string strLocalEnemyModelName = "", 
                              strLocalLocationModelName = "", 
                              strLocalMainPCModelName = "";
         
         public static bool bSelectedBattleFileFromDB;
 
-        public string typedChars = string.Empty;
-        public static int iTabPageSelected;
+        private string typedChars = string.Empty;
+        private static int iTabPageSelected;
 
         DataGridViewColumn tmpdgvEnemiesSortColumn;
         SortOrder tmpdgvEnemiesSortOrder;

@@ -1,11 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace KimeraCS
@@ -31,7 +25,7 @@ namespace KimeraCS
 
         }
 
-        public void DefineToolTips()
+        private void DefineToolTips()
         {
             // Set up the delays for the ToolTip.
             toolTip1.AutoPopDelay = 1000;
@@ -51,7 +45,7 @@ namespace KimeraCS
             Close();
         }
 
-        public void SetListItemsState(bool bState)
+        private void SetListItemsState(bool bState)
         {
             int i;
 

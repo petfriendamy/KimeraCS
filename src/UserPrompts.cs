@@ -74,15 +74,19 @@ namespace KimeraCS
             int result;
             try
             {
-                result = LoadSkeleton(strFileName, loadGeometryQ, false, false, TEXTURE_REMOVE_CHECK);
+                result = LoadSkeleton(strFileName, loadGeometryQ, false, false,
+                                      TEXTURE_REMOVE_CHECK);
             }
             catch (PFileNotFoundException ex) //missing P files
             {
                 if (MissingPFilePrompt(ex.Message))
-                    result = LoadSkeleton(strFileName, loadGeometryQ, true, false, TEXTURE_REMOVE_CHECK);
+                    result = LoadSkeleton(strFileName, loadGeometryQ, true, false,
+                                          TEXTURE_REMOVE_CHECK);
                 else
                     throw new FileLoadException("File could not be loaded.", ex);
             }
+            if (result == -2)
+                bLoaded = false;
             int modelType = GetSkeletonType(strFileName);
             switch (modelType)
             {
@@ -102,12 +106,14 @@ namespace KimeraCS
             int result;
             try
             {
-                result = LoadFieldSkeletonFromDB(strFileName, strAnimFileName, loadGeometryQ, false, false, TEXTURE_REMOVE_CHECK);
+                result = LoadFieldSkeletonFromDB(strFileName, strAnimFileName, loadGeometryQ,
+                                                 false, false, TEXTURE_REMOVE_CHECK);
             }
             catch (PFileNotFoundException ex) //missing P files
             {
                 if (MissingPFilePrompt(ex.Message))
-                    result = LoadSkeleton(strFileName, loadGeometryQ, true, false, TEXTURE_REMOVE_CHECK);
+                    result = LoadSkeleton(strFileName, loadGeometryQ, true, false,
+                                          TEXTURE_REMOVE_CHECK);
                 else
                     throw new FileLoadException("File could not be loaded.", ex);
             }

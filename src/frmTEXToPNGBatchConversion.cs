@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Text.RegularExpressions;
-using System.Collections.Generic;
 using System.IO;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -20,7 +17,7 @@ namespace KimeraCS
     public partial class FrmTEXToPNGBatchConversion : Form
     {
 
-        public bool bCancelPressed;
+        private bool bCancelPressed;
 
         public FrmTEXToPNGBatchConversion()
         {
@@ -143,13 +140,13 @@ namespace KimeraCS
             }
         }
 
-        public void ActivateSettings()
+        private void ActivateSettings()
         {
             gbSettings.Enabled = true;
             gbProgress.Enabled = false;
         }
 
-        public static Bitmap PutPixelDataIntoBitmap32ARGB(TEX inTEX, bool bFlipVert)
+        private static Bitmap PutPixelDataIntoBitmap32ARGB(TEX inTEX, bool bFlipVert)
         {
             DirectBitmap tmpDBMP = new DirectBitmap(inTEX.width, inTEX.height);
             int i, iBMPValue, iBMPByteLength, iR, iG, iB, iA;
@@ -197,7 +194,7 @@ namespace KimeraCS
             return tmpDBMP.Bitmap;
         }
 
-        public string GetOutputPNGFileName(string strTEXFile, bool chkFFNXAALINaming)
+        private string GetOutputPNGFileName(string strTEXFile, bool chkFFNXAALINaming)
         {
             string strGetPNGFileNameResult;
 
@@ -348,7 +345,7 @@ namespace KimeraCS
             return strGetPNGFileNameResult;
         }
 
-        public async void ProcessTEX2PNGBatch(string strMainPath)
+        private async void ProcessTEX2PNGBatch(string strMainPath)
         {
             int iCounter;
             TEX tmpTEX;

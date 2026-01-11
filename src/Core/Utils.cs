@@ -11,8 +11,6 @@ namespace KimeraCS
     using Core;
     using Rendering;
 
-    using static FrmSkeletonEditor;
-
     using static FF7Skeleton;
     using static FF7FieldSkeleton;
     using static FF7PModel;
@@ -783,7 +781,7 @@ namespace KimeraCS
 
         public static void ResetCamera(ref double alpha, ref double beta, ref double gamma,
                                        ref float panX, ref float panY, ref float panZ,
-                                       ref double DIST)
+                                       ref double DIST, int animIndex, int currFrame)
         {
             Point3D p_min = new Point3D();
             Point3D p_max = new Point3D();
@@ -795,7 +793,7 @@ namespace KimeraCS
                 switch (modelType)
                 {
                     case K_HRC_SKELETON:
-                        ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[iCurrentFrameScroll],
+                        ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[currFrame],
                                                 ref p_min, ref p_max);
                         break;
 
@@ -803,7 +801,7 @@ namespace KimeraCS
                     case K_MAGIC_SKELETON:
                         //if (!bSkeleton.IsBattleLocation)
                         //{
-                        ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll],
+                        ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[animIndex].frames[currFrame],
                                                  ref p_min, ref p_max);
                         //}
                         break;

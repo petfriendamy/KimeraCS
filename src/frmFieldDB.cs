@@ -119,7 +119,7 @@ namespace KimeraCS
             fbdFieldDataDirectory.Dispose();*/
         }
 
-        public void UpdatelbAnimation()
+        private void UpdatelbAnimation()
         {
             int ai, ni;
 

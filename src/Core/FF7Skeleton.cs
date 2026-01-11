@@ -5,22 +5,17 @@ using OpenTK.Graphics.OpenGL.Compatibility;
 
 namespace KimeraCS
 {
-    using static FrmSkeletonEditor;
-
     using static FF7FieldSkeleton;
     using static FF7FieldAnimation;
 
     using static FF7BattleSkeleton;
     using static FF7BattleAnimationsPack;
-    using static FF7BattleAnimation;
 
     using static FF7FieldRSDResource;
     using static FF7PModel;
     using static FF7TMDModel;
 
     using static FF7TEXTexture;
-
-    using static Lighting;
 
     using static Utils;
     using static FileTools;
@@ -66,6 +61,7 @@ namespace KimeraCS
         public static bool IsTMDModel;
         public static bool IsRSDResource;
 
+        public static bool bLoaded;
 
         //
         // Global Skeleton/Model functions/procedures
@@ -224,80 +220,6 @@ namespace KimeraCS
             return iloadSkeletonResult;
         }
 
-        public static int WriteSkeleton(string strFileName, bool compileMultiPBones)
-        {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
-            BattleFrame tmpwpFrame;
-
-            int isaveSkeletonResult = 0;
-
-            try
-            {
-                switch (modelType)
-                {
-                    case K_HRC_SKELETON:
-                        ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[iCurrentFrameScroll], ref p_min, ref p_max);
-
-                        SetCameraAroundModel(ref p_min, ref p_max, 0, 0, -2 * ComputeSceneRadius(p_min, p_max),
-                                             0, 0, 0, 1, 1, 1);
-
-                        SetLights();
-
-                        ApplyFieldChanges(ref fSkeleton, fAnimation.frames[iCurrentFrameScroll], compileMultiPBones);
-
-                        WriteFieldSkeleton(ref fSkeleton, strFileName);
-                        //  WriteFieldAnimation(fAnimation, saveFile.FileName);
-                        CreateDListsFromFieldSkeleton(ref fSkeleton);
-
-                        isaveSkeletonResult = 1;
-                        break;
-
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
-                        if (bSkeleton.IsBattleLocation && ianimIndex > 0) ianimIndex = 0;
-
-                        ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll], ref p_min, ref p_max);
-
-                        SetCameraAroundModel(ref p_min, ref p_max, 0, 0, -2 * ComputeSceneRadius(p_min, p_max),
-                                             0, 0, 0, 1, 1, 1);
-
-                        SetLights();
-
-                        tmpwpFrame = new BattleFrame();
-                        if (bSkeleton.nsWeaponsAnims > 0) tmpwpFrame = bAnimationsPack.WeaponAnimations[0].frames[0];
-
-                        ApplyBattleChanges(ref bSkeleton, bAnimationsPack.SkeletonAnimations[0].frames[0], tmpwpFrame);
-
-                        if (modelType == K_AA_SKELETON)
-                        {
-                            // Battle model (*AA)
-                            WriteBattleSkeleton(ref bSkeleton, strFileName);
-                        }
-                        else
-                        {
-                            // Magic model (*.D)
-                            WriteMagicSkeleton(ref bSkeleton, strFileName);
-                        }
-
-                        //  WriteBattleAnimationsPack(bAnimationsPack, strFileNameAnimationsPack);
-                        //  CheckWriteBattleAnimationsPack(bAnimationsPack, strFileNameAnimationsPack);
-                        CreateDListsFromBattleSkeleton(ref bSkeleton);
-
-                        isaveSkeletonResult = 1;
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                strGlobalExceptionMessage = ex.Message;
-
-                isaveSkeletonResult = -1;
-            }
-
-            return isaveSkeletonResult;
-        }
-
         public static int DestroySkeleton()
         {
             int iDestroySkeletonResult = 1;
@@ -372,55 +294,6 @@ namespace KimeraCS
             }
 
             return iSkeletonType;
-        }
-
-        public static int WritePModel(string strFileName)
-        {
-            Point3D p_min = new Point3D();
-            Point3D p_max = new Point3D();
-
-            int isaveModelResult = 0;
-
-            try
-            {
-                switch (modelType)
-                {
-                    case K_P_FIELD_MODEL:
-                    case K_P_BATTLE_MODEL:
-                    case K_P_MAGIC_MODEL:
-                    case K_3DS_MODEL:
-                        GL.MatrixMode(MatrixMode.Modelview);
-                        GL.PushMatrix();
-
-                        SetCameraModelViewQuat(fPModel.repositionX, fPModel.repositionY, fPModel.repositionZ,
-                                               fPModel.rotationQuaternion,
-                                               fPModel.resizeX, fPModel.resizeY, fPModel.resizeZ);
-
-                        ApplyPChanges(ref fPModel, Path.GetExtension(strFileName).ToUpper() != ".P");
-
-                        ComputePModelBoundingBox(fPModel, ref p_min, ref p_max);
-                        SetCameraAroundModel(ref p_min, ref p_max,
-                                             0, 0, -2 * ComputeSceneRadius(p_min, p_max),
-                                             0, 0, 0, 1, 1, 1);
-
-                        SetLights();
-
-                        if (GL.IsEnabled(EnableCap.Lighting)) ApplyCurrentVColors(ref fPModel);
-
-                        GL.PopMatrix();
-                        WriteGlobalPModel(ref fPModel, strFileName);
-                        CreateDListsFromPModel(ref fPModel);
-
-                        isaveModelResult = 1;
-                        break;
-                }
-            }
-            catch
-            {
-                isaveModelResult = -1;
-            }
-
-            return isaveModelResult;
         }
 
         public static int LoadRSDResourceModel(string strRSDFolder, string strRSDName,
@@ -518,7 +391,7 @@ namespace KimeraCS
             return isaveAnimationResult;
         }
 
-        public static bool NumAnimFramesIsOne()
+        public static bool NumAnimFramesIsOne(int index)
         {
             bool iNumAnimFramesIsOneResult = false;
             switch (modelType)
@@ -529,7 +402,7 @@ namespace KimeraCS
 
                 case K_AA_SKELETON:
                 case K_MAGIC_SKELETON:
-                    if (bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort == 1) iNumAnimFramesIsOneResult = true;
+                    if (bAnimationsPack.SkeletonAnimations[index].numFramesShort == 1) iNumAnimFramesIsOneResult = true;
                     break;
             }
 

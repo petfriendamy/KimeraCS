@@ -1,12 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Globalization;
 using System.Windows.Forms;
 
@@ -25,9 +19,9 @@ namespace KimeraCS
 
         readonly private FrmSkeletonEditor frmSkelEdit;
 
-        public static string strAttachedTo, strAttachedName;
-        public static int iMode;                        // Mode: 0 - Add Joint / 1 - Edit Joint
-        public static int iNumBoneSelected;
+        private static string strAttachedTo, strAttachedName;
+        private static int iMode;                        // Mode: 0 - Add Joint / 1 - Edit Joint
+        private static int iNumBoneSelected;
 
 
         public FrmSkeletonJoints(FrmSkeletonEditor frmSkelEdit, int iMenuMode, string strJoint)

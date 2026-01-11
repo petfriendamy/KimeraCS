@@ -31,7 +31,7 @@ namespace KimeraCS
         readonly private FrmSkeletonEditor frmSkelEdit;
 
         // Const
-        public enum EditMode
+        private enum EditMode
         {
             K_PAINT,
             K_CUT_EDGE,
@@ -44,15 +44,14 @@ namespace KimeraCS
             K_MOVE_VERTEX
         }
 
-        public enum Event
+        private enum Event
         {
             K_LOAD = -1,
             K_MOVE = 0,
             K_CLICK = 1,
             K_CLICK_SHIFT = 2
         }
-        public const int LIGHT_STEPS = 10;
-
+        private const int LIGHT_STEPS = 10;
         private const int F_BATTLELOCATION_SCALE = 10;
 
 
@@ -62,54 +61,54 @@ namespace KimeraCS
 
         public static int EditedBone, EditedBonePiece;
 
-        public static DrawMode drawMode;
+        private static DrawMode drawMode;
 
-        public EditMode primaryFunc, secondaryFunc, ternaryFunc;
+        private EditMode primaryFunc, secondaryFunc, ternaryFunc;
 
-        public Color[] vcolorsOriginal;
-        public Color[] pcolorsOriginal;
+        private Color[] vcolorsOriginal;
+        private Color[] pcolorsOriginal;
 
         public static float alphaPE, betaPE, gammaPE;
         public static float DISTPE;
         public static float panXPE, panYPE, panZPE;
 
-        public float planeA, planeB, planeC, planeD;
-        public float planeOriginalA, planeOriginalB, planeOriginalC, planeOriginalD;
-        public float oldAlphaPlane, oldBetaPlane, oldGammaPlane;
+        private float planeA, planeB, planeC, planeD;
+        private float planeOriginalA, planeOriginalB, planeOriginalC, planeOriginalD;
+        private float oldAlphaPlane, oldBetaPlane, oldGammaPlane;
 
         public Point3D planeOriginalPoint = new Point3D();
-        public Point3D planePoint = new Point3D();
-        public Utils.Quaternion planeRotationQuat = new Utils.Quaternion();
-        public static double[] planeTransformation = new double[16];
+        private Point3D planePoint = new Point3D();
+        private Utils.Quaternion planeRotationQuat = new Utils.Quaternion();
+        private static double[] planeTransformation = new double[16];
 
-        public static Point3D planeOriginalPoint1 = new Point3D();
-        public static Point3D planeOriginalPoint2 = new Point3D();
-        public static Point3D planeOriginalPoint3 = new Point3D();
-        public static Point3D planeOriginalPoint4 = new Point3D();
+        private static Point3D planeOriginalPoint1 = new Point3D();
+        private static Point3D planeOriginalPoint2 = new Point3D();
+        private static Point3D planeOriginalPoint3 = new Point3D();
+        private static Point3D planeOriginalPoint4 = new Point3D();
 
         public static float rszXPE, rszYPE, rszZPE;
         public static float repXPE, repYPE, repZPE;
-        public float x_lastPE, y_lastPE;
+        private float x_lastPE, y_lastPE;
 
         // PEditor drawing main DoFunction vars
-        public static int VCountNewPoly;
-        public static ushort[] tmpVNewPoly = new ushort[3];
-        public static double dblPickedVertexZ;
+        private static int VCountNewPoly;
+        private static ushort[] tmpVNewPoly = new ushort[3];
+        private static double dblPickedVertexZ;
         List<int> lstPickedVertices = new List<int>();
         int[] lstAdjacentPolys;
         STIntVector[] lstAdjacentVerts;
         STIntVector[] lstAdjacentAdjacentPolys;
 
         public static bool loadedPModel;
-        public static bool bLoading;
+        private static bool bLoading;
         private bool pbMouseIsDownPE;
 
         public bool loadingModifiersQ;
-        public bool loadingColorModifiersQ;
+        private bool loadingColorModifiersQ;
         public static bool updateSkeletonEditorQ;
-        public bool controlPressedQ;
-        public int shiftPressedQ;
-        public bool DoNotAddPEStateQ;
+        private bool controlPressedQ;
+        private int shiftPressedQ;
+        private bool DoNotAddPEStateQ;
 
         public static nint panelEditorPModelDC;
         public static nint OGLContextPEditor;
@@ -118,21 +117,21 @@ namespace KimeraCS
         public static List<Color> colorTable = new List<Color>();
         public static PairIB[] translationTablePolys;
         public static PairIB[] translationTableVertex;
-        public static int iSelectedColor, iBrightnessFactor;
+        private static int iSelectedColor, iBrightnessFactor;
         public static byte iThreshold;
-        public DirectBitmap bmpFullGradientPalette;
-        public bool bColorsChanged;  // -- (KimeraVB6 var "ModelDirty")
+        private DirectBitmap bmpFullGradientPalette;
+        private bool bColorsChanged;  // -- (KimeraVB6 var "ModelDirty")
 
         // Var for Group aspects
-        public static int SelectedGroup;
-        public static float rszGroupXPE, rszGroupYPE, rszGroupZPE;
-        public static float repGroupXPE, repGroupYPE, repGroupZPE;
+        private static int SelectedGroup;
+        private static float rszGroupXPE, rszGroupYPE, rszGroupZPE;
+        private static float repGroupXPE, repGroupYPE, repGroupZPE;
         public static float alphaGroupPE, betaGroupPE, gammaGroupPE;
-        public static float fBattleLocationGroupScale;
-        public static bool bGlobalChangeGroup;
+        private static float fBattleLocationGroupScale;
+        private static bool bGlobalChangeGroup;
 
         // GroupPropierties vars
-        public FrmGroupProperties frmGroupProp;
+        private FrmGroupProperties frmGroupProp;
 
 
         public FrmPEditor(FrmSkeletonEditor frmSkelEdit, PModel ModelIn)
@@ -148,7 +147,7 @@ namespace KimeraCS
 
         /////////////////////////////////////////////////////////////
         // OpenGL methods:
-        public void SetOGLEditorSettings()
+        private void SetOGLEditorSettings()
         {
             GL.ClearDepth(1.0f);
 
@@ -174,7 +173,7 @@ namespace KimeraCS
         // Create the ToolTip and associate with the Form container.
         readonly ToolTip toolTip1 = new ToolTip();
 
-        public void DefineToolTips()
+        private void DefineToolTips()
         {
             // Set up the delays for the ToolTip.
             toolTip1.AutoPopDelay = 1000;
@@ -447,7 +446,7 @@ namespace KimeraCS
             }
         }
 
-        public void PanelEditorPModel_MouseWheel(object sender, MouseEventArgs e)
+        private void PanelEditorPModel_MouseWheel(object sender, MouseEventArgs e)
         {
 
              if (controlPressedQ)
@@ -867,7 +866,7 @@ namespace KimeraCS
             hsbRepositionZ.Value = iRepositionZ;
         }
 
-        public void RotationModifiersChanged()
+        private void RotationModifiersChanged()
         {
             if (loadingModifiersQ) return;
 
@@ -2399,7 +2398,7 @@ namespace KimeraCS
             }
         }
 
-        public void UpdateColorValues()
+        private void UpdateColorValues()
         {
             loadingColorModifiersQ = true;
 
@@ -2712,7 +2711,7 @@ namespace KimeraCS
 
         /////////////////////////////////////////////////////////////
         // Local methods:
-        public void InitializeLoadPEditor()
+        private void InitializeLoadPEditor()
         {
             // GLControl handles context creation internally
             panelEditorPModel.MakeCurrent();
@@ -2784,7 +2783,7 @@ namespace KimeraCS
             ResetPlane();
         }
 
-        public void InitializeEditorPModelDataControls()
+        private void InitializeEditorPModelDataControls()
         {
             Point3D p_min = new Point3D();
             Point3D p_max = new Point3D();
@@ -2920,7 +2919,7 @@ namespace KimeraCS
             }
         }
 
-        public void ResetCameraPE()
+        private void ResetCameraPE()
         {
             Point3D p_min = new Point3D();
             Point3D p_max = new Point3D();
@@ -2940,7 +2939,7 @@ namespace KimeraCS
             }
         }
 
-        public void ComputeCurrentEquations()
+        private void ComputeCurrentEquations()
         {
             Point3D normal = new Point3D();
             Point3D tmpNormal = new Point3D(planeOriginalA, planeOriginalB, planeOriginalC);
@@ -2967,7 +2966,7 @@ namespace KimeraCS
             planeD = -planeA * planePoint.x - planeB * planePoint.y - planeC * planePoint.z;
         }
 
-        public void ResetPlane()
+        private void ResetPlane()
         {
             nudAlphaPlane.Value = 0;
             nudBetaPlane.Value = 0;
@@ -3015,7 +3014,7 @@ namespace KimeraCS
             ComputeCurrentEquations();
         }
 
-        public void CommitContextualizedPChanges(bool bDNormals)
+        private void CommitContextualizedPChanges(bool bDNormals)
         {
             Point3D p_min = new Point3D();
             Point3D p_max = new Point3D();
@@ -3126,7 +3125,7 @@ namespace KimeraCS
             PbPalette_Paint(null, null);
         }
 
-        public void SetFunctionButtonColors()
+        private void SetFunctionButtonColors()
         {
             SetPaintButtonColor();
             SetCutEdgeButtonColor();
@@ -3138,7 +3137,7 @@ namespace KimeraCS
             SetNewPolyButtonColor();
         }
 
-        public void SetPaintButtonColor()
+        private void SetPaintButtonColor()
         {
             if (primaryFunc == EditMode.K_PAINT)
             {
@@ -3165,7 +3164,7 @@ namespace KimeraCS
             }                 
         }
 
-        public void SetCutEdgeButtonColor()
+        private void SetCutEdgeButtonColor()
         {
             if (primaryFunc == EditMode.K_CUT_EDGE)
             {
@@ -3192,7 +3191,7 @@ namespace KimeraCS
             }
         }
 
-        public void SetEraseButtonColor()
+        private void SetEraseButtonColor()
         {
             if (primaryFunc == EditMode.K_ERASE_POLY)
             {
@@ -3219,7 +3218,7 @@ namespace KimeraCS
             }
         }
 
-        public void SetPickVertexButtonColor()
+        private void SetPickVertexButtonColor()
         {
             if (primaryFunc == EditMode.K_PICK_VERTEX)
             {
@@ -3246,7 +3245,7 @@ namespace KimeraCS
             }
         }
 
-        public void SetRotateButtonColor()
+        private void SetRotateButtonColor()
         {
             if (primaryFunc == EditMode.K_ROTATE)
             {
@@ -3266,7 +3265,7 @@ namespace KimeraCS
             }
         }
 
-        public void SetZoomButtonColor()
+        private void SetZoomButtonColor()
         {
             if (primaryFunc == EditMode.K_ZOOM)
             {
@@ -3286,7 +3285,7 @@ namespace KimeraCS
             }
         }
 
-        public void SetPanButtonColor()
+        private void SetPanButtonColor()
         {
             if (primaryFunc == EditMode.K_PAN)
             {
@@ -3306,7 +3305,7 @@ namespace KimeraCS
             }
         }
 
-        public void SetNewPolyButtonColor()
+        private void SetNewPolyButtonColor()
         {
             if (primaryFunc == EditMode.K_NEW_POLY)
             {
@@ -3333,7 +3332,7 @@ namespace KimeraCS
             }
         }
 
-        public void DrawPalette(Event iEvent)
+        private void DrawPalette(Event iEvent)
         {
             int iColorCounter, x, y, numRow, numCol, szColorRowsHeight, szColorColsWidth, numColorRows, numColorCols;
             //float numColorsFactor;
@@ -3467,7 +3466,7 @@ namespace KimeraCS
                                                           System.Drawing.Imaging.PixelFormat.Format32bppRgb);
         }
 
-        public void ChangeGroupStatus(bool bChangeGroup)
+        private void ChangeGroupStatus(bool bChangeGroup)
         {
             if (bChangeGroup)
             {
@@ -3529,7 +3528,7 @@ namespace KimeraCS
         }
 
         // ORIGINAL BACKUP COPY KIMERAVB6
-        //public void DrawPalette(int iEvent)
+        //private void DrawPalette(int iEvent)
         //{
         //    int i, x, y, x0, y0;           
         //    uint col;
@@ -3637,7 +3636,7 @@ namespace KimeraCS
 
         ////////////////////////////////////////////////////////////
         //  Main DoFunction procedure
-        public void DoFunction(EditMode nFunc, Event iEvent, int x, int y)
+        private void DoFunction(EditMode nFunc, Event iEvent, int x, int y)
         {
             Point3D tmpPoint3D = new Point3D();
             Point3D tmpPoint3D_2 = new Point3D();
@@ -4047,7 +4046,7 @@ namespace KimeraCS
         //  -------------------------------------------------------------------------------------------------
         //  ======================================= PEDITOR PROCEDURES ======================================
         //  -------------------------------------------------------------------------------------------------
-        public static int GetClosestVertex(PModel Model, int px, int py,
+        private static int GetClosestVertex(PModel Model, int px, int py,
             float panX, float panY, float panZ, float cameraDist,
             float alpha, float beta, float gamma)
         {
@@ -4104,7 +4103,7 @@ namespace KimeraCS
         /// Finds the closest polygon in the model at the given screen coordinates using ray casting.
         /// Replaces deprecated GL_SELECT mode with CPU-based ray-triangle intersection.
         /// </summary>
-        public static int GetClosestPolygon(PModel Model, int px, int py,
+        private static int GetClosestPolygon(PModel Model, int px, int py,
             float panX, float panY, float panZ, float cameraDist,
             float alpha, float beta, float gamma)
         {
@@ -4223,7 +4222,7 @@ namespace KimeraCS
             return distance > EPSILON;
         }
 
-        public static int GetClosestEdge(PModel Model, int iPolyIdx, int px, int py, ref float alpha)
+        private static int GetClosestEdge(PModel Model, int iPolyIdx, int px, int py, ref float alpha)
         {
             int iGetClosestEdgeReturn;
 

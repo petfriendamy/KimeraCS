@@ -1,11 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace KimeraCS
@@ -17,7 +10,7 @@ namespace KimeraCS
 
         readonly private FrmPEditor frmPEdit;
 
-        public int SelectedGroup;
+        private int SelectedGroup;
 
         public FrmGroupProperties(FrmPEditor frmPEdit, int iGroupIdx)
         {
@@ -38,7 +31,7 @@ namespace KimeraCS
         // Create the ToolTip and associate with the Form container.
         readonly ToolTip toolTip1 = new ToolTip();
 
-        public void DefineToolTips()
+        private void DefineToolTips()
         {
             // Set up the delays for the ToolTip.
             toolTip1.AutoPopDelay = 5000;
@@ -52,7 +45,7 @@ namespace KimeraCS
         }
 
 
-        public void SetOptionsEnabled()
+        private void SetOptionsEnabled()
         {
             //chkV_WIREFRAME_OPTION.Enabled = chkV_WIREFRAME.Checked;
             //chkTrueV_TEX.Enabled = chkV_TEXTURE.Checked;
@@ -65,7 +58,7 @@ namespace KimeraCS
             //chkV_SHADEMODE_Lighted.Enabled = chkV_SHADEMODE.Checked;
         }
 
-        public void SetSelectedGroup()
+        private void SetSelectedGroup()
         {
             int iFeatures, iOptions;
 

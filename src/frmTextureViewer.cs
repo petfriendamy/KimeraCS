@@ -4,11 +4,6 @@ using System.Windows.Forms;
 using System.Drawing.Drawing2D;
 using System.Collections.Generic;
 using System.IO;
-using System.ComponentModel;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KimeraCS
 {
@@ -17,8 +12,6 @@ namespace KimeraCS
     using static FF7Skeleton;
     using static FF7FieldRSDResource;
     using static FF7PModel;
-
-    using static Utils;
 
     public partial class FrmTextureViewer : Form
     {
@@ -37,26 +30,26 @@ namespace KimeraCS
 
         readonly private FrmSkeletonEditor frmSkelEdit;
 
-        public const int I_MAXNUMGROUPS = 128;
-        public const int I_TEXTURECOORDVIEWMINSIZE = 512;
-        public const int I_WINDOWWIDTHBORDER = 24;
-        public const int I_WINDOWHEIGHTBORDER = 44;
-        public const int I_RADIUS = 3;
+        private const int I_MAXNUMGROUPS = 128;
+        private const int I_TEXTURECOORDVIEWMINSIZE = 512;
+        private const int I_WINDOWWIDTHBORDER = 24;
+        private const int I_WINDOWHEIGHTBORDER = 44;
+        private const int I_RADIUS = 3;
 
-        public PModel TexViewModel;
+        private PModel TexViewModel;
 
-        public int iTCWidth, iTCHeight;
+        private int iTCWidth, iTCHeight;
 
         // UV Coordinates movement with mouse structs
-        public List<STUVXYCoord> lstUVXYCoords;
+        private List<STUVXYCoord> lstUVXYCoords;
         bool bFoundXYCoord;
         bool bMouseLeftClicked;
         bool bLoadingTextureViewer;
         int localXYPointIdx, localGroupIdx;
 
-        public bool shiftPressedQ;
-        public int iPosXClicked;
-        public int iPosYClicked;
+        private bool shiftPressedQ;
+        private int iPosXClicked;
+        private int iPosYClicked;
         Cursor Hand, HandPlus;
 
 
@@ -78,7 +71,7 @@ namespace KimeraCS
         // Create the ToolTip and associate with the Form container.
         readonly ToolTip toolTip1 = new ToolTip();
 
-        public void DefineToolTips()
+        private void DefineToolTips()
         {
             // Set up the delays for the ToolTip.
             toolTip1.AutoPopDelay = 1000;
@@ -95,7 +88,7 @@ namespace KimeraCS
             toolTip1.SetToolTip(btnZoomOut, "Zoom Out");
         }
 
-        public bool NormalizeTextureCoordinates(int iGroupIdx)
+        private bool NormalizeTextureCoordinates(int iGroupIdx)
         {
             int iVertCounter;
 
@@ -111,7 +104,7 @@ namespace KimeraCS
             return false;
         }
 
-        public void PrepareUVXYCoords()
+        private void PrepareUVXYCoords()
         {
             int iGroupIdx, iVertCounter, iTexID;
             float fU, fV;
@@ -239,7 +232,7 @@ namespace KimeraCS
             bLoadingTextureViewer = false;
         }
 
-        public void DrawUVs()
+        private void DrawUVs()
         {
             Bitmap hTmpBMP = null;
 
@@ -561,7 +554,7 @@ namespace KimeraCS
             }
         }
 
-        public void ChangeTexCoordViewSize()
+        private void ChangeTexCoordViewSize()
         {
             int iWidth, iHeight, iTexID, iTexSize;
             float fAspectRatio, fWidth, fHeight;
@@ -661,7 +654,7 @@ namespace KimeraCS
             this.Left = (Screen.PrimaryScreen.WorkingArea.Width - iWidth) / 2;
         }
 
-        public void ChangeZoomButtons()
+        private void ChangeZoomButtons()
         {
             if (frmSkelEdit.iTexCoordViewerScale == 1) btnZoomOut.Enabled = false;
             else btnZoomOut.Enabled = true;
@@ -700,7 +693,7 @@ namespace KimeraCS
             DrawUVs();
         }
 
-        public bool FoundXYPosMouse(int X, int Y)
+        private bool FoundXYPosMouse(int X, int Y)
         {
             localGroupIdx = 0;
 
@@ -729,7 +722,7 @@ namespace KimeraCS
         }
 
 
-        public void UpdateXYCoords()
+        private void UpdateXYCoords()
         {
             int iGroupIdx, iTexID, iVertCounter, iWidth, iHeight;
 

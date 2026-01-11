@@ -35,10 +35,10 @@ namespace KimeraCS
     public partial class FrmSkeletonEditor : Form
     {
 
-        public string STR_APPNAME = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version}";
+        private string STR_APPNAME = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version}";
 
-        public static int modelWidth;
-        public static int modelHeight;
+        //private static int modelWidth;
+        //private static int modelHeight;
 
         public static int SelectedBone;
         public static int SelectedBonePiece;
@@ -49,53 +49,53 @@ namespace KimeraCS
         public static double DIST;
         public static float panX, panY, panZ;
 
-        public static bool bLoaded, bChangesDone;
-        public static bool selectBoneForWeaponAttachmentQ;
-        public static int nWeapons;
+        public static bool bChangesDone;
+        private static bool selectBoneForWeaponAttachmentQ;
+        //private static int nWeapons;
 
-        public static int x_last, y_last;
+        private static int x_last, y_last;
 
-        public static bool loadingBoneModifiersQ;
-        public static bool loadingBonePieceModifiersQ;
-        public static bool loadingAnimationQ;
-        public static bool controlPressedQ;
+        private static bool loadingBoneModifiersQ;
+        private static bool loadingBonePieceModifiersQ;
+        private static bool loadingAnimationQ;
+        private static bool controlPressedQ;
 
-        //public static bool OpenGLValid = false;
+        //private static bool OpenGLValid = false;
 
         // This is for the Copy/Paste Frame feature
         FieldFrame CopyfFieldFrame;
         BattleFrame CopybBattleFrame;
         BattleFrame CopybBattleWFrame;
 
-        // Public vars of controls
+        // private vars of controls
         // Drawing
-        public static bool bDListsEnable;
-        public static bool bShowBones;
-        public static bool bShowGround;
-        public static bool bShowLastFrameGhost;
-        public static bool bDontRefreshPicture;
+        private static bool bDListsEnable;
+        private static bool bShowBones;
+        private static bool bShowGround;
+        private static bool bShowLastFrameGhost;
+        private static bool bDontRefreshPicture;
 
         // Animation
-        public static int iCurrentFrameScroll;
+        private static int iCurrentFrameScroll;
         public static int ianimIndex;
         public static int ianimWeaponIndex;
-        public static int iFPS;
-        public static float fFPS;
+        private static int iFPS;
+        private static float fFPS;
 
         // Lighting
-        public static bool bchkFrontLight;
-        public static bool bchkRearLight;
-        public static bool bchkRightLight;
-        public static bool bchkLeftLight;
-        public static bool infinityFarQ;
-        public static float fLightPosXScroll, fLightPosYScroll, fLightPosZScroll;
+        private static bool bchkFrontLight;
+        private static bool bchkRearLight;
+        private static bool bchkRightLight;
+        private static bool bchkLeftLight;
+        private static bool infinityFarQ;
+        private static float fLightPosXScroll, fLightPosYScroll, fLightPosZScroll;
 
         // Mouse PanelModel
         private bool pbMouseIsDown;
-        public bool pbIsMinimized;
+        //private bool pbIsMinimized;
 
         // Undo/Redo feature
-        public static bool DoNotAddStateQ;
+        private static bool DoNotAddStateQ;
 
         // Helper Vars
         int nUDTexUpDown;
@@ -115,26 +115,26 @@ namespace KimeraCS
         public FrmPEditor frmPEdit;
 
         // Texture Viewer vars
-        public FrmTextureViewer frmTexViewer;
+        private FrmTextureViewer frmTexViewer;
         public bool bPaintGreen;
         public int iTexCoordViewerScale;
 
         // Statistics vars
-        public FrmStatistics frmStats;
+        private FrmStatistics frmStats;
 
         // TMD Object List
-        public FrmTMDObjList frmTMDOL;
+        private FrmTMDObjList frmTMDOL;
 
         // DPI vars
         public decimal dDPIScaleFactor;
 
         // Show Normals
-        public static bool bShowVertexNormals, bShowFaceNormals;
-        public static int iNormalsColor;
-        public static float fNormalsScale;
+        private static bool bShowVertexNormals, bShowFaceNormals;
+        private static int iNormalsColor;
+        private static float fNormalsScale;
 
         // SaveAs global variable
-        public static string strGlobalPathSaveAsSkeletonFolder;
+        private static string strGlobalPathSaveAsSkeletonFolder;
 
 
         /////////////////////////////////////////////////////////////
@@ -148,7 +148,7 @@ namespace KimeraCS
 
         /////////////////////////////////////////////////////////////
         // OpenGL methods:
-        public void SetOGLSettings()
+        private void SetOGLSettings()
         {
 
             GL.ClearDepth(1.0f);
@@ -166,7 +166,7 @@ namespace KimeraCS
 
         }
 
-        public void InitOpenGLContext()
+        private void InitOpenGLContext()
         {
             // GLControl handles context creation internally
             panelModel.MakeCurrent();
@@ -188,7 +188,7 @@ namespace KimeraCS
         // Create the ToolTip and associate with the Form container.
         readonly ToolTip toolTip1 = new ToolTip();
 
-        public void DefineToolTips()
+        private void DefineToolTips()
         {
             // Set up the delays for the ToolTip.
             toolTip1.AutoPopDelay = 1000;
@@ -212,7 +212,7 @@ namespace KimeraCS
 
         /////////////////////////////////////////////////////////////
         // MAIN LOAD FORM
-        public void InitializeDBs()
+        private void InitializeDBs()
         {
             // Instantiate Field Database form
             switch (ReadCharFilterFile())
@@ -539,7 +539,7 @@ namespace KimeraCS
             }
         }
 
-        public void InitializeWinFormsDataControls()
+        private void InitializeWinFormsDataControls()
         {
             // Init vars
             ianimIndex = 0;
@@ -667,7 +667,7 @@ namespace KimeraCS
             //SetOGLSettings();
         }
 
-        public void EnableWinFormsDataControls()
+        private void EnableWinFormsDataControls()
         {
             int iWeaponIdx, iAnimIdx;
 
@@ -939,7 +939,7 @@ namespace KimeraCS
             WriteCFGFile();
         }
 
-        public void TextureViewer_Paint(object sender, PaintEventArgs e)
+        private void TextureViewer_Paint(object sender, PaintEventArgs e)
         {
             if (cbTextureSelect.SelectedIndex > -1)
             {
@@ -1031,7 +1031,7 @@ namespace KimeraCS
         }
 
         // BACKUP
-        //public void PanelModel_Paint(object sender, PaintEventArgs e)
+        //private void PanelModel_Paint(object sender, PaintEventArgs e)
         //{
         //    if (bLoaded)
         //    {
@@ -1127,7 +1127,7 @@ namespace KimeraCS
             }
         }
 
-        public static void FillBoneSelector(ComboBox cbIn)
+        private static void FillBoneSelector(ComboBox cbIn)
         {
             int iBoneIdx;
 
@@ -1703,7 +1703,7 @@ namespace KimeraCS
             }
         }
 
-        public void PanelModel_MouseWheel(object sender, MouseEventArgs e)
+        private void PanelModel_MouseWheel(object sender, MouseEventArgs e)
         {
             Point3D p_temp;
             Point3D p_temp2;
@@ -1863,7 +1863,8 @@ namespace KimeraCS
 
         private void ResetCameraToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            ResetCamera(ref alpha, ref beta, ref gamma, ref panX, ref panY, ref panZ, ref DIST);
+            ResetCamera(ref alpha, ref beta, ref gamma, ref panX, ref panY, ref panZ, ref DIST,
+                        ianimIndex, iCurrentFrameScroll);
 
             PanelModel_Paint(null, null);
             TextureViewer_Paint(null, null);
@@ -5739,7 +5740,7 @@ namespace KimeraCS
             bool bisLoopQ;
 
             //  Check if number of frames > 1
-            if (NumAnimFramesIsOne())
+            if (NumAnimFramesIsOne(ianimIndex))
             {
                 MessageBox.Show("Can't interpolate animations with a single frame.", "Interpolation warning", MessageBoxButtons.OK);
                 return;
@@ -6247,7 +6248,7 @@ namespace KimeraCS
             //PanelModel_Paint(null, null);
         }
 
-        public void TsUIOpacity100_Click(object sender, EventArgs e)
+        private void TsUIOpacity100_Click(object sender, EventArgs e)
         {
             this.Opacity = 1.00F;
 
@@ -6258,7 +6259,7 @@ namespace KimeraCS
             tsUIOpacity25.Checked = false;
         }
 
-        public void TsUIOpacity90_Click(object sender, EventArgs e)
+        private void TsUIOpacity90_Click(object sender, EventArgs e)
         {
             this.Opacity = 0.90F;
 
@@ -6269,7 +6270,7 @@ namespace KimeraCS
             tsUIOpacity25.Checked = false;
         }
 
-        public void TsUIOpacity75_Click(object sender, EventArgs e)
+        private void TsUIOpacity75_Click(object sender, EventArgs e)
         {
             this.Opacity = 0.75F;
 
@@ -6280,7 +6281,7 @@ namespace KimeraCS
             tsUIOpacity25.Checked = false;
         }
 
-        public void TsUIOpacity50_Click(object sender, EventArgs e)
+        private void TsUIOpacity50_Click(object sender, EventArgs e)
         {
             this.Opacity = 0.50F;
 
@@ -6291,7 +6292,7 @@ namespace KimeraCS
             tsUIOpacity25.Checked = false;
         }
 
-        public void TsUIOpacity25_Click(object sender, EventArgs e)
+        private void TsUIOpacity25_Click(object sender, EventArgs e)
         {
             this.Opacity = 0.25F;
 
@@ -6344,7 +6345,7 @@ namespace KimeraCS
             txtAnimationFrame.Text = tbCurrentFrameScroll.Value.ToString();
         }
 
-        public void PieceRotationModifiersChanged()
+        private void PieceRotationModifiersChanged()
         {
             if (loadingBonePieceModifiersQ) return;
 
@@ -6400,7 +6401,7 @@ namespace KimeraCS
             DoNotAddStateQ = false;
         }
 
-        public void LoadSkeletonFromDB()
+        private void LoadSkeletonFromDB()
         {
             Point3D p_min = new Point3D();
             Point3D p_max = new Point3D();
@@ -6460,7 +6461,7 @@ namespace KimeraCS
             }
         }
 
-        public void LoadSkeletonFromBattleDB(string strfileNameModel, string strfileNameAnim)
+        private void LoadSkeletonFromBattleDB(string strfileNameModel, string strfileNameAnim)
         {
             Point3D p_min = new Point3D();
             Point3D p_max = new Point3D();
@@ -6552,7 +6553,7 @@ namespace KimeraCS
             }
         }
 
-        public void SetWeaponAnimationAttachedToBone(bool middleQ, FrmSkeletonEditor frmSkEditor)
+        private void SetWeaponAnimationAttachedToBone(bool middleQ, FrmSkeletonEditor frmSkEditor)
         {
             int fi, jsp;
             double[] MV_matrix = new double[16];
@@ -7024,7 +7025,7 @@ namespace KimeraCS
                 Text += "  *";
         }
 
-        public void UpdateScrollBars(int rszX, int rszY, int rszZ,
+        private void UpdateScrollBars(int rszX, int rszY, int rszZ,
                                      int repX, int repY, int repZ,
                                      int alpha, int beta, int gamma)
         {
@@ -7049,7 +7050,7 @@ namespace KimeraCS
         // This function asks to the user (as remember) what wants to do with
         // the changes committed in the PEditor in case he pushes Load options
         // without saving.
-        public bool CheckChangesCommittedPEditor()
+        private bool CheckChangesCommittedPEditor()
         {
             DialogResult mbbYesNo;
             bool bCheckChangesCommittedPEditor = false;
@@ -7139,7 +7140,7 @@ namespace KimeraCS
         /// Sets up lighting based on current FrmSkeletonEditor state.
         /// This is the form-dependent wrapper that creates a LightingConfig from static state.
         /// </summary>
-        public static void SetLights()
+        private static void SetLights()
         {
             // Create config from current FrmSkeletonEditor state
             var config = new LightingConfig
@@ -7186,7 +7187,7 @@ namespace KimeraCS
         /// Draws the current skeleton/model using FrmSkeletonEditor static state.
         /// For decoupled rendering, use ModelDrawing.DrawSkeletonModel(RenderingContext) directly.
         /// </summary>
-        public static void DrawSkeletonModel(bool bDListsEnable)
+        private static void DrawSkeletonModel(bool bDListsEnable)
         {
             // Create context from current FrmSkeletonEditor state and delegate
             var ctx = RenderingContext.FromSkeletonEditor(
@@ -7571,6 +7572,129 @@ namespace KimeraCS
             }
 
             return closestBone;
+        }
+
+        private static int WriteSkeleton(string strFileName, bool compileMultiPBones)
+        {
+            Point3D p_min = new Point3D();
+            Point3D p_max = new Point3D();
+            BattleFrame tmpwpFrame;
+
+            int isaveSkeletonResult = 0;
+
+            try
+            {
+                switch (modelType)
+                {
+                    case K_HRC_SKELETON:
+                        ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[iCurrentFrameScroll], ref p_min, ref p_max);
+
+                        SetCameraAroundModel(ref p_min, ref p_max, 0, 0, -2 * ComputeSceneRadius(p_min, p_max),
+                                             0, 0, 0, 1, 1, 1);
+
+                        SetLights();
+
+                        ApplyFieldChanges(ref fSkeleton, fAnimation.frames[iCurrentFrameScroll], compileMultiPBones);
+
+                        WriteFieldSkeleton(ref fSkeleton, strFileName);
+                        //  WriteFieldAnimation(fAnimation, saveFile.FileName);
+                        CreateDListsFromFieldSkeleton(ref fSkeleton);
+
+                        isaveSkeletonResult = 1;
+                        break;
+
+                    case K_AA_SKELETON:
+                    case K_MAGIC_SKELETON:
+                        if (bSkeleton.IsBattleLocation && ianimIndex > 0) ianimIndex = 0;
+
+                        ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll], ref p_min, ref p_max);
+
+                        SetCameraAroundModel(ref p_min, ref p_max, 0, 0, -2 * ComputeSceneRadius(p_min, p_max),
+                                             0, 0, 0, 1, 1, 1);
+
+                        SetLights();
+
+                        tmpwpFrame = new BattleFrame();
+                        if (bSkeleton.nsWeaponsAnims > 0) tmpwpFrame = bAnimationsPack.WeaponAnimations[0].frames[0];
+
+                        ApplyBattleChanges(ref bSkeleton, bAnimationsPack.SkeletonAnimations[0].frames[0], tmpwpFrame);
+
+                        if (modelType == K_AA_SKELETON)
+                        {
+                            // Battle model (*AA)
+                            WriteBattleSkeleton(ref bSkeleton, strFileName);
+                        }
+                        else
+                        {
+                            // Magic model (*.D)
+                            WriteMagicSkeleton(ref bSkeleton, strFileName);
+                        }
+
+                        //  WriteBattleAnimationsPack(bAnimationsPack, strFileNameAnimationsPack);
+                        //  CheckWriteBattleAnimationsPack(bAnimationsPack, strFileNameAnimationsPack);
+                        CreateDListsFromBattleSkeleton(ref bSkeleton);
+
+                        isaveSkeletonResult = 1;
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                strGlobalExceptionMessage = ex.Message;
+
+                isaveSkeletonResult = -1;
+            }
+
+            return isaveSkeletonResult;
+        }
+
+        private static int WritePModel(string strFileName)
+        {
+            Point3D p_min = new Point3D();
+            Point3D p_max = new Point3D();
+
+            int isaveModelResult = 0;
+
+            try
+            {
+                switch (modelType)
+                {
+                    case K_P_FIELD_MODEL:
+                    case K_P_BATTLE_MODEL:
+                    case K_P_MAGIC_MODEL:
+                    case K_3DS_MODEL:
+                        GL.MatrixMode(MatrixMode.Modelview);
+                        GL.PushMatrix();
+
+                        SetCameraModelViewQuat(fPModel.repositionX, fPModel.repositionY, fPModel.repositionZ,
+                                               fPModel.rotationQuaternion,
+                                               fPModel.resizeX, fPModel.resizeY, fPModel.resizeZ);
+
+                        ApplyPChanges(ref fPModel, Path.GetExtension(strFileName).ToUpper() != ".P");
+
+                        ComputePModelBoundingBox(fPModel, ref p_min, ref p_max);
+                        SetCameraAroundModel(ref p_min, ref p_max,
+                                             0, 0, -2 * ComputeSceneRadius(p_min, p_max),
+                                             0, 0, 0, 1, 1, 1);
+
+                        SetLights();
+
+                        if (GL.IsEnabled(EnableCap.Lighting)) ApplyCurrentVColors(ref fPModel);
+
+                        GL.PopMatrix();
+                        WriteGlobalPModel(ref fPModel, strFileName);
+                        CreateDListsFromPModel(ref fPModel);
+
+                        isaveModelResult = 1;
+                        break;
+                }
+            }
+            catch
+            {
+                isaveModelResult = -1;
+            }
+
+            return isaveModelResult;
         }
     }
 }

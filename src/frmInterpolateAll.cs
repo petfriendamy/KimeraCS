@@ -29,8 +29,8 @@ namespace KimeraCS
         private const int UNIQUE_BATTLE_ANIMS_COUNT = 391;
         private const int UNIQUE_MAGIC_ANIMS_COUNT = 79;
 
-        public bool bCancelPressed;
-        public int numTotalAnims;
+        private bool bCancelPressed;
+        private int numTotalAnims;
 
         public FrmInterpolateAll()
         {
@@ -458,7 +458,7 @@ namespace KimeraCS
             }
         }
 
-        public void ActivateSettings()
+        private void ActivateSettings()
         {
             gbSettings.Enabled = true;
             gbProgress.Enabled = false;
@@ -476,7 +476,7 @@ namespace KimeraCS
             ActivateSettings();
         }
 
-        public void ListAllUniqueCharAnimations(ref List<STSkeletonAnimationNames> lstUniqueCharSkAnim)
+        private void ListAllUniqueCharAnimations(ref List<STSkeletonAnimationNames> lstUniqueCharSkAnim)
         {
             HashSet<string> hsUniqueCharAnims = new HashSet<string>();
 
@@ -508,7 +508,7 @@ namespace KimeraCS
                                      });
         }
 
-        public async void InterpolateAllAnimations()
+        private async void InterpolateAllAnimations()
         {
             int iCounter;
 

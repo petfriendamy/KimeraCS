@@ -12,7 +12,7 @@ namespace KimeraCS
     public partial class FrmMagicDB : Form
     {
         public static string strMagicFile = "", strMagicAnimFile = "";
-        public static string strLocalMagicModelName = "";
+        private static string strLocalMagicModelName = "";
 
         public static bool bSelectedMagicFileFromDB;
 
