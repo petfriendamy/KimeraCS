@@ -1,13 +1,16 @@
 ﻿using System;
-using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
+#nullable enable
 namespace KimeraCS.Core
 {
-
+    using static FF7FieldSkeleton;
+    using static FF7FieldAnimation;
+    using static Utils;
     using static UndoRedo;
     using static UndoRedoPE;
 
@@ -635,6 +638,64 @@ namespace KimeraCS.Core
             return lstBattleLimitsAnimations.Exists(x => x.lstModelNames.Contains(strModelName));
         }
 
+        public static FieldAnimation GetFieldAnimationFromFolder(ref FieldSkeleton fSkeleton, string folderPath)
+        {
+            FieldAnimation fAnimation;
 
+            // We try to find some compatible Field Animation for the Field Skeleton.
+            // If there is no compatible field animation we have this var:   strGlobalFieldAnimationName = ""
+            string animName = SearchFirstCompatibleFieldAnimationFileName(fSkeleton, folderPath);
+
+            fAnimation = new FieldAnimation(fSkeleton,
+                                            folderPath + "\\" + animName,
+                                            animName != "DUMMY.A");
+            return fAnimation;
+        }
+
+
+        public static string SearchFirstCompatibleFieldAnimationFileName(FieldSkeleton fieldSkeleton, string strFileFullPath)
+        {
+            int iCounter = 0;
+            bool bFound = false;
+            string[] lstFieldAnimsFiles;
+            string strAnimationName = string.Empty;
+
+            try
+            {
+                string strFieldSkeletonFolder = strFileFullPath;
+
+                if (string.IsNullOrEmpty(strFieldSkeletonFolder))
+                {
+                    if (strGlobalPathFieldSkeletonFolder != "")
+                        strGlobalPathFieldAnimationFolder = strGlobalPathFieldSkeletonFolder;
+                    else strGlobalPathFieldAnimationFolder = strGlobalPath;
+                }
+
+                lstFieldAnimsFiles = Directory.GetFiles(strGlobalPathFieldAnimationFolder, "*.A", SearchOption.TopDirectoryOnly);
+
+                if (lstFieldAnimsFiles != null && lstFieldAnimsFiles.Length > 0)
+                {
+                    while (iCounter < lstFieldAnimsFiles.Length && !bFound)
+                    {
+                        if (SameFieldAnimNumBones(lstFieldAnimsFiles[iCounter], fieldSkeleton))
+                        {
+                            strAnimationName = Path.GetFileName(lstFieldAnimsFiles[iCounter]);
+
+                            bFound = true;
+                        }
+
+                        iCounter++;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                strGlobalExceptionMessage = ex.Message;
+                throw new KimeraException("Something went wrong loading the animation file.", ex);
+            }
+
+            if (!bFound) strAnimationName = "DUMMY.A";
+            return strAnimationName;
+        }
     }
 }

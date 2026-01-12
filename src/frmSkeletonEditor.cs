@@ -2868,6 +2868,7 @@ namespace KimeraCS
                         // Load the Field Animation
                         tmpfAnimation = fAnimation;
                         fAnimation = new FieldAnimation(fSkeleton, openFile.FileName.ToUpper(), true);
+                        strGlobalFieldAnimationName = fAnimation.strFieldAnimationFile;
 
                         // Let's stop the Animation
                         btnPlayStopAnim.Checked = false;

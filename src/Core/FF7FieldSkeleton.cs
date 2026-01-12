@@ -6,11 +6,10 @@ using System.Text;
 
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
+using KimeraCS.Rendering;
 
 namespace KimeraCS.Core
 {
-    using Rendering;
-
     using static FF7FieldAnimation;
     using static FF7FieldRSDResource;
 
@@ -977,7 +976,7 @@ namespace KimeraCS.Core
 
                     strRSDList = strRSDList + " " + tmpRSDResource.res_file.ToUpper();
 
-                    WriteRSDResource(tmpRSDResource, strDirectoryPath + "\\" + fBone.fRSDResources[ri].res_file.ToUpper() + ".RSD");
+                    WriteRSDResource(tmpRSDResource, strDirectoryPath + "\\" + fBone.fRSDResources[ri].res_file.ToUpper() + ".RSD", strDirectoryPath);
 
                     if (tmpRSDResource.Model.Polys != null)
                         WriteGlobalPModel(ref tmpRSDResource.Model, strDirectoryPath + "\\" + fBone.fRSDResources[ri].Model.fileName.ToUpper());

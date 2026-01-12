@@ -74,6 +74,7 @@ namespace KimeraCS
         {
             int result;
             bool isLimitBreak = CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strFileName).ToUpper());
+
             try
             {
                 result = LoadSkeleton(strFileName, loadGeometryQ, isLimitBreak, false, false,
@@ -93,8 +94,11 @@ namespace KimeraCS
             switch (modelType)
             {
                 case ModelType.K_HRC_SKELETON:
+                    fAnimation = GetFieldAnimationFromFolder(ref fSkeleton, Path.GetDirectoryName(strFileName));
+                    strGlobalFieldAnimationName = fAnimation.strFieldAnimationFile;
                     FieldSkeletonPolyCheck(ref fSkeleton);
                     break;
+
                 case ModelType.K_AA_SKELETON:
                 case ModelType.K_MAGIC_SKELETON:
                     BattleSkeletonPolyCheck(ref bSkeleton);
@@ -109,17 +113,23 @@ namespace KimeraCS
             bool isLimitBreak = CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strFileName).ToUpper());
             try
             {
-                result = LoadFieldSkeletonFromDB(strFileName, strAnimFileName, loadGeometryQ, isLimitBreak,
+                result = FF7Skeleton.LoadSkeletonFromDB(strFileName, strAnimFileName, loadGeometryQ, isLimitBreak,
                                                  false, false, TEXTURE_REMOVE_CHECK);
             }
             catch (PFileNotFoundException ex) //missing P files
             {
                 if (MissingPFilePrompt(ex.Message))
-                    result = LoadFieldSkeletonFromDB(strFileName, strAnimFileName, loadGeometryQ, isLimitBreak,
+                    result = FF7Skeleton.LoadSkeletonFromDB(strFileName, strAnimFileName, loadGeometryQ, isLimitBreak,
                                                      false, false, TEXTURE_REMOVE_CHECK);
                 else
                     throw new FileLoadException("File could not be loaded.", ex);
             }
+
+            if (string.IsNullOrEmpty(strAnimFileName))
+                strGlobalFieldAnimationName = "--";
+            else
+                strGlobalFieldAnimationName = Path.GetFileName(strAnimFileName);
+
             ModelType modelType = GetSkeletonType(strFileName);
             switch (modelType)
             {
@@ -160,6 +170,8 @@ namespace KimeraCS
                 else
                     throw new FileLoadException("File could not be loaded.", ex);
             }
+            fAnimation = GetFieldAnimationFromFolder(ref fSkeleton, Path.GetDirectoryName(strfileName));
+            strGlobalFieldAnimationName = Path.GetFileName(fAnimation.strFieldAnimationFile);
             FieldSkeletonPolyCheck(ref fSkeleton);
             return fSkeleton;
         }

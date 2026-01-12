@@ -13,7 +13,6 @@ namespace KimeraCS.Core
     using static FF7TEXTexture;
 
     using static Utils;
-    //using static FileTools;
 
     public static class FF7FieldRSDResource
     {

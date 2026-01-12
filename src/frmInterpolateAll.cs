@@ -674,6 +674,33 @@ namespace KimeraCS
                                 "is lower than the number of animations of the Battle Skeleton " +
                                 "header. FIXING.\n");
 
+                        strGlobalBattleAnimationName = "--";
+                        string strBattleAnimPackFileName;
+                        switch (modelType)
+                        {
+                            case ModelType.K_AA_SKELETON:
+                                if (Path.GetExtension(strbAnimationsPackFullFileName).Length == 4)
+                                    strBattleAnimPackFileName = Path.GetFileName(strbAnimationsPackFullFileName).ToUpper();
+                                else
+                                {
+                                    // Let's check if we are opening all the model or only loading an animation
+                                    if (Path.GetFileName(strbAnimationsPackFullFileName).ToUpper().EndsWith("AA"))
+                                        strBattleAnimPackFileName = Path.GetFileNameWithoutExtension(strbAnimationsPackFullFileName).Substring(0, 2).ToUpper() + "DA";
+                                    else
+                                        strBattleAnimPackFileName = Path.GetFileNameWithoutExtension(strbAnimationsPackFullFileName).ToUpper();
+                                }
+
+
+                                strGlobalBattleAnimationName = strBattleAnimPackFileName;
+                                break;
+
+                            default:
+                                strBattleAnimPackFileName = Path.GetFileNameWithoutExtension(strbAnimationsPackFullFileName).ToUpper() + ".A00";
+
+                                strGlobalMagicAnimationName = strBattleAnimPackFileName;
+                                break;
+                        }
+
                         await Task.Run(() => InterpolateBattleAnimationsPack(ref bSkeleton, ref bAnimationsPack, (int)nudInterpFrameBattleMagic.Value, false));
                         Task.WaitAll();
                         await Task.Run(() => WriteBattleAnimationsPack(ref bAnimationsPack, strbAnimationsPackFullWriteFileName));
@@ -843,6 +870,15 @@ namespace KimeraCS
             //    End If
             //    Hide
             //End Sub
+        }
+
+        private static bool IsLimitAnimation(string strbAnimationFileName)
+        {
+            foreach (STLimitsRegister itmLimit in lstBattleLimitsAnimations)
+                if (itmLimit.lstLimitsAnimations.Contains(strbAnimationFileName.ToUpper()))
+                    return true;
+
+            return false;
         }
 
         private void FrmInterpolateAll_FormClosing(object sender, FormClosingEventArgs e)

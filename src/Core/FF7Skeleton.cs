@@ -46,9 +46,9 @@ namespace KimeraCS.Core
         //
         // Global Skeleton/Model functions/procedures
         //
-        public static int LoadSkeleton(string strFileName, bool loadGeometryQ, bool isLimitBreak,
-                                       bool ignoreMissingPFiles, bool repairPolys,
-                                       bool removeTextureCoords)
+        public static int LoadSkeleton(string strFileName, bool loadGeometryQ,
+                                       bool isLimitBreak, bool ignoreMissingPFiles,
+                                       bool repairPolys, bool removeTextureCoords)
         {
             int iloadSkeletonResult = 1;
 
@@ -70,23 +70,11 @@ namespace KimeraCS.Core
                     switch (modelType)
                     {
                         case ModelType.K_HRC_SKELETON:
-                            string strAnimationName = "";
-
                             // Field Skeleton (.hrc)
-                            fSkeleton = new FieldSkeleton(strFileName, loadGeometryQ, ignoreMissingPFiles,
-                                                          repairPolys, removeTextureCoords);
-
-                            // We try to find some compatible Field Animation for the Field Skeleton.
-                            // If there is no compatible field animation we have this var:   strGlobalFieldAnimationName = ""
-                            iloadSkeletonResult = SearchFirstCompatibleFieldAnimationFileName(fSkeleton, 
-                                                                                              Path.GetDirectoryName(strFileName), 
-                                                                                              ref strAnimationName);
-
-                            if (iloadSkeletonResult == 1)
-                                fAnimation = new FieldAnimation(fSkeleton,
-                                                                Path.GetDirectoryName(strFileName) + "\\" + strAnimationName, 
-                                                                strAnimationName != "DUMMY.A");
-
+                            fSkeleton = new FieldSkeleton(strFileName, loadGeometryQ,
+                                                          ignoreMissingPFiles, repairPolys,
+                                                          removeTextureCoords);
+                            fAnimation = new FieldAnimation(fSkeleton, "DUMMY.A", false);
                             break;
 
                         case ModelType.K_AA_SKELETON:
@@ -127,7 +115,7 @@ namespace KimeraCS.Core
             return iloadSkeletonResult;
         }
 
-        public static int LoadFieldSkeletonFromDB(string strFileName, 
+        public static int LoadSkeletonFromDB(string strFileName, 
                                                   string strAnimFileName, 
                                                   bool loadGeometryQ,
                                                   bool isLimitBreak,

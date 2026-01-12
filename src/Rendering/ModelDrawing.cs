@@ -8,7 +8,7 @@ using KimeraCS.Core;
 #nullable enable
 namespace KimeraCS.Rendering
 {
-    using static Rendering.VisualizationHelpers;
+    using static VisualizationHelpers;
 
     using static FF7Skeleton;
     using static FF7FieldSkeleton;
@@ -1621,11 +1621,11 @@ namespace KimeraCS.Rendering
 
             switch (ctx.DrawMode)
             {
-                case DrawMode.K_MESH:
+                case Core.DrawMode.K_MESH:
                     DrawPModelWireframe(ref model, true);
                     break;
 
-                case DrawMode.K_PCOLORS:
+                case Core.DrawMode.K_PCOLORS:
                     GL.Enable(EnableCap.PolygonOffsetFill);
                     GL.PolygonOffset(1, 1);
                     DrawPModelPolygonColors(ref model, true);
@@ -1634,7 +1634,7 @@ namespace KimeraCS.Rendering
                     DrawPModelWireframe(ref model, true);
                     break;
 
-                case DrawMode.K_VCOLORS:
+                case Core.DrawMode.K_VCOLORS:
                     DrawPModel(ref model, ref texIds, true);
                     break;
             }

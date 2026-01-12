@@ -13,7 +13,6 @@ namespace KimeraCS.Core
     using static FF7FieldSkeleton;
 
     using static Utils;
-    using static FileTools;
 
     public static class FF7FieldAnimation
     {
@@ -102,7 +101,6 @@ namespace KimeraCS.Core
                     {
                         // Case were we have found a compatible animation for the opened model.
                         strFieldAnimationFile = Path.GetFileName(strFullFileName).ToUpper();
-                        strGlobalFieldAnimationName = strFieldAnimationFile;
 
                         ReadFieldAnimation(strFullFileName);
                         FixFieldAnimation(fSkeleton, this);
@@ -111,7 +109,6 @@ namespace KimeraCS.Core
                     {
                         // Case where we didn't find a compatible animation for the opened model.
                         strFieldAnimationFile = "DUMMY.A";
-                        strGlobalFieldAnimationName = strFieldAnimationFile;
 
                         CreateCompatibleFieldAnimation();
                     }
@@ -453,8 +450,6 @@ namespace KimeraCS.Core
             {
                 if (strAnimFileName != "")
                 {
-                    strGlobalFieldAnimationName = Path.GetFileName(strAnimFileName);
-
                     tmpfAnimation = new FieldAnimation(fSkeleton, strAnimFileName, true);
                     //FixFieldAnimation(fSkeleton, tmpfAnimation);
 
@@ -463,7 +458,6 @@ namespace KimeraCS.Core
 
                         // Ok. If loading the animation we have problems,
                         // we will create a compatible animation.
-                        strGlobalFieldAnimationName = "--";
                         fAnimation = new FieldAnimation(fSkeleton, "--", false);
                         iloadAnimationFromDBResult = 2;
                     }
@@ -476,7 +470,6 @@ namespace KimeraCS.Core
                 {
                     // Ok. If loading the animation we have problems,
                     // we will create a compatible animation.
-                    strGlobalFieldAnimationName = "--";
                     fAnimation = new FieldAnimation(fSkeleton, "--", false);
                     iloadAnimationFromDBResult = 3;
                 }
@@ -487,53 +480,6 @@ namespace KimeraCS.Core
             }
 
             return iloadAnimationFromDBResult;
-        }
-
-
-        public static int SearchFirstCompatibleFieldAnimationFileName(FieldSkeleton fieldSkeleton, string strFileFullPath, ref string strAnimationName)
-        {
-            int iResult = 1, iCounter = 0;
-            bool bFound = false;
-            string[] lstFieldAnimsFiles;
-
-            try
-            {
-                strGlobalPathFieldAnimationFolder = strFileFullPath;
-
-                if (strGlobalPathFieldAnimationFolder == "")
-                {
-                    if (strGlobalPathFieldSkeletonFolder != "")
-                        strGlobalPathFieldAnimationFolder = strGlobalPathFieldSkeletonFolder;
-                    else strGlobalPathFieldAnimationFolder = strGlobalPath;
-                }
-
-                lstFieldAnimsFiles = Directory.GetFiles(strGlobalPathFieldAnimationFolder, "*.A", SearchOption.TopDirectoryOnly);
-
-                if (lstFieldAnimsFiles != null && lstFieldAnimsFiles.Length > 0)
-                {
-                    while (iCounter < lstFieldAnimsFiles.Length && !bFound)
-                    {
-                        if (SameFieldAnimNumBones(lstFieldAnimsFiles[iCounter], fieldSkeleton))
-                        {
-                            strAnimationName = Path.GetFileName(lstFieldAnimsFiles[iCounter]);
-
-                            bFound = true;
-                        }
-
-                        iCounter++;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                strGlobalExceptionMessage = ex.Message;
-
-                iResult = -1;
-            }
-
-            if (!bFound) strAnimationName = "DUMMY.A";
-
-            return iResult;
         }
 
         public static bool IsBrokenFieldRotation(ref FieldRotation fRotation)

@@ -32,7 +32,6 @@ namespace KimeraCS.Core
     using static FF7BattleAnimation;
 
     using static Utils;
-    using static FileTools;
 
     public static class FF7BattleAnimationsPack
     {
@@ -71,7 +70,6 @@ namespace KimeraCS.Core
                 if (bSkeleton.IsBattleLocation)
                 {
                     CreateEmptyBattleAnimationsPack(ref this, bSkeleton.nBones + 1);
-                    strGlobalBattleAnimationName = "--";
                 }
                 else
                 {
@@ -88,15 +86,10 @@ namespace KimeraCS.Core
                                 else
                                     strBattleAnimPackFileName = Path.GetFileNameWithoutExtension(strFileName).ToUpper();
                             }
-
-
-                            strGlobalBattleAnimationName = strBattleAnimPackFileName;
                             break;
 
                         default:
                             strBattleAnimPackFileName = Path.GetFileNameWithoutExtension(strFileName).ToUpper() + ".A00";
-
-                            strGlobalMagicAnimationName = strBattleAnimPackFileName;
                             break;
                     }
 
@@ -454,16 +447,5 @@ namespace KimeraCS.Core
 
             return tmpnBonesAnim == bSkeleton.nBones; 
         }
-
-        public static bool IsLimitAnimation (string strbAnimationFileName)
-        {
-            foreach (STLimitsRegister itmLimit in lstBattleLimitsAnimations)
-                if (itmLimit.lstLimitsAnimations.Contains(strbAnimationFileName.ToUpper()))
-                    return true;
-
-            return false;
-        }
-
-
     }
 }

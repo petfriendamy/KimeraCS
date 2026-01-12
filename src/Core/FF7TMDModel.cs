@@ -84,7 +84,6 @@ namespace KimeraCS.Core
     using static FF7PModel;
 
     using static Utils;
-    //using static FileTools;
 
     public static class FF7TMDModel
     {
