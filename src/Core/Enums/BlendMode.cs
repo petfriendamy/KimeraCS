@@ -1,6 +1,6 @@
 ﻿namespace KimeraCS.Core
 {
-    public enum BlendModes
+    public enum BlendMode
     {
         Average = 0,
         Add,

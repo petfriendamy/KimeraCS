@@ -164,7 +164,7 @@ namespace KimeraCS.Core
     /// </summary>
     public class RenderingContext
     {
-        public int ModelType { get; set; }
+        public ModelType ModelType { get; set; }
         public bool IsLoaded { get; set; }
         public CameraState Camera { get; set; }
         public ModelTransform Transform { get; set; }
@@ -190,7 +190,7 @@ namespace KimeraCS.Core
         /// Call this from the form to get a snapshot of current state.
         /// </summary>
         public static RenderingContext FromSkeletonEditor(
-            int modelType,
+            ModelType modelType,
             bool isLoaded,
             float alpha, float beta, float gamma,
             float distance,
@@ -268,7 +268,7 @@ namespace KimeraCS.Core
         /// Use this from external applications that have their own model data.
         /// </summary>
         public static RenderingContext CreateWithModelData(
-            int modelType,
+            ModelType modelType,
             SkeletonModelData modelData,
             CameraState camera,
             AnimationState animation,

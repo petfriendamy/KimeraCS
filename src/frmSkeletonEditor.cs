@@ -31,6 +31,7 @@ namespace KimeraCS
     using static ModelDrawing;
     using static UndoRedo;
     using static Utils;
+    using static Utils_WinForms;
 
     public partial class FrmSkeletonEditor : Form
     {
@@ -157,7 +158,7 @@ namespace KimeraCS
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Lequal);
 
-            SetBlendMode(BlendModes.None);
+            SetBlendMode(BlendMode.None);
 
             GL.CullFace(TriangleFace.Front);
             GL.Enable(EnableCap.CullFace);
@@ -351,9 +352,6 @@ namespace KimeraCS
                 dDPIScaleFactor = Math.Round((decimal)(g.DpiX / 96.0), 2);
             }
 
-            // Initialize OpenGL panel reference for FF7Skeleton
-            glPanel = panelModel;
-
 
             // Initialize Databases files
             InitializeDBs();
@@ -365,8 +363,8 @@ namespace KimeraCS
 
             // Set Minimum Size (using the property sometimes changes auto in designer)
             // Init also Width/Height as per CFG values
-            this.MinimumSize = new Size(750, 688);
-            this.Size = new Size(isizeWindowWidth, isizeWindowHeight);
+            //this.MinimumSize = new Size(750, 688);
+            //this.Size = new Size(isizeWindowWidth, isizeWindowHeight);
 
             if (iwindowPosX == 0 && iwindowPosY == 0) this.CenterToScreen();
             else this.Location = new Point(iwindowPosX, iwindowPosY);
@@ -444,6 +442,20 @@ namespace KimeraCS
             btnPlayStopAnim.Checked = false;
         }
 
+        private int DestroySkeleton()
+        {
+            int result = FF7Skeleton.DestroySkeleton();
+            if (result == 1)
+            {
+                // Clear PanelModel PictureBox
+                bLoaded = false;
+                ClearPanel();
+                GL.Flush();
+                panelModel?.SwapBuffers();
+            }
+            return result;
+        }
+
         private void FrmSkeletonEditor_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.ControlKey) controlPressedQ = true;
@@ -464,13 +476,13 @@ namespace KimeraCS
                 {
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             if (fSkeleton.bones[SelectedBone].nResources > 0)
                                 SelectedBonePiece = 0;
                             break;
 
-                        case K_AA_SKELETON:
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_AA_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
                             if (bSkeleton.nBones == SelectedBone)
                             {
                                 if (bSkeleton.nWeapons > 0 && cbWeapon.SelectedIndex > -1)
@@ -675,10 +687,10 @@ namespace KimeraCS
             // Visual controls
             switch (modelType)
             {
-                case K_P_FIELD_MODEL:
-                case K_P_BATTLE_MODEL:
-                case K_P_MAGIC_MODEL:
-                case K_3DS_MODEL:
+                case ModelType.K_P_FIELD_MODEL:
+                case ModelType.K_P_BATTLE_MODEL:
+                case ModelType.K_P_MAGIC_MODEL:
+                case ModelType.K_3DS_MODEL:
                     gbSelectedPieceFrame.Enabled = true;
 
                     // Menu Strip
@@ -688,7 +700,7 @@ namespace KimeraCS
                     oneftoolStripMenuItem.PerformClick();
                     break;
 
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     lblBoneSelector.Visible = true;
                     cbBoneSelector.Visible = true;
 
@@ -745,7 +757,7 @@ namespace KimeraCS
                     oneftoolStripMenuItem.PerformClick();
                     break;
 
-                case K_AA_SKELETON:
+                case ModelType.K_AA_SKELETON:
                     lblBoneSelector.Visible = true;
                     cbBoneSelector.Visible = true;
 
@@ -845,7 +857,7 @@ namespace KimeraCS
                     statisticsToolStripMenuItem.Enabled = true;
                     break;
 
-                case K_MAGIC_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     lblBoneSelector.Visible = true;
                     cbBoneSelector.Visible = true;
 
@@ -947,7 +959,7 @@ namespace KimeraCS
 
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].width == 0 ||
                             fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].height == 0)
                             return;
@@ -975,8 +987,8 @@ namespace KimeraCS
                         }
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         if (bSkeleton.textures[cbTextureSelect.SelectedIndex].texID != 0xFFFFFFFF)
                         {
                             //chkColorKeyFlag.Enabled = true;
@@ -1110,7 +1122,7 @@ namespace KimeraCS
                     {
                         gbSelectedBoneFrame.Enabled = true;
 
-                        if (modelType == K_HRC_SKELETON)
+                        if (modelType == ModelType.K_HRC_SKELETON)
                             editJointToolStripMenuItem.Enabled = true;
                     }
                 }
@@ -1134,7 +1146,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     for (iBoneIdx = 0; iBoneIdx < fSkeleton.bones.Count; iBoneIdx++)
                     {
                         cbIn.Items.Add(fSkeleton.bones[iBoneIdx].joint_i + "-" + fSkeleton.bones[iBoneIdx].joint_f);
@@ -1143,7 +1155,7 @@ namespace KimeraCS
                     cbIn.Enabled = true;
                     break;
 
-                case K_AA_SKELETON:
+                case ModelType.K_AA_SKELETON:
                     for (iBoneIdx = 0; iBoneIdx < bSkeleton.nBones; iBoneIdx++)
                     {
                         if (bSkeleton.bones[iBoneIdx].hasModel == 1)
@@ -1157,7 +1169,7 @@ namespace KimeraCS
                     cbIn.Enabled = true;
                     break;
 
-                case K_MAGIC_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     for (iBoneIdx = 0; iBoneIdx < bSkeleton.nBones; iBoneIdx++)
                     {
                         cbIn.Items.Add("Joint" + bSkeleton.bones[iBoneIdx].parentBone.ToString() + "- Joint" + iBoneIdx.ToString());
@@ -1180,7 +1192,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     nUDResizeBoneX.Value = (decimal)fSkeleton.bones[SelectedBone].resizeX * 100;
                     nUDResizeBoneY.Value = (decimal)fSkeleton.bones[SelectedBone].resizeY * 100;
                     nUDResizeBoneZ.Value = (decimal)fSkeleton.bones[SelectedBone].resizeZ * 100;
@@ -1191,8 +1203,8 @@ namespace KimeraCS
                     SetFrameEditorFields();
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     if (bSkeleton.IsBattleLocation)
                     {
                         nUDResizeBoneX.Value = (decimal)bSkeleton.bones[SelectedBone].resizeX * 100;
@@ -1246,7 +1258,7 @@ namespace KimeraCS
 
         public void SetFrameEditorFields()
         {
-            if (modelType < 3 || modelType > 5) return;
+            if ((int)modelType < 3 || (int)modelType > 5) return;
 
             if (btnPlayStopAnim.Checked)
             {
@@ -1266,7 +1278,7 @@ namespace KimeraCS
                     {
                         switch (modelType)
                         {
-                            case K_HRC_SKELETON:
+                            case ModelType.K_HRC_SKELETON:
                                 nUDXAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rotations[SelectedBone].alpha;
                                 nUDYAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rotations[SelectedBone].beta;
                                 nUDZAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rotations[SelectedBone].gamma;
@@ -1281,8 +1293,8 @@ namespace KimeraCS
                                 //End With
                                 break;
 
-                            case K_AA_SKELETON:
-                            case K_MAGIC_SKELETON:
+                            case ModelType.K_AA_SKELETON:
+                            case ModelType.K_MAGIC_SKELETON:
                                 if (SelectedBone == bSkeleton.nBones)
                                 {
                                     nUDXAnimationFramePart.Value = (decimal)bAnimationsPack.WeaponAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].bones[0].alpha;
@@ -1339,7 +1351,7 @@ namespace KimeraCS
                 case K_FRAME_ROOT_ROTATION:
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             nUDXAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rootRotationAlpha;
                             nUDYAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rootRotationBeta;
                             nUDZAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rootRotationGamma;
@@ -1354,8 +1366,8 @@ namespace KimeraCS
                             //End With
                             break;
 
-                        case K_AA_SKELETON:
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_AA_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
                             nUDXAnimationFramePart.Value = (decimal)bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].bones[0].alpha;
                             nUDYAnimationFramePart.Value = (decimal)bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].bones[0].beta;
                             nUDZAnimationFramePart.Value = (decimal)bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].bones[0].gamma;
@@ -1376,7 +1388,7 @@ namespace KimeraCS
                 case K_FRAME_ROOT_TRANSLATION:
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             nUDXAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rootTranslationX;
                             nUDYAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rootTranslationY;
                             nUDZAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rootTranslationZ;
@@ -1391,8 +1403,8 @@ namespace KimeraCS
                             //End With
                             break;
 
-                        case K_AA_SKELETON:
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_AA_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
                             if (SelectedBone == bSkeleton.nBones)
                             {
                                 nUDXAnimationFramePart.Value = bAnimationsPack.WeaponAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].startX;
@@ -1463,7 +1475,7 @@ namespace KimeraCS
 
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[tbCurrentFrameScroll.Value],
                                                 ref p_min, ref p_max);
 
@@ -1505,8 +1517,8 @@ namespace KimeraCS
                         SetTextureEditorFields();
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         wpFrame = new BattleFrame();
 
                         ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value],
@@ -1644,22 +1656,22 @@ namespace KimeraCS
 
                             switch (modelType)
                             {
-                                case K_P_FIELD_MODEL:
-                                case K_P_BATTLE_MODEL:
-                                case K_P_MAGIC_MODEL:
-                                case K_3DS_MODEL:
+                                case ModelType.K_P_FIELD_MODEL:
+                                case ModelType.K_P_BATTLE_MODEL:
+                                case ModelType.K_P_MAGIC_MODEL:
+                                case ModelType.K_3DS_MODEL:
                                     SetCameraPModel(fPModel, 0, 0, (float)DIST, 0, 0, 0, 1, 1, 1);
                                     break;
 
-                                case K_HRC_SKELETON:
+                                case ModelType.K_HRC_SKELETON:
                                     ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[tbCurrentFrameScroll.Value],
                                                             ref p_min, ref p_max);
 
                                     SetCameraAroundModel(ref p_min, ref p_max, 0, 0, (float)DIST, 0, 0, 0, 1, 1, 1);
                                     break;
 
-                                case K_AA_SKELETON:
-                                case K_MAGIC_SKELETON:
+                                case ModelType.K_AA_SKELETON:
+                                case ModelType.K_MAGIC_SKELETON:
                                     ComputeBattleBoundingBox(bSkeleton,
                                                              bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value],
                                                              ref p_min, ref p_max);
@@ -1773,7 +1785,8 @@ namespace KimeraCS
                 // This checks avoids a crash when we "unselect" or "click in
                 // any place outside the model" in skeleton main window.
                 // So, we restore to SelectedBone and SelectedBonePiece its values.
-                if (modelType == K_HRC_SKELETON || modelType == K_AA_SKELETON || modelType == K_MAGIC_SKELETON)
+                if (modelType == ModelType.K_HRC_SKELETON || modelType == ModelType.K_AA_SKELETON ||
+                    modelType == ModelType.K_MAGIC_SKELETON)
                 {
                     if (SelectedBone == -1 || SelectedBonePiece == -1)
                     {
@@ -1796,13 +1809,13 @@ namespace KimeraCS
 
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         if (SelectedBone > -1 && SelectedBonePiece > -1)
                             tmpPModel = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].Model;
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         if (SelectedBone > -1 && SelectedBonePiece > -1)
                         {
                             if (SelectedBone == bSkeleton.nBones)
@@ -1813,10 +1826,10 @@ namespace KimeraCS
 
                         break;
 
-                    case K_P_BATTLE_MODEL:
-                    case K_P_FIELD_MODEL:
-                    case K_P_MAGIC_MODEL:
-                    case K_3DS_MODEL:
+                    case ModelType.K_P_BATTLE_MODEL:
+                    case ModelType.K_P_FIELD_MODEL:
+                    case ModelType.K_P_MAGIC_MODEL:
+                    case ModelType.K_3DS_MODEL:
                         tmpPModel = fPModel;
                         break;
                 }
@@ -2019,7 +2032,7 @@ namespace KimeraCS
             if (strGlobalPathBattleSkeletonFolder != "")
                 openFile.InitialDirectory = strGlobalPathBattleSkeletonFolder;
 
-            if (modelType == K_MAGIC_SKELETON)
+            if (modelType == ModelType.K_MAGIC_SKELETON)
                 if (strGlobalPathMagicSkeletonFolder != "")
                     openFile.InitialDirectory = strGlobalPathMagicSkeletonFolder;
 
@@ -2062,7 +2075,7 @@ namespace KimeraCS
                         }
 
                         // Set Global Paths
-                        if (modelType == K_AA_SKELETON)
+                        if (modelType == ModelType.K_AA_SKELETON)
                         {
                             strGlobalPathBattleSkeletonFolder = Path.GetDirectoryName(openFile.FileName);
                             strGlobalPathBattleAnimationFolder = strGlobalPathBattleSkeletonFolder;
@@ -2374,7 +2387,7 @@ namespace KimeraCS
 
                         if (fPModel.Header.numVerts > 0)
                         {
-                            modelType = K_3DS_MODEL;
+                            modelType = ModelType.K_3DS_MODEL;
 
                             // Enable/Make Visible Win Forms Data controls
                             EnableWinFormsDataControls();
@@ -2548,7 +2561,7 @@ namespace KimeraCS
                     // for any case
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             if (IsRSDResource)
                             {
                                 modelTypeStr = "RSD Resource";
@@ -2570,7 +2583,7 @@ namespace KimeraCS
 
                             break;
 
-                        case K_AA_SKELETON:
+                        case ModelType.K_AA_SKELETON:
                             modelTypeStr = "Battle Skeleton";
 
                             if (strGlobalPathSaveAsSkeletonFolder == "")
@@ -2580,7 +2593,7 @@ namespace KimeraCS
 
                             break;
 
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
                             modelTypeStr = "Magic Skeleton";
 
                             if (strGlobalPathSaveAsSkeletonFolder == "")
@@ -2602,7 +2615,7 @@ namespace KimeraCS
                     {
                         // We save the Skeleton.
                         bool mergeBones = false;
-                        if (modelType == K_HRC_SKELETON)
+                        if (modelType == ModelType.K_HRC_SKELETON)
                         {
                             mergeBones = (MessageBox.Show("Merge multi PModels bones in a single file?", "Confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes);
                         }
@@ -2650,7 +2663,7 @@ namespace KimeraCS
             // Check Initial Directory
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     if (IsRSDResource)
                     {
                         saveFile.Title = "Save RSD Resource As...";
@@ -2676,7 +2689,7 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
+                case ModelType.K_AA_SKELETON:
                     saveFile.Title = "Save Battle Skeleton As...";
                     saveFile.Filter = "Battle Skeleton|*AA|All files|*.*";
 
@@ -2688,7 +2701,7 @@ namespace KimeraCS
 
                     break;
 
-                case K_MAGIC_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     saveFile.Title = "Save Magic Skeleton As...";
                     saveFile.Filter = "Magic Skeleton|*.D|All files|*.*";
 
@@ -2700,17 +2713,17 @@ namespace KimeraCS
 
                     break;
 
-                case K_P_FIELD_MODEL:
-                case K_P_BATTLE_MODEL:
-                case K_P_MAGIC_MODEL:
-                case K_3DS_MODEL:
+                case ModelType.K_P_FIELD_MODEL:
+                case ModelType.K_P_BATTLE_MODEL:
+                case ModelType.K_P_MAGIC_MODEL:
+                case ModelType.K_3DS_MODEL:
                     saveFile.Title = "Save Model As...";
                     saveFile.Filter = "Field Model|*.P|Battle Model|*.*|Magic Model|*.P??|All files|*.*";
 
                     if (strGlobalPathSaveModelFolder == "")
                         strGlobalPathSaveModelFolder = strGlobalPathPModelFolder;
 
-                    if (modelType == K_3DS_MODEL) saveFile.FileName =
+                    if (modelType == ModelType.K_3DS_MODEL) saveFile.FileName =
                                 Path.GetFileNameWithoutExtension(strGlobal3DSModelName).ToUpper();
                     else saveFile.FileName = strGlobalPModelName.ToUpper();
 
@@ -2736,9 +2749,9 @@ namespace KimeraCS
 
                         switch (modelType)
                         {
-                            case K_HRC_SKELETON:
-                            case K_AA_SKELETON:
-                            case K_MAGIC_SKELETON:
+                            case ModelType.K_HRC_SKELETON:
+                            case ModelType.K_AA_SKELETON:
+                            case ModelType.K_MAGIC_SKELETON:
                                 // Prepare Path
                                 strGlobalPathSaveSkeletonFolder = Path.GetDirectoryName(saveFile.FileName);
                                 saveFile.FileName = strGlobalPathSaveSkeletonFolder + "\\" + Path.GetFileName(saveFile.FileName).ToUpper();
@@ -2754,7 +2767,7 @@ namespace KimeraCS
                                 {
                                     // We save the Skeleton.
                                     bool mergeBones = false;
-                                    if (modelType == K_HRC_SKELETON)
+                                    if (modelType == ModelType.K_HRC_SKELETON)
                                     {
                                         mergeBones = (MessageBox.Show("Merge multi PModels bones in a single file?", "Confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes);
                                     }
@@ -2774,10 +2787,10 @@ namespace KimeraCS
                                 }
                                 break;
 
-                            case K_P_FIELD_MODEL:
-                            case K_P_BATTLE_MODEL:
-                            case K_P_MAGIC_MODEL:
-                            case K_3DS_MODEL:
+                            case ModelType.K_P_FIELD_MODEL:
+                            case ModelType.K_P_BATTLE_MODEL:
+                            case ModelType.K_P_MAGIC_MODEL:
+                            case ModelType.K_3DS_MODEL:
                                 // Prepare Path
                                 strGlobalPathSaveModelFolder = Path.GetDirectoryName(saveFile.FileName);
                                 saveFile.FileName = strGlobalPathSaveModelFolder + "\\" + Path.GetFileName(saveFile.FileName).ToUpper();
@@ -2898,7 +2911,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_AA_SKELETON:
+                case ModelType.K_AA_SKELETON:
                     // We will check if the model loaded can have Limit Breaks.
                     openFile.Filter = "Battle/Limit Animation|*DA;";
 
@@ -2915,7 +2928,7 @@ namespace KimeraCS
                     openFile.Filter += "|All files|*.*";
                     break;
 
-                case K_MAGIC_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     openFile.Filter = "Magic Animation|*.A00|All files|*.*";
                     break;
             }
@@ -2925,7 +2938,7 @@ namespace KimeraCS
             // Check Initial Directory
             if (strGlobalPathBattleAnimationFolder != null)
             {
-                if (modelType == K_AA_SKELETON)
+                if (modelType == ModelType.K_AA_SKELETON)
                 {
                     openFile.InitialDirectory = strGlobalPathBattleAnimationFolder;
                     openFile.FileName = strGlobalBattleAnimationName;
@@ -2961,7 +2974,7 @@ namespace KimeraCS
                         bAnimationsPack = new BattleAnimationsPack(bSkeleton, openFile.FileName.ToUpper());
 
                         // Set Global Paths
-                        if (modelType == K_AA_SKELETON)
+                        if (modelType == ModelType.K_AA_SKELETON)
                         {
                             strGlobalBattleAnimationName = Path.GetFileName(openFile.FileName).ToUpper();
                             strGlobalPathBattleAnimationFolder = Path.GetDirectoryName(openFile.FileName);
@@ -2978,7 +2991,7 @@ namespace KimeraCS
                         btnPlayStopAnim.Checked = false;
 
                         // Let's initialize some things like Battle Animations ComboBox
-                        if (modelType == K_MAGIC_SKELETON) lblBattleAnimation.Text = "Magic Animation:";
+                        if (modelType == ModelType.K_MAGIC_SKELETON) lblBattleAnimation.Text = "Magic Animation:";
                         else if (bAnimationsPack.IsLimit) lblBattleAnimation.Text = "Limit Animation:";
                         else lblBattleAnimation.Text = "Battle Animation:";
 
@@ -3030,20 +3043,20 @@ namespace KimeraCS
                     // Prepare direct filename Folder+Name
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             modelTypeStr = "Field Animation";
                             if (strGlobalFieldAnimationName == "") strGlobalFieldAnimationName = "DUMMY.A";
 
                             saveFileName = strGlobalPathFieldAnimationFolder + "\\" + strGlobalFieldAnimationName.ToUpper();
                             break;
 
-                        case K_AA_SKELETON:
+                        case ModelType.K_AA_SKELETON:
                             modelTypeStr = "Battle Animation";
 
                             saveFileName = strGlobalPathBattleAnimationFolder + "\\" + strGlobalBattleAnimationName.ToUpper();
                             break;
 
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
                             modelTypeStr = "Magic Animation";
 
                             saveFileName = strGlobalPathMagicAnimationFolder + "\\" + strGlobalMagicAnimationName.ToUpper();
@@ -3079,7 +3092,7 @@ namespace KimeraCS
             // Check Initial Directory
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     modelTypeStr = "Field Animation";
                     saveFile.Title = "Save Field Animation As...";
                     saveFile.Filter = "Field Animation|*.A|All files|*.*";
@@ -3088,7 +3101,7 @@ namespace KimeraCS
                     saveFile.FileName = strGlobalFieldAnimationName.ToUpper();
                     break;
 
-                case K_AA_SKELETON:
+                case ModelType.K_AA_SKELETON:
                     modelTypeStr = "Battle Animation";
 
                     if (bAnimationsPack.IsLimit)
@@ -3106,7 +3119,7 @@ namespace KimeraCS
                     saveFile.FileName = strGlobalBattleAnimationName.ToUpper();
                     break;
 
-                case K_MAGIC_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     modelTypeStr = "Magic Animation";
                     saveFile.Title = "Save Magic Animation As...";
                     saveFile.Filter = "Magic Pack Animation|*.A00|All files|*.*";
@@ -3205,7 +3218,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     if (SelectedBone > -1 && SelectedBonePiece > -1)
                     {
                         gbTexturesFrame.Enabled = true;
@@ -3224,8 +3237,8 @@ namespace KimeraCS
                     TextureViewer_Paint(null, null);
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     if (SelectedBone > -1 && SelectedBonePiece > -1)
                     {
                         gbTexturesFrame.Enabled = true;
@@ -3338,7 +3351,7 @@ namespace KimeraCS
 
                         switch (modelType)
                         {
-                            case K_HRC_SKELETON:
+                            case ModelType.K_HRC_SKELETON:
                                 if (SelectedBone > -1 && SelectedBonePiece > -1)
                                 {
                                     AddStateToBuffer(this);
@@ -3359,8 +3372,8 @@ namespace KimeraCS
                                 }
                                 break;
 
-                            case K_AA_SKELETON:
-                            case K_MAGIC_SKELETON:
+                            case ModelType.K_AA_SKELETON:
+                            case ModelType.K_MAGIC_SKELETON:
                                 if (bSkeleton.nTextures <= 10)
                                 {
                                     AddStateToBuffer(this);
@@ -3415,7 +3428,7 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         if (SelectedBone > -1)
                         {
                             AddStateToBuffer(this);
@@ -3431,8 +3444,8 @@ namespace KimeraCS
 
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         AddStateToBuffer(this);
 
                         bSkeleton.textures.RemoveAt(texIndex);
@@ -3513,7 +3526,7 @@ namespace KimeraCS
 
                         switch (modelType)
                         {
-                            case K_HRC_SKELETON:
+                            case ModelType.K_HRC_SKELETON:
                                 AddStateToBuffer(this);
 
                                 tmpfBone = fSkeleton.bones[SelectedBone];
@@ -3528,8 +3541,8 @@ namespace KimeraCS
                                 cbTextureSelect.SelectedIndex = texIndex;
                                 break;
 
-                            case K_AA_SKELETON:
-                            case K_MAGIC_SKELETON:
+                            case ModelType.K_AA_SKELETON:
+                            case ModelType.K_MAGIC_SKELETON:
                                 AddStateToBuffer(this);
 
                                 tex.TEXfileName = GetBattleModelTextureFilename(bSkeleton, texIndex);
@@ -3620,7 +3633,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
 
                     for (fi = 0; fi < fAnimation.nFrames; fi++)
                     {
@@ -3639,8 +3652,8 @@ namespace KimeraCS
                     }
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
 
                     for (fi = 0; fi < bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort; fi++)
                     {
@@ -3685,7 +3698,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldBone tmpfBone;
                     FieldRSDResource tmpRSDResource;
 
@@ -3699,8 +3712,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     PModel wpModel;
                     //int wpIndex;
 
@@ -3738,7 +3751,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldBone tmpfBone;
                     FieldRSDResource tmpRSDResource;
 
@@ -3752,8 +3765,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     PModel wpModel;
 
                     if (SelectedBone == bSkeleton.nBones)
@@ -3789,7 +3802,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldBone tmpfBone;
                     FieldRSDResource tmpRSDResource;
 
@@ -3803,8 +3816,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     PModel wpModel;
 
                     if (SelectedBone == bSkeleton.nBones)
@@ -3840,7 +3853,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldBone tmpfBone;
                     FieldRSDResource tmpRSDResource;
 
@@ -3854,8 +3867,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     PModel wpModel;
 
                     if (SelectedBone == bSkeleton.nBones)
@@ -3891,7 +3904,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldBone tmpfBone;
                     FieldRSDResource tmpRSDResource;
 
@@ -3905,8 +3918,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     PModel wpModel;
 
                     if (SelectedBone == bSkeleton.nBones)
@@ -3942,7 +3955,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldBone tmpfBone;
                     FieldRSDResource tmpRSDResource;
 
@@ -3956,8 +3969,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     PModel wpModel;
 
                     if (SelectedBone == bSkeleton.nBones)
@@ -4009,7 +4022,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     if (SelectedBone > -1 && SelectedBonePiece > -1)
                     {
                         if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].
@@ -4031,8 +4044,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     if (bSkeleton.textures[cbTextureSelect.SelectedIndex].texID != 0xFFFFFFFF)
                     {
                         if (bSkeleton.textures[cbTextureSelect.SelectedIndex].ColorKeyFlag != newZeroTransparentValue)
@@ -4190,7 +4203,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldBone tmpfBone;
 
                     tmpfBone = fSkeleton.bones[SelectedBone];
@@ -4199,8 +4212,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     PModel wpModel;
                     BattleBone bBone;
 
@@ -4232,7 +4245,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldBone tmpfBone;
 
                     tmpfBone = fSkeleton.bones[SelectedBone];
@@ -4241,8 +4254,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     PModel wpModel;
                     BattleBone bBone;
 
@@ -4274,7 +4287,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldBone tmpfBone;
 
                     tmpfBone = fSkeleton.bones[SelectedBone];
@@ -4283,8 +4296,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     PModel wpModel;
                     BattleBone bBone;
 
@@ -4317,12 +4330,12 @@ namespace KimeraCS
                 {
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             fOldValue = (float)fSkeleton.bones[SelectedBone].len;
                             break;
 
-                        case K_AA_SKELETON:
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_AA_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
                             fOldValue = bSkeleton.bones[SelectedBone].len;
                             break;
 
@@ -4350,7 +4363,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldBone tmpfBone;
 
                     tmpfBone = fSkeleton.bones[SelectedBone];
@@ -4359,8 +4372,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     BattleBone bBone;
 
                     bBone = bSkeleton.bones[SelectedBone];
@@ -4380,7 +4393,7 @@ namespace KimeraCS
             PModel AdditionalP;
             int iResult;
 
-            if (modelType != K_HRC_SKELETON && modelType != K_AA_SKELETON && modelType != K_MAGIC_SKELETON)
+            if (modelType != ModelType.K_HRC_SKELETON && modelType != ModelType.K_AA_SKELETON && modelType != ModelType.K_MAGIC_SKELETON)
             {
                 // MessageBox.Show("This should not happen.", "Error");
                 return;
@@ -4392,15 +4405,15 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     openFile.FilterIndex = 1;
                     break;
 
-                case K_AA_SKELETON:
+                case ModelType.K_AA_SKELETON:
                     openFile.FilterIndex = 2;
                     break;
 
-                case K_MAGIC_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     openFile.FilterIndex = 3;
                     break;
             }
@@ -4453,7 +4466,7 @@ namespace KimeraCS
                         {
                             AddStateToBuffer(this);
 
-                            if (modelType == K_HRC_SKELETON)
+                            if (modelType == ModelType.K_HRC_SKELETON)
                             {
                                 FieldBone tmpfBone = fSkeleton.bones[SelectedBone];
                                 AddFieldBone(ref tmpfBone, ref AdditionalP);
@@ -4488,7 +4501,7 @@ namespace KimeraCS
         {
             try
             {
-                if (modelType == K_HRC_SKELETON)
+                if (modelType == ModelType.K_HRC_SKELETON)
                 {
                     if (fSkeleton.bones[SelectedBone].nResources > 0)
                     {
@@ -4537,14 +4550,14 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         if (SelectedBone > -1)
                             tex = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex];
 
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         if (SelectedBone > -1)
                             tex = bSkeleton.textures[texIndex];
                         break;
@@ -4601,7 +4614,7 @@ namespace KimeraCS
 
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         if (SelectedBone > -1)
                         {
                             int r, t;
@@ -4623,8 +4636,8 @@ namespace KimeraCS
                         }
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
 
                         for (i = 0; i < bSkeleton.nTextures; i++)
                         {
@@ -4654,13 +4667,13 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         if (SelectedBone > -1)
                             tex = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex];
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
 
                         if (SelectedBone > -1)
                             tex = bSkeleton.textures[texIndex];
@@ -4704,7 +4717,7 @@ namespace KimeraCS
 
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         if (SelectedBone > -1)
                         {
                             int r, t;
@@ -4726,8 +4739,8 @@ namespace KimeraCS
                         }
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
 
                         for (i = 0; i < bSkeleton.nTextures; i++)
                         {
@@ -4758,13 +4771,13 @@ namespace KimeraCS
 
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         if (SelectedBone > -1)
                             tex = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex];
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
 
                         if (SelectedBone > -1)
                             tex = bSkeleton.textures[texIndex];
@@ -4806,7 +4819,7 @@ namespace KimeraCS
 
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         if (SelectedBone > -1)
                         {
                             int r, t;
@@ -4828,8 +4841,8 @@ namespace KimeraCS
                         }
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
 
                         for (i = 0; i < bSkeleton.nTextures; i++)
                         {
@@ -4864,7 +4877,7 @@ namespace KimeraCS
                     // Down
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             if (SelectedBone > -1)
                             {
                                 if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].numTextures > 0)
@@ -4885,8 +4898,8 @@ namespace KimeraCS
                             }
                             break;
 
-                        case K_AA_SKELETON:
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_AA_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
 
                             texIndex = cbTextureSelect.SelectedIndex;
 
@@ -4911,7 +4924,7 @@ namespace KimeraCS
                     // Up
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             if (SelectedBone > -1)
                             {
                                 if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].numTextures > 0)
@@ -4932,8 +4945,8 @@ namespace KimeraCS
                             }
                             break;
 
-                        case K_AA_SKELETON:
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_AA_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
 
                             texIndex = cbTextureSelect.SelectedIndex;
 
@@ -5010,7 +5023,7 @@ namespace KimeraCS
                     {
                         switch (modelType)
                         {
-                            case K_HRC_SKELETON:
+                            case ModelType.K_HRC_SKELETON:
                                 diff = val - fAnimation.frames[frameIndex].rotations[SelectedBone].alpha;
 
                                 for (fi = frameIndex; fi <= nFrames; fi++)
@@ -5021,8 +5034,8 @@ namespace KimeraCS
                                 }
                                 break;
 
-                            case K_AA_SKELETON:
-                            case K_MAGIC_SKELETON:
+                            case ModelType.K_AA_SKELETON:
+                            case ModelType.K_MAGIC_SKELETON:
                                 if (SelectedBone == bSkeleton.nBones)
                                 {
                                     diff = val - bAnimationsPack.WeaponAnimations[ianimIndex].frames[frameIndex].bones[0].alpha;
@@ -5053,7 +5066,7 @@ namespace KimeraCS
                 case K_FRAME_ROOT_ROTATION:
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             diff = val - fAnimation.frames[frameIndex].rootRotationAlpha;
 
                             for (fi = frameIndex; fi <= nFrames; fi++)
@@ -5064,8 +5077,8 @@ namespace KimeraCS
                             }
                             break;
 
-                        case K_AA_SKELETON:
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_AA_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
                             diff = val - bAnimationsPack.SkeletonAnimations[ianimIndex].frames[frameIndex].bones[0].alpha;
 
                             for (fi = frameIndex; fi <= nFrames; fi++)
@@ -5081,7 +5094,7 @@ namespace KimeraCS
                 case K_FRAME_ROOT_TRANSLATION:
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             diff = val - fAnimation.frames[frameIndex].rootTranslationX;
 
                             for (fi = frameIndex; fi <= nFrames; fi++)
@@ -5092,8 +5105,8 @@ namespace KimeraCS
                             }
                             break;
 
-                        case K_AA_SKELETON:
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_AA_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
                             if (SelectedBone == bSkeleton.nBones)
                             {
                                 diff = val - bAnimationsPack.WeaponAnimations[ianimIndex].frames[frameIndex].startX;
@@ -5165,7 +5178,7 @@ namespace KimeraCS
                     {
                         switch (modelType)
                         {
-                            case K_HRC_SKELETON:
+                            case ModelType.K_HRC_SKELETON:
                                 diff = val - fAnimation.frames[frameIndex].rotations[SelectedBone].beta;
 
                                 for (fi = frameIndex; fi <= nFrames; fi++)
@@ -5176,8 +5189,8 @@ namespace KimeraCS
                                 }
                                 break;
 
-                            case K_AA_SKELETON:
-                            case K_MAGIC_SKELETON:
+                            case ModelType.K_AA_SKELETON:
+                            case ModelType.K_MAGIC_SKELETON:
                                 if (SelectedBone == bSkeleton.nBones)
                                 {
                                     diff = val - bAnimationsPack.WeaponAnimations[ianimIndex].frames[frameIndex].bones[0].beta;
@@ -5208,7 +5221,7 @@ namespace KimeraCS
                 case K_FRAME_ROOT_ROTATION:
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             diff = val - fAnimation.frames[frameIndex].rootRotationBeta;
 
                             for (fi = frameIndex; fi <= nFrames; fi++)
@@ -5219,8 +5232,8 @@ namespace KimeraCS
                             }
                             break;
 
-                        case K_AA_SKELETON:
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_AA_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
                             diff = val - bAnimationsPack.SkeletonAnimations[ianimIndex].frames[frameIndex].bones[0].beta;
 
                             for (fi = frameIndex; fi <= nFrames; fi++)
@@ -5236,7 +5249,7 @@ namespace KimeraCS
                 case K_FRAME_ROOT_TRANSLATION:
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             diff = val - fAnimation.frames[frameIndex].rootTranslationY;
 
                             for (fi = frameIndex; fi <= nFrames; fi++)
@@ -5247,8 +5260,8 @@ namespace KimeraCS
                             }
                             break;
 
-                        case K_AA_SKELETON:
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_AA_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
                             if (SelectedBone == bSkeleton.nBones)
                             {
                                 diff = val - bAnimationsPack.WeaponAnimations[ianimIndex].frames[frameIndex].startY;
@@ -5321,7 +5334,7 @@ namespace KimeraCS
                     {
                         switch (modelType)
                         {
-                            case K_HRC_SKELETON:
+                            case ModelType.K_HRC_SKELETON:
                                 diff = val - fAnimation.frames[frameIndex].rotations[SelectedBone].gamma;
 
                                 for (fi = frameIndex; fi <= nFrames; fi++)
@@ -5332,8 +5345,8 @@ namespace KimeraCS
                                 }
                                 break;
 
-                            case K_AA_SKELETON:
-                            case K_MAGIC_SKELETON:
+                            case ModelType.K_AA_SKELETON:
+                            case ModelType.K_MAGIC_SKELETON:
 
                                 if (SelectedBone == bSkeleton.nBones)
                                 {
@@ -5365,7 +5378,7 @@ namespace KimeraCS
                 case K_FRAME_ROOT_ROTATION:
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             diff = val - fAnimation.frames[frameIndex].rootRotationGamma;
 
                             for (fi = frameIndex; fi <= nFrames; fi++)
@@ -5376,8 +5389,8 @@ namespace KimeraCS
                             }
                             break;
 
-                        case K_AA_SKELETON:
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_AA_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
 
                             diff = val - bAnimationsPack.SkeletonAnimations[ianimIndex].frames[frameIndex].bones[0].gamma;
 
@@ -5394,7 +5407,7 @@ namespace KimeraCS
                 case K_FRAME_ROOT_TRANSLATION:
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             diff = val - fAnimation.frames[frameIndex].rootTranslationZ;
 
                             for (fi = frameIndex; fi <= nFrames; fi++)
@@ -5405,8 +5418,8 @@ namespace KimeraCS
                             }
                             break;
 
-                        case K_AA_SKELETON:
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_AA_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
 
                             if (SelectedBone == bSkeleton.nBones)
                             {
@@ -5456,7 +5469,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     if (fAnimation.nFrames > 1)
                     {
                         fAnimation.frames.RemoveAt(tbCurrentFrameScroll.Value);
@@ -5473,8 +5486,8 @@ namespace KimeraCS
                     }
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
 
                     BattleAnimation tmpbAnimation;
                     float primarySecondaryCountersCoef;
@@ -5525,7 +5538,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     fAnimation.nFrames += 1;
 
                     fAnimation.frames.Insert(tbCurrentFrameScroll.Value,
@@ -5534,8 +5547,8 @@ namespace KimeraCS
                     tbCurrentFrameScroll.Maximum += 1;
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
 
                     BattleAnimation tmpbAnimation;
                     float primarySecondaryCountersCoef;
@@ -5582,7 +5595,7 @@ namespace KimeraCS
 
 
             // Set interpolated frames value readed from Kimera.cfg or updated previously
-            if (modelType == K_HRC_SKELETON)
+            if (modelType == ModelType.K_HRC_SKELETON)
                 numInterpolatedFramesStr = idefaultFieldInterpFrames.ToString();
             else
                 numInterpolatedFramesStr = idefaultBattleInterpFrames.ToString();
@@ -5603,7 +5616,7 @@ namespace KimeraCS
 
 
             // Update interpolated frames value in Kimera.cfg file
-            if (modelType == K_HRC_SKELETON)
+            if (modelType == ModelType.K_HRC_SKELETON)
             {
                 if (idefaultFieldInterpFrames != numInterpolatedFrames)
                 {
@@ -5631,7 +5644,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     //  Create new frames
                     FieldFrame tmpfFrame = new FieldFrame();
 
@@ -5654,8 +5667,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
 
                     BattleAnimation tmpbAnimation;
                     BattleFrame tmpbFrame = new BattleFrame();
@@ -5748,7 +5761,7 @@ namespace KimeraCS
             }
 
             // Ask for interpolated frames
-            if (modelType == K_HRC_SKELETON)
+            if (modelType == ModelType.K_HRC_SKELETON)
                 numInterpolatedFramesStr = idefaultFieldInterpFrames.ToString();
             else
                 numInterpolatedFramesStr = idefaultBattleInterpFrames.ToString();
@@ -5766,7 +5779,7 @@ namespace KimeraCS
             else return;
 
             // Update default value of interpolated frames
-            if (modelType == K_HRC_SKELETON)
+            if (modelType == ModelType.K_HRC_SKELETON)
                 idefaultFieldInterpFrames = numInterpolatedFrames;
             else
                 idefaultBattleInterpFrames = numInterpolatedFrames;
@@ -5783,7 +5796,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldFrame fFrame = new FieldFrame();
 
                     //  Create new frames
@@ -5828,8 +5841,8 @@ namespace KimeraCS
                     tbCurrentFrameScroll.Maximum = fAnimation.nFrames - 1;
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
 
                     BattleAnimation tmpbAnimation;
                     //BattleFrame tmpbFrame = new BattleFrame();
@@ -5911,7 +5924,7 @@ namespace KimeraCS
             }
 
             // Frames less or equal 1 not Play Animation (Field skeleton)
-            if (modelType == K_HRC_SKELETON)
+            if (modelType == ModelType.K_HRC_SKELETON)
                 if (fAnimation.nFrames <= 1)
                 {
                     btnPlayStopAnim.Checked = false;
@@ -5919,7 +5932,7 @@ namespace KimeraCS
                 }
 
             // Frames less or equal 1 not Play Animation (Battle Magic skeleton)
-            if (modelType == K_AA_SKELETON || modelType == K_MAGIC_SKELETON)
+            if (modelType == ModelType.K_AA_SKELETON || modelType == ModelType.K_MAGIC_SKELETON)
                 if (bAnimationsPack.SkeletonAnimations[0].frames.Count <= 1)
                 {
                     btnPlayStopAnim.Checked = false;
@@ -6039,7 +6052,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     if (txtAnimationFrame.Text != "")
                     {
                         CopyfFieldFrame = CopyfFrame(fAnimation.frames[tbCurrentFrameScroll.Value]);
@@ -6049,8 +6062,8 @@ namespace KimeraCS
                     }
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
 
                     if (txtAnimationFrame.Text != "" && ianimIndex >= 0)
                     {
@@ -6076,7 +6089,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     if (txtAnimationFrame.Text != "")
                     {
                         fAnimation.nFrames += 1;
@@ -6086,8 +6099,8 @@ namespace KimeraCS
                     }
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
 
                     float primarySecondaryCountersCoef;
                     BattleAnimation tmpbAnimation;
@@ -6140,13 +6153,13 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     Model = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].Model;
                     diam = ComputeDiameter(Model.BoundingBox) / 100;
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
 
                     if (SelectedBone == bSkeleton.nBones)
                     {
@@ -6355,7 +6368,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldBone tmpfBone = fSkeleton.bones[SelectedBone];
                     FieldRSDResource tmpRSDResource = tmpfBone.fRSDResources[SelectedBonePiece];
 
@@ -6367,8 +6380,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
 
                     PModel tmpbModel;
 
@@ -6598,7 +6611,7 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].texID == 0xFFFFFFFF)
                             return;
 
@@ -6606,8 +6619,8 @@ namespace KimeraCS
 
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         if (bSkeleton.textures[cbTextureSelect.SelectedIndex].texID == 0xFFFFFFFF) return;
 
                         if (bSkeleton.wpModels.Count > 0 && SelectedBone == bSkeleton.nBones)
@@ -6989,7 +7002,7 @@ namespace KimeraCS
         {
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
 
                     if (IsRSDResource) Text = STR_APPNAME + " - Model: " + strGlobalRSDResourceName.ToUpper();
                     else
@@ -6997,17 +7010,17 @@ namespace KimeraCS
                                              " / Anim: " + strGlobalFieldAnimationName.ToUpper();
                     break;
 
-                case K_AA_SKELETON:
+                case ModelType.K_AA_SKELETON:
                     Text = STR_APPNAME + " - Model: " + strGlobalBattleSkeletonFileName.ToUpper() +
                                          " / Anim: " + strGlobalBattleAnimationName.ToUpper();
                     break;
 
-                case K_MAGIC_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     Text = STR_APPNAME + " - Model: " + strGlobalMagicSkeletonFileName.ToUpper() +
                                          " / Anim: " + strGlobalMagicAnimationName.ToUpper();
                     break;
 
-                case K_3DS_MODEL:
+                case ModelType.K_3DS_MODEL:
                     Text = STR_APPNAME + " - Model: " + Path.GetFileNameWithoutExtension(strGlobal3DSModelName).ToUpper() + ".P";
                     break;
 
@@ -7157,19 +7170,19 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_P_FIELD_MODEL:
-                case K_P_BATTLE_MODEL:
-                case K_P_MAGIC_MODEL:
-                case K_3DS_MODEL:
+                case ModelType.K_P_FIELD_MODEL:
+                case ModelType.K_P_BATTLE_MODEL:
+                case ModelType.K_P_MAGIC_MODEL:
+                case ModelType.K_3DS_MODEL:
                     ComputePModelBoundingBox(fPModel, ref p_min, ref p_max);
                     break;
 
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[iCurrentFrameScroll], ref p_min, ref p_max);
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll],
                                              ref p_min, ref p_max);
                     break;
@@ -7581,7 +7594,7 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[iCurrentFrameScroll], ref p_min, ref p_max);
 
                         SetCameraAroundModel(ref p_min, ref p_max, 0, 0, -2 * ComputeSceneRadius(p_min, p_max),
@@ -7598,8 +7611,8 @@ namespace KimeraCS
                         isaveSkeletonResult = 1;
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         if (bSkeleton.IsBattleLocation && ianimIndex > 0) ianimIndex = 0;
 
                         ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll], ref p_min, ref p_max);
@@ -7614,7 +7627,7 @@ namespace KimeraCS
 
                         ApplyBattleChanges(ref bSkeleton, bAnimationsPack.SkeletonAnimations[0].frames[0], tmpwpFrame);
 
-                        if (modelType == K_AA_SKELETON)
+                        if (modelType == ModelType.K_AA_SKELETON)
                         {
                             // Battle model (*AA)
                             WriteBattleSkeleton(ref bSkeleton, strFileName);
@@ -7654,10 +7667,10 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_P_FIELD_MODEL:
-                    case K_P_BATTLE_MODEL:
-                    case K_P_MAGIC_MODEL:
-                    case K_3DS_MODEL:
+                    case ModelType.K_P_FIELD_MODEL:
+                    case ModelType.K_P_BATTLE_MODEL:
+                    case ModelType.K_P_MAGIC_MODEL:
+                    case ModelType.K_3DS_MODEL:
                         GL.MatrixMode(MatrixMode.Modelview);
                         GL.PushMatrix();
 

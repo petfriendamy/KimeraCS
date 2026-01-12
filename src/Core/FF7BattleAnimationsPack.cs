@@ -31,6 +31,7 @@ namespace KimeraCS
     using static FF7BattleSkeleton;
     using static FF7BattleAnimation;
 
+    using Core;
     using static Utils;
     using static FileTools;
 
@@ -77,7 +78,7 @@ namespace KimeraCS
                 {
                     switch (modelType)
                     {
-                        case K_AA_SKELETON:
+                        case ModelType.K_AA_SKELETON:
                             if (Path.GetExtension(strFileName).Length == 4)
                                 strBattleAnimPackFileName = Path.GetFileName(strFileName).ToUpper();
                             else
@@ -317,7 +318,7 @@ namespace KimeraCS
                         ai++;
                     }
 
-                    if (!bBlockOverSize && modelType == K_AA_SKELETON)
+                    if (!bBlockOverSize && modelType == ModelType.K_AA_SKELETON)
                     {
                         ai = 0;
                         while (ai < bAnimationsPack.nbWeaponAnims && !bBlockOverSize)
@@ -447,7 +448,9 @@ namespace KimeraCS
             tmpnBonesAnim = GetNumBattleBones(strFileAnimationsPack);
 
             if (tmpnBonesAnim > 1 )
-                if (bSkeleton.skeletonType == 0 ||bSkeleton.skeletonType == 2 || modelType == K_MAGIC_SKELETON) 
+                if (bSkeleton.skeletonType == ModelType.K_P_FIELD_MODEL ||
+                    bSkeleton.skeletonType == ModelType.K_P_MAGIC_MODEL ||
+                    modelType == ModelType.K_MAGIC_SKELETON) 
                     tmpnBonesAnim--;
 
             return tmpnBonesAnim == bSkeleton.nBones; 

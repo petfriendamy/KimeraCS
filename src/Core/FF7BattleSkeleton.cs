@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
 
@@ -14,6 +13,7 @@ namespace KimeraCS
     using static FF7PModel;
 
     using static Utils;
+    using Core;
 
     public static class FF7BattleSkeleton
     {
@@ -24,7 +24,7 @@ namespace KimeraCS
         public struct BattleSkeleton
         {
             public string fileName;
-            public int skeletonType;                       //  0 - Enemy Model, 1 - Battle Location, 2 - PC Battle Model?
+            public ModelType skeletonType;                       //  0 - Enemy Model, 1 - Battle Location, 2 - PC Battle Model?
             public int unk1;                               //  Always 1?
             public int unk2;                               //  Always 1?
             public int nBones;
@@ -77,7 +77,7 @@ namespace KimeraCS
                 {
                     using (var memReader = new BinaryReader(fileMemory))
                     {
-                        skeletonType = memReader.ReadInt32();
+                        skeletonType = (ModelType)memReader.ReadInt32();
                         unk1 = memReader.ReadInt32();
                         unk2 = memReader.ReadInt32();
                         nBones = memReader.ReadInt32();
@@ -253,7 +253,7 @@ namespace KimeraCS
                 {
                     using (var memReader = new BinaryReader(fileMemory))
                     {
-                        skeletonType = memReader.ReadInt32();
+                        skeletonType = (ModelType)memReader.ReadInt32();
                         unk1 = memReader.ReadInt32();
                         unk2 = memReader.ReadInt32();
                         nBones = memReader.ReadInt32();
@@ -598,7 +598,7 @@ namespace KimeraCS
         {           
             if (bBone.nModels > 0)
             {
-                if (modelType == K_AA_SKELETON)
+                if (modelType == ModelType.K_AA_SKELETON)
                 {
                     Model.fileName = bBone.Models[0].fileName + (bBone.nModels - 1).ToString();
                 }
@@ -842,12 +842,12 @@ namespace KimeraCS
             {
                 using (var memWriter = new BinaryWriter(fileMemory))
                 {
-                    memWriter.Write(bSkeleton.skeletonType);
+                    memWriter.Write((int)bSkeleton.skeletonType);
                     memWriter.Write(bSkeleton.unk1);
                     memWriter.Write(bSkeleton.unk2);
 
                     if (bSkeleton.IsBattleLocation)
-                        memWriter.Write((int)0);
+                        memWriter.Write(0);
                     else
                         memWriter.Write(bSkeleton.nBones);
 
@@ -940,7 +940,7 @@ namespace KimeraCS
             {
                 using (var memWriter = new BinaryWriter(fileMemory))
                 {
-                    memWriter.Write(bSkeleton.skeletonType);
+                    memWriter.Write((int)bSkeleton.skeletonType);
                     memWriter.Write(bSkeleton.unk1);
                     memWriter.Write(bSkeleton.unk2);
                     memWriter.Write(bSkeleton.nBones);

@@ -1082,10 +1082,10 @@ namespace KimeraCS
             {
                 switch (ctx.ModelType)
                 {
-                    case K_3DS_MODEL:
-                    case K_P_FIELD_MODEL:
-                    case K_P_BATTLE_MODEL:
-                    case K_P_MAGIC_MODEL:
+                    case ModelType.K_3DS_MODEL:
+                    case ModelType.K_P_FIELD_MODEL:
+                    case ModelType.K_P_BATTLE_MODEL:
+                    case ModelType.K_P_MAGIC_MODEL:
                         ComputePModelBoundingBox(pModel, ref p_min, ref p_max);
 
                         SetCameraAroundModel(ref p_min, ref p_max,
@@ -1124,7 +1124,7 @@ namespace KimeraCS
 
                         break;
 
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         ComputeFieldBoundingBox(fieldSkel, fieldAnim.frames[ctx.Animation.CurrentFrame],
                                                 ref p_min, ref p_max);
 
@@ -1174,8 +1174,8 @@ namespace KimeraCS
                                                 ctx.Selection.SelectedBone, ctx.Selection.SelectedBonePiece);
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         ComputeBattleBoundingBox(battleSkel, battleAnims.SkeletonAnimations[ctx.Animation.AnimationIndex].frames[ctx.Animation.CurrentFrame],
                                                  ref p_min, ref p_max);
 
@@ -1310,7 +1310,7 @@ namespace KimeraCS
             ground_radius = CalculateDistance(p_min_aux, p_max_aux) / 2;
 
             // Draw Shadow
-            SetBlendMode(BlendModes.Average);
+            SetBlendMode(BlendMode.Average);
 
             numSegments = 20;
             GL.Begin(PrimitiveType.TriangleFan);
@@ -1372,7 +1372,7 @@ namespace KimeraCS
 
             GL.Disable(EnableCap.CullFace);
 
-            SetBlendMode(BlendModes.Average);
+            SetBlendMode(BlendMode.Average);
 
             MultiplyPoint3DByOGLMatrix(planeTransformation, planeOriginalPoint1, ref p1);
             MultiplyPoint3DByOGLMatrix(planeTransformation, planeOriginalPoint2, ref p2);
@@ -1408,22 +1408,22 @@ namespace KimeraCS
 
             switch(modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[iFrame],
                                             ref p_min, ref p_max);
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iFrame],
                                              ref p_min, ref p_max);
 
                     break;
 
-                case K_3DS_MODEL:
-                case K_P_BATTLE_MODEL:
-                case K_P_FIELD_MODEL:
-                case K_P_MAGIC_MODEL:
+                case ModelType.K_3DS_MODEL:
+                case ModelType.K_P_BATTLE_MODEL:
+                case ModelType.K_P_FIELD_MODEL:
+                case ModelType.K_P_MAGIC_MODEL:
                     ComputePModelBoundingBox(fPModel, ref p_min, ref p_max);
 
                     break;

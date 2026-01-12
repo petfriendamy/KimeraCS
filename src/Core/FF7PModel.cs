@@ -1642,7 +1642,7 @@ namespace KimeraCS
         {
             int iVertIdx;
 
-            SetBlendMode(BlendModes.Disabled);
+            SetBlendMode(BlendMode.Disabled);
 
             for (iVertIdx = 0; iVertIdx < Model.Header.numVerts; iVertIdx++)
             {
@@ -2675,13 +2675,13 @@ namespace KimeraCS
         //  ---------------------------------------------------------------------------------------------------
         //  ====================================== HELP PMODEL FUNCTIONS ======================================
         //  ---------------------------------------------------------------------------------------------------
-        public static int GetPModelType(string strGlobalPModelName)
+        public static ModelType GetPModelType(string strGlobalPModelName)
         {
             string strExt = Path.GetExtension(strGlobalPModelName).ToUpper();
 
-            if (strExt.Length <= 0) return K_P_BATTLE_MODEL;
-            else if (strExt == ".P" && strExt.Length < 3) return K_P_FIELD_MODEL;
-            else return K_P_MAGIC_MODEL;
+            if (strExt.Length <= 0) return ModelType.K_P_BATTLE_MODEL;
+            else if (strExt == ".P" && strExt.Length < 3) return ModelType.K_P_FIELD_MODEL;
+            else return ModelType.K_P_MAGIC_MODEL;
         }
 
 

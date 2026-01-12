@@ -13,7 +13,7 @@ namespace KimeraCS
     using static FF7PModel;
     using static FF7TMDModel;
 
-    using static Utils;
+    using static Utils_WinForms;
     using static FileTools;
 
     public partial class FrmTMDObjList : Form

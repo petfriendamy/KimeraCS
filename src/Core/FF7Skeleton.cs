@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using OpenTK.Graphics.OpenGL.Compatibility;
+using KimeraCS.Core;
 
 namespace KimeraCS
 {
@@ -18,29 +18,11 @@ namespace KimeraCS
     using static FF7TEXTexture;
 
     using static Utils;
-    using static FileTools;
 
     public static class FF7Skeleton
     {
-        // This will tell to all the tool which type of skeleton/model we have loaded
-        // Possible values:
-        // -1: Error (file not exists, error opening file...)
-        //  0: Field P Model
-        //  1: Battle P Model
-        //  2: Magic P Model
-        //  3: Field Skeleton
-        //  4: Battle Skeleton
-        //  5: Magic Skeleton
-        //  6: 3DS Model
-        public const int K_P_FIELD_MODEL = 0;
-        public const int K_P_BATTLE_MODEL = 1;
-        public const int K_P_MAGIC_MODEL = 2;
-        public const int K_HRC_SKELETON = 3;
-        public const int K_AA_SKELETON = 4;
-        public const int K_MAGIC_SKELETON = 5;
-        public const int K_3DS_MODEL = 6;
-
-        public static int modelType = -1;
+        // The currently loaded model type
+        public static ModelType modelType = ModelType.K_NONE;
 
         // Animation constants for skeleton
         public const int K_FRAME_BONE_ROTATION = 0;
@@ -48,7 +30,6 @@ namespace KimeraCS
         public const int K_FRAME_ROOT_TRANSLATION = 2;
 
         // Global vars
-        public static OpenTK.GLControl.GLControl glPanel;  // Reference to OpenGL panel for SwapBuffers
         public static FieldSkeleton fSkeleton;
         public static FieldAnimation fAnimation;
 
@@ -66,8 +47,9 @@ namespace KimeraCS
         //
         // Global Skeleton/Model functions/procedures
         //
-        public static int LoadSkeleton(string strFileName, bool loadGeometryQ, bool ignoreMissingPFiles,
-                                       bool repairPolys, bool removeTextureCoords)
+        public static int LoadSkeleton(string strFileName, bool loadGeometryQ, bool isLimitBreak,
+                                       bool ignoreMissingPFiles, bool repairPolys,
+                                       bool removeTextureCoords)
         {
             int iloadSkeletonResult = 1;
 
@@ -75,20 +57,20 @@ namespace KimeraCS
             {
 
                 // First we destroy the previous loaded Field Skeleton.
-                if (bLoaded && (modelType >= 3 && modelType <= 5))
+                if (bLoaded && ((int)modelType >= 3 && (int)modelType <= 5))
                 {
                     if (DestroySkeleton() != 1) iloadSkeletonResult = -2;
                 }
 
                 modelType = GetSkeletonType(strFileName);
 
-                if (modelType >= 3 && modelType <= 5)
+                if ((int)modelType >= 3 && (int)modelType <= 5)
                 {
                     // LOAD Skeleton
                     // We load the Field Skeleton into memory.
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             string strAnimationName = "";
 
                             // Field Skeleton (.hrc)
@@ -108,10 +90,10 @@ namespace KimeraCS
 
                             break;
 
-                        case K_AA_SKELETON:
+                        case ModelType.K_AA_SKELETON:
                             // Battle Skeleton (aa)
-                            bSkeleton = new BattleSkeleton(strFileName, CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strFileName).ToUpper()),
-                                true, repairPolys, removeTextureCoords);
+                            bSkeleton = new BattleSkeleton(strFileName, isLimitBreak, true, repairPolys,
+                                                           removeTextureCoords);
 
                             // Normally we will have the ??DA file with the Animation Pack.
                             // Location Battle Models has NOT ??DA file.
@@ -121,7 +103,7 @@ namespace KimeraCS
 
                             break;
 
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
                             // Magic Skeleton (.d)
                             bSkeleton = new BattleSkeleton(strFileName, true, repairPolys, removeTextureCoords);
 
@@ -149,6 +131,7 @@ namespace KimeraCS
         public static int LoadFieldSkeletonFromDB(string strFileName, 
                                                   string strAnimFileName, 
                                                   bool loadGeometryQ,
+                                                  bool isLimitBreak,
                                                   bool ignoreMissingPFiles,
                                                   bool repairPolys,
                                                   bool removeTextureCoords)
@@ -159,19 +142,19 @@ namespace KimeraCS
             {
 
                 // First we destroy the previous loaded Field Skeleton.
-                if (bLoaded && (modelType >= 3 && modelType <= 5))
+                if (bLoaded && ((int)modelType >= 3 && (int)modelType <= 5))
                 {
                     if (DestroySkeleton() != 1) iloadSkeletonResult = -2;
                 }
 
                 modelType = GetSkeletonType(strFileName);
 
-                if (modelType >= 3 && modelType <= 5)
+                if ((int)modelType >= 3 && (int)modelType <= 5)
                 {
                     // LOAD Skeleton
                     switch (modelType)
                     {
-                        case K_HRC_SKELETON:
+                        case ModelType.K_HRC_SKELETON:
                             // We load the Field Skeleton into memory.
 
                             // Field Skeleton (.hrc)
@@ -181,10 +164,10 @@ namespace KimeraCS
                             iloadSkeletonResult = LoadAnimationFromDB(strAnimFileName);
                             break;
 
-                        case K_AA_SKELETON:
+                        case ModelType.K_AA_SKELETON:
                             // Battle Skeleton (aa)
-                            bSkeleton = new BattleSkeleton(strFileName, CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strFileName).ToUpper()),
-                                                           true, repairPolys, removeTextureCoords);
+                            bSkeleton = new BattleSkeleton(strFileName, isLimitBreak, true, repairPolys,
+                                                           removeTextureCoords);
 
                             // Normally we will have the ??DA file with the Animation Pack.
                             // Location Battle Models has NOT ??DA file.
@@ -193,7 +176,7 @@ namespace KimeraCS
                             bAnimationsPack = new BattleAnimationsPack(bSkeleton, strFileName);
                             break;
 
-                        case K_MAGIC_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
                             // Magic Skeleton (.d)
                             bSkeleton = new BattleSkeleton(strFileName, true, repairPolys, removeTextureCoords);
 
@@ -228,21 +211,15 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         DestroyFieldSkeleton(fSkeleton);
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         DestroyBattleSkeleton(bSkeleton);
                         break;
                 }
-
-                // Clear PanelModel PictureBox
-                bLoaded = false;
-                ClearPanel();
-                GL.Flush();
-                glPanel?.SwapBuffers();
             }
             catch
             {
@@ -252,9 +229,9 @@ namespace KimeraCS
             return iDestroySkeletonResult;
         }
 
-        public static int GetSkeletonType(string strFileName)
+        public static ModelType GetSkeletonType(string strFileName)
         {
-            int iSkeletonType = -1;
+            ModelType iSkeletonType = ModelType.K_NONE;
             string tmpFileName;
 
             if (strFileName.Length > 0)
@@ -262,11 +239,7 @@ namespace KimeraCS
                 switch (Path.GetExtension(strFileName).ToUpper())
                 {
                     case ".HRC":
-                        iSkeletonType = 3;
-
-                        strGlobalFieldSkeletonName = Path.GetFileNameWithoutExtension(strFileName).ToUpper();
-                        strGlobalFieldSkeletonFileName = Path.GetFileName(strFileName).ToUpper();
-
+                        iSkeletonType = ModelType.K_HRC_SKELETON;
                         break;
 
                     case "":
@@ -274,21 +247,12 @@ namespace KimeraCS
                         if (tmpFileName.Length > 2)
                         {
                             if (tmpFileName[tmpFileName.Length - 1] == 'A' && tmpFileName[tmpFileName.Length - 2] == 'A')
-                            {
-                                strGlobalBattleSkeletonName = Path.GetFileNameWithoutExtension(strFileName).ToUpper();
-                                strGlobalBattleSkeletonFileName = Path.GetFileName(strFileName).ToUpper();
-
-                                iSkeletonType = 4;
-                            }
+                                iSkeletonType = ModelType.K_AA_SKELETON;
                         }
                         break;
 
                     case ".D":
-                        iSkeletonType = 5;
-
-                        strGlobalMagicSkeletonName = Path.GetFileNameWithoutExtension(strFileName).ToUpper();
-                        strGlobalMagicSkeletonFileName = Path.GetFileName(strFileName).ToUpper();
-
+                        iSkeletonType = ModelType.K_MAGIC_SKELETON;
                         break;
                 }
             }
@@ -344,7 +308,7 @@ namespace KimeraCS
                                                 strRSDFolder + "\\" + strfAnimation,
                                                 false);
 
-                modelType = K_HRC_SKELETON;
+                modelType = ModelType.K_HRC_SKELETON;
                 IsRSDResource = true;
             }
             catch (Exception ex)
@@ -369,14 +333,14 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         WriteFieldAnimation(fAnimation, strFileName);
 
                         isaveAnimationResult = 1;
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         isaveAnimationResult = WriteBattleAnimationsPack(ref bAnimationsPack, strFileName);
                         break;
                 }
@@ -396,12 +360,12 @@ namespace KimeraCS
             bool iNumAnimFramesIsOneResult = false;
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     if (fAnimation.nFrames == 1) iNumAnimFramesIsOneResult = true;
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     if (bAnimationsPack.SkeletonAnimations[index].numFramesShort == 1) iNumAnimFramesIsOneResult = true;
                     break;
             }
@@ -417,14 +381,14 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         ReadFieldFrameData(fSkeleton, ref fAnimation, strFileName, bMerge);
 
                         iinputFrameData = 1;
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         //iinputFrameData = WriteBattleFrameDataPack(ref bAnimationsPack, strFileName);
                         break;
                 }
@@ -447,14 +411,14 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         WriteFieldFrameData(fSkeleton, fAnimation, strFileName);
 
                         ioutputFrameData = 1;
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         //ioutputFrameData = WriteBattleAnimationsPack(ref bAnimationsPack, strFileName);
                         break;
                 }
@@ -477,14 +441,14 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         ReadFieldFrameDataSelective(fSkeleton, ref fAnimation, strFileName);
 
                         iinputFrameData = 1;
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         //iinputFrameData = WriteBattleFrameDataPack(ref bAnimationsPack, strFileName);
                         break;
                 }

@@ -1,17 +1,17 @@
-﻿using System;
-using System.Drawing;
-using System.Windows.Forms;
-using System.Drawing.Drawing2D;
+﻿using KimeraCS.Core;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
+using System.Windows.Forms;
 
 namespace KimeraCS
 {
-    using static FrmSkeletonEditor;
-
-    using static FF7Skeleton;
     using static FF7FieldRSDResource;
     using static FF7PModel;
+    using static FF7Skeleton;
+    using static FrmSkeletonEditor;
 
     public partial class FrmTextureViewer : Form
     {
@@ -243,7 +243,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     hTmpBMP = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[iTexID].bitmap;
 
                     iTCWidth = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[iTexID].width;
@@ -251,8 +251,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     hTmpBMP = bSkeleton.textures[iTexID].bitmap;
 
                     iTCWidth = bSkeleton.textures[iTexID].width;
@@ -398,13 +398,13 @@ namespace KimeraCS
             // Commit the previous update to the original model
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     tmpfRSDResource = CopyRSDResource(fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece]);
                     tmpfRSDResource.Model.TexCoords = TexViewModel.TexCoords;
                     fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece] = CopyRSDResource(tmpfRSDResource);
                     break;
 
-                case K_AA_SKELETON:
+                case ModelType.K_AA_SKELETON:
                     if (bSkeleton.wpModels.Count > 0 && SelectedBone == bSkeleton.nBones)
                     {
                         bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex] = CopyPModel(TexViewModel);
@@ -418,7 +418,7 @@ namespace KimeraCS
                     }
                     break;
 
-                case K_MAGIC_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     tmpPModel = CopyPModel(bSkeleton.bones[SelectedBone].Models[SelectedBonePiece]);
                     tmpPModel.TexCoords = TexViewModel.TexCoords;
                     bSkeleton.bones[SelectedBone].Models[SelectedBonePiece] = CopyPModel(tmpPModel);
@@ -565,13 +565,13 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     iWidth = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[iTexID].width;
                     iHeight = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[iTexID].height;
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     iWidth = bSkeleton.textures[iTexID].width;
                     iHeight = bSkeleton.textures[iTexID].height;
                     break;

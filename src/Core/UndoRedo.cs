@@ -1,16 +1,15 @@
-﻿using System.Windows.Forms;
+﻿using KimeraCS.Core;
+using System.Windows.Forms;
 
 namespace KimeraCS
 {
-    using static FrmSkeletonEditor;
-
-    using static FF7Skeleton;
-    using static FF7FieldSkeleton;
-    using static FF7FieldAnimation;
-    using static FF7PModel;
-
-    using static FF7BattleSkeleton;
     using static FF7BattleAnimationsPack;
+    using static FF7BattleSkeleton;
+    using static FF7FieldAnimation;
+    using static FF7FieldSkeleton;
+    using static FF7PModel;
+    using static FF7Skeleton;
+    using static FrmSkeletonEditor;
 
     class UndoRedo
     {
@@ -164,7 +163,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     fSkeleton = CopyfSkeleton(sState.URfSkeleton);
                     fAnimation = CopyfAnimation(sState.URfAnimation);
 
@@ -194,8 +193,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     bSkeleton = CopybSkeleton(sState.URbSkeleton);
                     bAnimationsPack = CopybAnimationsPack(sState.URbAnimationsPack);
 
@@ -224,10 +223,10 @@ namespace KimeraCS
                     frmSkEditor.cbTextureSelect.SelectedIndex = sState.textureIndex;
                     break;
 
-                case K_P_FIELD_MODEL:
-                case K_P_BATTLE_MODEL:
-                case K_P_MAGIC_MODEL:
-                case K_3DS_MODEL:
+                case ModelType.K_P_FIELD_MODEL:
+                case ModelType.K_P_BATTLE_MODEL:
+                case ModelType.K_P_MAGIC_MODEL:
+                case ModelType.K_3DS_MODEL:
                     fPModel = CopyPModel(sState.URModel);
                     break;
             }
@@ -248,7 +247,7 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     sState.URfSkeleton = CopyfSkeleton(fSkeleton);
                     sState.URfAnimation = CopyfAnimation(fAnimation);
 
@@ -256,8 +255,8 @@ namespace KimeraCS
                     sState.frameIndex = frmSkEditor.tbCurrentFrameScroll.Value;
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     sState.URbSkeleton = CopybSkeleton(bSkeleton);
                     sState.URbAnimationsPack = CopybAnimationsPack(bAnimationsPack);
 
@@ -268,10 +267,10 @@ namespace KimeraCS
                     if (frmSkEditor.cbWeapon.Visible) sState.weaponIndex = ianimWeaponIndex;
                     break;
 
-                case K_P_FIELD_MODEL:
-                case K_P_BATTLE_MODEL:
-                case K_P_MAGIC_MODEL:
-                case K_3DS_MODEL:
+                case ModelType.K_P_FIELD_MODEL:
+                case ModelType.K_P_BATTLE_MODEL:
+                case ModelType.K_P_MAGIC_MODEL:
+                case ModelType.K_3DS_MODEL:
                     sState.URModel = CopyPModel(fPModel);
                     break;
             }

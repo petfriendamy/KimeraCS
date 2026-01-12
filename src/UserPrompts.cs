@@ -12,6 +12,8 @@ namespace KimeraCS
     using static FF7TEXTexture;
     using static FileTools;
 
+    using Core;
+
     public static class UserPrompts
     {
         // I don't expect this to ever be needed
@@ -72,29 +74,30 @@ namespace KimeraCS
         public static int LoadGenericSkeleton(string strFileName, bool loadGeometryQ)
         {
             int result;
+            bool isLimitBreak = CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strFileName).ToUpper());
             try
             {
-                result = LoadSkeleton(strFileName, loadGeometryQ, false, false,
+                result = LoadSkeleton(strFileName, loadGeometryQ, isLimitBreak, false, false,
                                       TEXTURE_REMOVE_CHECK);
             }
             catch (PFileNotFoundException ex) //missing P files
             {
                 if (MissingPFilePrompt(ex.Message))
-                    result = LoadSkeleton(strFileName, loadGeometryQ, true, false,
+                    result = LoadSkeleton(strFileName, loadGeometryQ, isLimitBreak, true, false,
                                           TEXTURE_REMOVE_CHECK);
                 else
                     throw new FileLoadException("File could not be loaded.", ex);
             }
             if (result == -2)
                 bLoaded = false;
-            int modelType = GetSkeletonType(strFileName);
+            ModelType modelType = GetSkeletonType(strFileName);
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldSkeletonPolyCheck(ref fSkeleton);
                     break;
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     BattleSkeletonPolyCheck(ref bSkeleton);
                     break;
             }
@@ -104,28 +107,40 @@ namespace KimeraCS
         public static int LoadSkeletonFromDB(string strFileName, string strAnimFileName, bool loadGeometryQ)
         {
             int result;
+            bool isLimitBreak = CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strFileName).ToUpper());
             try
             {
-                result = LoadFieldSkeletonFromDB(strFileName, strAnimFileName, loadGeometryQ,
+                result = LoadFieldSkeletonFromDB(strFileName, strAnimFileName, loadGeometryQ, isLimitBreak,
                                                  false, false, TEXTURE_REMOVE_CHECK);
             }
             catch (PFileNotFoundException ex) //missing P files
             {
                 if (MissingPFilePrompt(ex.Message))
-                    result = LoadSkeleton(strFileName, loadGeometryQ, true, false,
-                                          TEXTURE_REMOVE_CHECK);
+                    result = LoadFieldSkeletonFromDB(strFileName, strAnimFileName, loadGeometryQ, isLimitBreak,
+                                                     false, false, TEXTURE_REMOVE_CHECK);
                 else
                     throw new FileLoadException("File could not be loaded.", ex);
             }
-            int modelType = GetSkeletonType(strFileName);
+            ModelType modelType = GetSkeletonType(strFileName);
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldSkeletonPolyCheck(ref fSkeleton);
+
+                    strGlobalFieldSkeletonName = Path.GetFileNameWithoutExtension(strFileName).ToUpper();
+                    strGlobalFieldSkeletonFileName = Path.GetFileName(strFileName).ToUpper();
                     break;
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
                     BattleSkeletonPolyCheck(ref bSkeleton);
+                    
+                    strGlobalBattleSkeletonName = Path.GetFileNameWithoutExtension(strFileName).ToUpper();
+                    strGlobalBattleSkeletonFileName = Path.GetFileName(strFileName).ToUpper();
+                    break;
+                case ModelType.K_MAGIC_SKELETON:
+                    BattleSkeletonPolyCheck(ref bSkeleton);
+
+                    strGlobalMagicSkeletonName = Path.GetFileNameWithoutExtension(strFileName).ToUpper();
+                    strGlobalMagicSkeletonFileName = Path.GetFileName(strFileName).ToUpper();
                     break;
             }
 

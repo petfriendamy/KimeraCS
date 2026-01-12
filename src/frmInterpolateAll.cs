@@ -16,6 +16,8 @@ namespace KimeraCS
     using static FileTools;
     using static Utils;
 
+    using Core;
+
     public partial class FrmInterpolateAll : Form
     {
 
@@ -646,7 +648,7 @@ namespace KimeraCS
                 //lstbAnimationsPackFiles = new string[1] { "CCDA" };
 
                 // Let's set the global var modelType to battle skeletons
-                modelType = K_AA_SKELETON;
+                modelType = ModelType.K_AA_SKELETON;
 
                 foreach (string itmBattleAnimation in lstbAnimationsPackFiles)
                 {
@@ -730,7 +732,7 @@ namespace KimeraCS
                 //lstbAnimationsPackFiles = new string[1] { "CCDA" };
 
                 // Let's set the global var modelType to battle skeletons
-                modelType = K_MAGIC_SKELETON;
+                modelType = ModelType.K_MAGIC_SKELETON;
 
                 foreach (string itmMagicAnimation in lstbAnimationsPackFiles)
                 {

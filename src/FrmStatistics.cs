@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KimeraCS.Core;
+using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 
@@ -33,7 +34,7 @@ namespace KimeraCS
             switch (modelType)
             {
                 // FIELD SKELETON
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     strFileName = fSkeleton.fileName + ".TXT";
 
                     rtbStats.Text = "Field Model:\t\t" + fSkeleton.fileName + "\n";
@@ -145,12 +146,12 @@ namespace KimeraCS
                     break;
 
                 // BATTLE/MAGIC SKELETON
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     strFileName = bSkeleton.fileName;
 
                     // Put battle model type
-                    if (modelType == K_MAGIC_SKELETON)
+                    if (modelType == ModelType.K_MAGIC_SKELETON)
                         rtbStats.Text = "Magic Model:";
                     else if (bSkeleton.IsBattleLocation)
                         rtbStats.Text = "Battle Model (Location):";

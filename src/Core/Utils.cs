@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Windows.Forms;
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
 
@@ -749,13 +747,13 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[currFrame],
                                                 ref p_min, ref p_max);
                         break;
 
-                    case K_AA_SKELETON:
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_AA_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         //if (!bSkeleton.IsBattleLocation)
                         //{
                         ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[animIndex].frames[currFrame],
@@ -763,10 +761,10 @@ namespace KimeraCS
                         //}
                         break;
 
-                    case K_P_FIELD_MODEL:
-                    case K_P_BATTLE_MODEL:
-                    case K_P_MAGIC_MODEL:
-                    case K_3DS_MODEL:
+                    case ModelType.K_P_FIELD_MODEL:
+                    case ModelType.K_P_BATTLE_MODEL:
+                    case ModelType.K_P_MAGIC_MODEL:
+                    case ModelType.K_3DS_MODEL:
                         ComputePModelBoundingBox(fPModel, ref p_min, ref p_max);
                         break;
                 }
@@ -1647,16 +1645,6 @@ namespace KimeraCS
             return GetPointInLine(p1, p2, alpha);
         }
 
-        public static bool FindWindowOpened (string strWindowName)
-        {
-            foreach (Form itmFrm in Application.OpenForms)
-            {
-                if (itmFrm.Name == strWindowName) return true;
-            }
-
-            return false;
-        }
-
         // This function will check if there are any duplicated vertices or duplicated polys indexes
         // in Add Polygon feature of PEditor.
         // iArrayVNP = VertexNewPoly        iVCNP = VertexCountNewPoly
@@ -1866,9 +1854,9 @@ namespace KimeraCS
         /// <summary>
         /// Set blend mode (legacy helper) - uses Defines.BLEND_MODE enum
         /// </summary>
-        public static void SetBlendMode(BlendModes bmMode)
+        public static void SetBlendMode(BlendMode bmMode)
         {
-            if (bmMode == BlendModes.Disabled)
+            if (bmMode == BlendMode.Disabled)
             {
                 GL.Disable(EnableCap.Blend);
             }
@@ -1879,24 +1867,24 @@ namespace KimeraCS
 
                 switch (bmMode)
                 {
-                    case BlendModes.Average:
+                    case BlendMode.Average:
                         GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
                         break;
 
-                    case BlendModes.Add:
+                    case BlendMode.Add:
                         GL.BlendFunc(BlendingFactor.One, BlendingFactor.One);
                         break;
 
-                    case BlendModes.Subtract:
+                    case BlendMode.Subtract:
                         GL.BlendFunc(BlendingFactor.One, BlendingFactor.One);
                         GL.BlendEquation(BlendEquationMode.FuncReverseSubtract);
                         break;
 
-                    case BlendModes._25P:
+                    case BlendMode._25P:
                         GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
                         break;
 
-                    case BlendModes.None:
+                    case BlendMode.None:
                         GL.BlendFunc(BlendingFactor.One, BlendingFactor.Zero);
                         break;
                 }
@@ -1928,7 +1916,7 @@ namespace KimeraCS
             GL.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             GL.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
 
-            SetBlendMode(BlendModes.Disabled);
+            SetBlendMode(BlendMode.Disabled);
         }
 
         /// <summary>
@@ -2085,54 +2073,6 @@ namespace KimeraCS
             GL.Viewport(vp0[0], vp0[1], vp0[2], vp0[3]);
 
             return result;
-        }
-
-
-        //  ------------------------------------------------------------------------------------------------
-        //  ======================================== BITMAP HELPERS ========================================
-        //  ------------------------------------------------------------------------------------------------
-
-        /// <summary>
-        /// Fits a bitmap to a PictureBox, scaling with NearestNeighbor interpolation.
-        /// </summary>
-        public static Bitmap FitBitmapToPictureBox(PictureBox pbIn, int iImgWidth, int iImgHeight, Bitmap srcBitmap)
-        {
-            if (srcBitmap == null)
-                return null;
-
-            Bitmap tmpBMP;
-            float fAspectRatio = (float)iImgWidth / (float)iImgHeight;
-
-            // Get the size available
-            float fWidth = pbIn.ClientSize.Width;
-            float fHeight = pbIn.ClientSize.Height;
-
-            // Adjust the wid/hgt ratio to match aspect_src
-            if (fWidth / fHeight > fAspectRatio)
-            {
-                // The area is too short and wide. Make it narrower.
-                fWidth = fAspectRatio * fHeight;
-            }
-            else
-            {
-                // The area is too tall and thin. Make it shorter.
-                fHeight = fWidth / fAspectRatio;
-            }
-
-            // Create image at the correct size.
-            if (iImgWidth < pbIn.ClientSize.Width && iImgHeight < pbIn.ClientSize.Height)
-                tmpBMP = new Bitmap(pbIn.ClientSize.Width, pbIn.ClientSize.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            else
-                tmpBMP = new Bitmap(iImgWidth, iImgHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-            using (Graphics g = Graphics.FromImage(tmpBMP))
-            {
-                g.InterpolationMode = InterpolationMode.NearestNeighbor;
-                g.PixelOffsetMode = PixelOffsetMode.Half;
-                g.DrawImage(srcBitmap, 0, 0, fWidth, fHeight);
-            }
-
-            return tmpBMP;
         }
 
     }

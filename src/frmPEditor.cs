@@ -154,7 +154,7 @@ namespace KimeraCS
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Lequal);
 
-            SetBlendMode(BlendModes.None);
+            SetBlendMode(BlendMode.None);
 
             GL.CullFace(TriangleFace.Front);
             GL.Enable(EnableCap.CullFace);
@@ -1225,7 +1225,7 @@ namespace KimeraCS
             // Apply changes to the Skeleton in frmSkeletonEditor (fSkeleton, bSkeleton, fPModel)
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     FieldRSDResource tmpRSDResourceModel;
 
                     tmpRSDResourceModel = fSkeleton.bones[EditedBone].fRSDResources[EditedBonePiece];
@@ -1236,8 +1236,8 @@ namespace KimeraCS
 
                     break;
 
-                case K_AA_SKELETON:
-                case K_MAGIC_SKELETON:
+                case ModelType.K_AA_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     PModel tmpPModel;
 
                     if (EditedBone == bSkeleton.nBones)
@@ -1255,10 +1255,10 @@ namespace KimeraCS
                     }
                     break;
 
-                case K_P_BATTLE_MODEL:
-                case K_P_FIELD_MODEL:
-                case K_P_MAGIC_MODEL:
-                case K_3DS_MODEL:
+                case ModelType.K_P_BATTLE_MODEL:
+                case ModelType.K_P_FIELD_MODEL:
+                case ModelType.K_P_MAGIC_MODEL:
+                case ModelType.K_3DS_MODEL:
                     fPModel = CopyPModel(EditedPModel);
                     CreateDListsFromPModel(ref fPModel);
 
@@ -1459,15 +1459,15 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         openFile.FilterIndex = 1;
                         break;
 
-                    case K_AA_SKELETON:
+                    case ModelType.K_AA_SKELETON:
                         openFile.FilterIndex = 2;
                         break;
 
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         openFile.FilterIndex = 3;
                         break;
                 }
@@ -1561,15 +1561,15 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case K_HRC_SKELETON:
+                    case ModelType.K_HRC_SKELETON:
                         openFile.FilterIndex = 1;
                         break;
 
-                    case K_AA_SKELETON:
+                    case ModelType.K_AA_SKELETON:
                         openFile.FilterIndex = 2;
                         break;
 
-                    case K_MAGIC_SKELETON:
+                    case ModelType.K_MAGIC_SKELETON:
                         openFile.FilterIndex = 3;
                         break;
                 }
@@ -1700,15 +1700,15 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case K_HRC_SKELETON:
+                case ModelType.K_HRC_SKELETON:
                     openFile.FilterIndex = 1;
                     break;
 
-                case K_AA_SKELETON:
+                case ModelType.K_AA_SKELETON:
                     openFile.FilterIndex = 2;
                     break;
 
-                case K_MAGIC_SKELETON:
+                case ModelType.K_MAGIC_SKELETON:
                     openFile.FilterIndex = 3;
                     break;
             }

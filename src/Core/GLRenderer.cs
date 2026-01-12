@@ -8,7 +8,6 @@ namespace KimeraCS.Rendering
 {
     using static FF7PModel;
     using static Utils;
-    using static FrmSkeletonEditor;
 
     /// <summary>
     /// Per-context OpenGL resources. Each GL context needs its own VAOs, VBOs, and shaders.
