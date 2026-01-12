@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
+using KimeraCS.Core;
 
 namespace KimeraCS.Rendering
 {

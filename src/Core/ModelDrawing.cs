@@ -3,11 +3,11 @@ using System.Drawing;
 using System.Windows.Forms;
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
+using KimeraCS.Core;
 
 #nullable enable
-namespace KimeraCS
+namespace KimeraCS.Rendering
 {
-    using Rendering;
     using static Rendering.VisualizationHelpers;
 
     using static FF7Skeleton;
@@ -24,7 +24,6 @@ namespace KimeraCS
     using static Lighting;
 
     using static Utils;
-    using Core;
 
     public static class ModelDrawing
     {

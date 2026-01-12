@@ -1,10 +1,10 @@
-﻿using KimeraCS.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Windows.Forms;
+using KimeraCS.Core;
 
 namespace KimeraCS
 {

@@ -1,12 +1,9 @@
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
 using KimeraCS.Core;
-using KimeraCS.Rendering;
 
-namespace KimeraCS
+namespace KimeraCS.Rendering
 {
-    using static Utils;
-
     class Lighting
     {
         public const int LIGHT_STEPS = 20;

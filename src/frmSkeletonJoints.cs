@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Windows.Forms;
+using KimeraCS.Core;
 
 namespace KimeraCS
 {

@@ -1,13 +1,11 @@
-﻿using KimeraCS.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using KimeraCS.Core;
 
 namespace KimeraCS
 {
-
     using static FF7Skeleton;
-
     using static FileTools;
     using static Utils;
 

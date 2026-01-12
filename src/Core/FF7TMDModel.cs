@@ -77,14 +77,14 @@ using System.Text;
 using System.Globalization;
 using OpenTK.Mathematics;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
 
     using static FF7Skeleton;
     using static FF7PModel;
 
     using static Utils;
-    using static FileTools;
+    //using static FileTools;
 
     public static class FF7TMDModel
     {
@@ -1658,7 +1658,7 @@ namespace KimeraCS
         // LOGGING PROCEDURES
 
 
-        public static void WriteTMDLOG()
+        public static void WriteTMDLOG(string modelName, string modelFolderPath)
         {
             int iCountObj = 0, iCountPrim;
             StringBuilder strTMDLOG = new StringBuilder();
@@ -1839,14 +1839,14 @@ namespace KimeraCS
                     iCountObj++;
                 }
 
-                File.WriteAllText(strGlobalPathTMDModelFolder + "\\" +
-                    Path.GetFileNameWithoutExtension(strGlobalTMDModelName).ToUpper() + ".log",
+                File.WriteAllText(modelFolderPath + "\\" +
+                    Path.GetFileNameWithoutExtension(modelName).ToUpper() + ".log",
                     strTMDLOG.ToString());
 
             }
             catch
             {
-                throw new Exception("Error saving the log for TMD file " + strGlobalTMDModelName + ".");
+                throw new Exception("Error saving the log for TMD file " + modelName + ".");
             }
         }
 

@@ -1,4 +1,6 @@
-namespace KimeraCS.Core
+using KimeraCS.Core;
+
+namespace KimeraCS.Rendering
 {
     using static FF7PModel;
     using static FF7FieldSkeleton;

@@ -7,23 +7,25 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using OpenTK.Mathematics;
+using KimeraCS.Core;
 
 namespace KimeraCS
 {
-    using Core;
-    using Rendering;
+    using static FrmSkeletonEditor;
+
     using static FF7BattleSkeleton;
     using static FF7FieldRSDResource;
     using static FF7FieldSkeleton;
     using static FF7PModel;
     using static FF7Skeleton;
     using static FileTools;
-    using static FrmSkeletonEditor;
-    using static Lighting;
     using static Model_3DS;
-    using static ModelDrawing;
     using static UndoRedoPE;
     using static Utils;
+
+    using Rendering;
+    using static Rendering.Lighting;
+    using static Rendering.ModelDrawing;
 
     public partial class FrmPEditor : Form
     {
@@ -61,7 +63,7 @@ namespace KimeraCS
 
         public static int EditedBone, EditedBonePiece;
 
-        private static DrawMode drawMode;
+        private static Core.DrawMode drawMode;
 
         private EditMode primaryFunc, secondaryFunc, ternaryFunc;
 
@@ -316,7 +318,7 @@ namespace KimeraCS
 
         private void RbMesh_Click(object sender, EventArgs e)
         {
-            drawMode = DrawMode.K_MESH;
+            drawMode = Core.DrawMode.K_MESH;
 
             rbMesh.Checked = true;
             rbPolygonColors.Checked = false;
@@ -327,7 +329,7 @@ namespace KimeraCS
 
         private void RbPolygonColors_Click(object sender, EventArgs e)
         {
-            drawMode = DrawMode.K_PCOLORS;
+            drawMode = Core.DrawMode.K_PCOLORS;
 
             rbMesh.Checked = false;
             rbPolygonColors.Checked = true;
@@ -338,7 +340,7 @@ namespace KimeraCS
 
         private void RbVertexColors_Click(object sender, EventArgs e)
         {
-            drawMode = DrawMode.K_VCOLORS;
+            drawMode = Core.DrawMode.K_VCOLORS;
 
             rbMesh.Checked = false;
             rbPolygonColors.Checked = false;
@@ -2743,7 +2745,7 @@ namespace KimeraCS
             hsbLightZ.Minimum = -LIGHT_STEPS;
 
             // Select Vertex colors draw mode by default
-            drawMode = DrawMode.K_VCOLORS;
+            drawMode = Core.DrawMode.K_VCOLORS;
             rbVertexColors.PerformClick();
 
             chkEnableLighting.Checked = false;

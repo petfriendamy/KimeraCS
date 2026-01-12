@@ -2,7 +2,7 @@
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
     public static class Utils_WinForms
     {

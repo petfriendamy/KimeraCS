@@ -7,12 +7,13 @@ using System.Drawing.Imaging;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using KimeraCS.Core;
 
 namespace KimeraCS
 {
-    using static Utils;
     using static FF7TEXTexture;
     using static FileTools;
+    using static Utils;
 
     public partial class FrmTEXToPNGBatchConversion : Form
     {

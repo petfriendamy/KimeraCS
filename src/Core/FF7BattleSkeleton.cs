@@ -4,7 +4,7 @@ using System.IO;
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
     using static FF7Skeleton;
     using static FF7BattleAnimation;
@@ -13,7 +13,6 @@ namespace KimeraCS
     using static FF7PModel;
 
     using static Utils;
-    using Core;
 
     public static class FF7BattleSkeleton
     {

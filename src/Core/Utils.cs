@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Drawing;
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
+using KimeraCS.Rendering;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
-    using Core;
-    using Rendering;
-
     using static FF7Skeleton;
     using static FF7FieldSkeleton;
     using static FF7PModel;

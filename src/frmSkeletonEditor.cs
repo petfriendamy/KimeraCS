@@ -6,14 +6,13 @@ using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using OpenTK.Mathematics;
+using KimeraCS.Core;
+using KimeraCS.Rendering;
 
 
 namespace KimeraCS
 {
-    using Core;
-    using OpenTK.Mathematics;
-    using Rendering;
-
     using static FF7BattleAnimation;
     using static FF7BattleAnimationsPack;
     using static FF7BattleSkeleton;
@@ -2609,7 +2608,7 @@ namespace KimeraCS
                     if (IsRSDResource)
                     {
                         // We save the RSD Resource.
-                        iSaveResult = WriteFullRSDResource(fSkeleton.bones[0], saveFileName);
+                        iSaveResult = WriteFullRSDResource(fSkeleton.bones[0], saveFileName, strGlobalPathSaveSkeletonFolder);
                     }
                     else
                     {
@@ -2761,7 +2760,7 @@ namespace KimeraCS
                                 if (IsRSDResource)
                                 {
                                     // We save the RSD Resource.
-                                    iSaveResult = WriteFullRSDResource(fSkeleton.bones[0], saveFile.FileName);
+                                    iSaveResult = WriteFullRSDResource(fSkeleton.bones[0], saveFile.FileName, strGlobalPathSaveSkeletonFolder);
                                 }
                                 else
                                 {

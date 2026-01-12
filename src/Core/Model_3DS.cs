@@ -7,7 +7,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using OpenTK.Mathematics;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
 
     using static FF7PModel;

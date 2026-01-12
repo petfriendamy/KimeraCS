@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
+using KimeraCS.Core;
 
 namespace KimeraCS.Rendering
 {

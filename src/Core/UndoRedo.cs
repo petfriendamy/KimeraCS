@@ -1,7 +1,6 @@
-﻿using KimeraCS.Core;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
     using static FF7BattleAnimationsPack;
     using static FF7BattleSkeleton;

@@ -7,9 +7,8 @@ using System.Linq;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
-    using Core;
     using Rendering;
 
     using static FF7Skeleton;

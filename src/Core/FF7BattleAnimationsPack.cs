@@ -24,14 +24,13 @@ using System.IO;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
 
     using static FF7Skeleton;
     using static FF7BattleSkeleton;
     using static FF7BattleAnimation;
 
-    using Core;
     using static Utils;
     using static FileTools;
 

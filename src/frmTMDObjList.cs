@@ -3,6 +3,7 @@ using System.IO;
 using System.Drawing;
 using System.Windows.Forms;
 using OpenTK.Mathematics;
+using KimeraCS.Core;
 
 namespace KimeraCS
 {
@@ -136,7 +137,7 @@ namespace KimeraCS
         {
             try
             {
-                WriteTMDLOG();
+                WriteTMDLOG(strGlobalTMDModelName, strGlobalPathTMDModelFolder);
                 MessageBox.Show("Log for TMD file " + strGlobalTMDModelName + " saved correctly.", "Info");
             }
             catch (Exception ex)

@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Text;
 using OpenTK.Mathematics;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
 
     using static FF7Skeleton;

@@ -2,7 +2,7 @@ using System;
 using System.IO;
 
 #nullable enable
-namespace KimeraCS
+namespace KimeraCS.Core
 {
     /// <summary>
     /// General exception for Kimera-specific errors.

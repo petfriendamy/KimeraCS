@@ -2,7 +2,7 @@
 using System.Windows.Forms;
 using System.Drawing;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
     class InputBoxCS
     {

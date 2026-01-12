@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using KimeraCS.Core;
 
 namespace KimeraCS
 {
@@ -15,8 +16,6 @@ namespace KimeraCS
 
     using static FileTools;
     using static Utils;
-
-    using Core;
 
     public partial class FrmInterpolateAll : Form
     {

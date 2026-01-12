@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
+using KimeraCS.Core;
 
 namespace KimeraCS
 {

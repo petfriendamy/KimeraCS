@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
+using KimeraCS.Core;
 
 namespace KimeraCS
 {
@@ -11,8 +12,6 @@ namespace KimeraCS
     using static FF7Skeleton;
     using static FF7TEXTexture;
     using static FileTools;
-
-    using Core;
 
     public static class UserPrompts
     {

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using OpenTK.Graphics.OpenGL.Compatibility;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
 
     using static FF7FieldSkeleton;
@@ -13,7 +13,7 @@ namespace KimeraCS
     using static FF7TEXTexture;
 
     using static Utils;
-    using static FileTools;
+    //using static FileTools;
 
     public static class FF7FieldRSDResource
     {
@@ -165,7 +165,7 @@ namespace KimeraCS
             fRSDResourceOut.numTextures += fRSDResourceIn.numTextures;
         }
 
-        public static int WriteRSDResource(FieldRSDResource fRSDResource, string fileName)
+        public static int WriteRSDResource(FieldRSDResource fRSDResource, string fileName, string folderPath)
         {
             int ti, iWriteRSDResourceResult;
             string nameP;
@@ -186,7 +186,7 @@ namespace KimeraCS
                 {
                     strRSDContent.AppendLine("TEX[" + ti.ToString() + "]=" +
                                              fRSDResource.textures[ti].TEXfileName.Substring(0, fRSDResource.textures[ti].TEXfileName.Length - 4).ToUpper() + ".TIM");
-                    WriteTEXTexture(fRSDResource.textures[ti], strGlobalPathSaveSkeletonFolder + "\\" + fRSDResource.textures[ti].TEXfileName.ToUpper());
+                    WriteTEXTexture(fRSDResource.textures[ti], folderPath + "\\" + fRSDResource.textures[ti].TEXfileName.ToUpper());
                 }
 
                 File.WriteAllText(fileName, strRSDContent.ToString());
@@ -202,7 +202,7 @@ namespace KimeraCS
             return iWriteRSDResourceResult;
         }
 
-        public static int WriteFullRSDResource(FieldBone infBone, string strFullFileName)
+        public static int WriteFullRSDResource(FieldBone infBone, string strFullFileName, string folderPath)
         {
             int iWriteRSDResourceResult;
             PModel tmpPModel;
@@ -212,7 +212,7 @@ namespace KimeraCS
                 if (infBone.fRSDResources.Count > 0)
                 {
                     // Write RSD Resource
-                    WriteRSDResource(infBone.fRSDResources[0], strFullFileName);
+                    WriteRSDResource(infBone.fRSDResources[0], strFullFileName, folderPath);
 
                     if (infBone.fRSDResources[0].Model.Polys != null)
                     {

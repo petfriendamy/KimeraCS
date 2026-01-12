@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
     public class DirectBitmap : IDisposable
     {

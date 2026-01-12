@@ -7,7 +7,7 @@ using System.Text;
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
     using Rendering;
 

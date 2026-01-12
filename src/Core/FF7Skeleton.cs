@@ -1,9 +1,8 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using KimeraCS.Core;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
     using static FF7FieldSkeleton;
     using static FF7FieldAnimation;

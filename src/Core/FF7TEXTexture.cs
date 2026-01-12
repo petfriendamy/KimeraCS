@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Linq;
 using OpenTK.Graphics.OpenGL.Compatibility;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
 
     using static Utils;

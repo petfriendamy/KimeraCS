@@ -5,7 +5,7 @@ using System.Diagnostics;
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
 
     using static FF7BattleSkeleton;

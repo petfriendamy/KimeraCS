@@ -4,7 +4,7 @@ using System.Drawing;
 
 using KimeraCS.Rendering;
 
-namespace KimeraCS
+namespace KimeraCS.Core
 {
     using static FrmPEditor;
     using static FF7PModel;
