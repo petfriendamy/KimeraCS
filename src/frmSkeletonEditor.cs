@@ -447,7 +447,6 @@ namespace KimeraCS
             if (result == 1)
             {
                 // Clear PanelModel PictureBox
-                bLoaded = false;
                 ClearPanel();
                 GL.Flush();
                 panelModel?.SwapBuffers();
@@ -1032,7 +1031,7 @@ namespace KimeraCS
                                  panelModel.ClientRectangle.Height);
                 ClearPanel();
 
-                DrawSkeletonModel(bDListsEnable);
+                DrawSkeletonModel();
 
                 if (bShowAxesSkeletonWindow) DrawAxes(panelModel, tbCurrentFrameScroll.Value,
                                                       ianimIndex);
@@ -1976,6 +1975,7 @@ namespace KimeraCS
                         }
 
                         // Set Global Paths
+                        strGlobalFieldSkeletonFileName = openFile.FileName;
                         strGlobalFieldSkeletonName = Path.GetFileName(openFile.FileName).ToUpper();
                         strGlobalPathFieldSkeletonFolder = Path.GetDirectoryName(openFile.FileName);
                         strGlobalPathFieldAnimationFolder = Path.GetDirectoryName(openFile.FileName);
@@ -2079,6 +2079,7 @@ namespace KimeraCS
                             strGlobalPathBattleSkeletonFolder = Path.GetDirectoryName(openFile.FileName);
                             strGlobalPathBattleAnimationFolder = strGlobalPathBattleSkeletonFolder;
 
+                            strGlobalBattleSkeletonFileName = openFile.FileName;
                             strGlobalBattleSkeletonName = Path.GetFileName(openFile.FileName).ToUpper();
                         }
                         else
@@ -2086,6 +2087,7 @@ namespace KimeraCS
                             strGlobalPathMagicSkeletonFolder = Path.GetDirectoryName(openFile.FileName);
                             strGlobalPathMagicAnimationFolder = strGlobalPathMagicSkeletonFolder;
 
+                            strGlobalMagicSkeletonFileName = openFile.FileName;
                             strGlobalMagicSkeletonName = Path.GetFileName(openFile.FileName).ToUpper();
                         }
 
@@ -6428,10 +6430,8 @@ namespace KimeraCS
             try
             {
                 // Set Global Paths
-                strGlobalFieldSkeletonName =
-                        Path.GetDirectoryName(FrmFieldDB.strFieldFile) + "\\" + Path.GetFileName(FrmFieldDB.strFieldFile).ToUpper();
-                strGlobalFieldAnimationName =
-                        Path.GetDirectoryName(FrmFieldDB.strAnimFile) + "\\" + Path.GetFileName(FrmFieldDB.strAnimFile).ToUpper();
+                strGlobalFieldSkeletonName = Path.GetFileName(FrmFieldDB.strFieldFile).ToUpper();
+                strGlobalFieldAnimationName = Path.GetFileName(FrmFieldDB.strAnimFile).ToUpper();
 
                 // Initialize OpenGL Context;
                 //InitOpenGLContext();
@@ -6488,10 +6488,8 @@ namespace KimeraCS
             try
             {
                 // Set Global Paths
-                strGlobalBattleSkeletonName =
-                        Path.GetDirectoryName(strfileNameModel) + "\\" + Path.GetFileName(strfileNameModel).ToUpper();
-                strGlobalBattleAnimationName =
-                        Path.GetDirectoryName(strfileNameAnim) + "\\" + Path.GetFileName(strfileNameAnim).ToUpper();
+                strGlobalBattleSkeletonName = Path.GetFileName(strfileNameModel).ToUpper();
+                strGlobalBattleAnimationName = Path.GetFileName(strfileNameAnim).ToUpper();
 
                 // Initialize OpenGL Context;
                 //InitOpenGLContext();
@@ -7006,17 +7004,17 @@ namespace KimeraCS
 
                     if (IsRSDResource) Text = STR_APPNAME + " - Model: " + strGlobalRSDResourceName.ToUpper();
                     else
-                        Text = STR_APPNAME + " - Model: " + strGlobalFieldSkeletonFileName.ToUpper() +
+                        Text = STR_APPNAME + " - Model: " + strGlobalFieldSkeletonName.ToUpper() +
                                              " / Anim: " + strGlobalFieldAnimationName.ToUpper();
                     break;
 
                 case ModelType.K_AA_SKELETON:
-                    Text = STR_APPNAME + " - Model: " + strGlobalBattleSkeletonFileName.ToUpper() +
+                    Text = STR_APPNAME + " - Model: " + strGlobalBattleSkeletonName.ToUpper() +
                                          " / Anim: " + strGlobalBattleAnimationName.ToUpper();
                     break;
 
                 case ModelType.K_MAGIC_SKELETON:
-                    Text = STR_APPNAME + " - Model: " + strGlobalMagicSkeletonFileName.ToUpper() +
+                    Text = STR_APPNAME + " - Model: " + strGlobalMagicSkeletonName.ToUpper() +
                                          " / Anim: " + strGlobalMagicAnimationName.ToUpper();
                     break;
 
@@ -7197,10 +7195,21 @@ namespace KimeraCS
         /// Draws the current skeleton/model using FrmSkeletonEditor static state.
         /// For decoupled rendering, use ModelDrawing.DrawSkeletonModel(RenderingContext) directly.
         /// </summary>
-        private static void DrawSkeletonModel(bool bDListsEnable)
+        private static void DrawSkeletonModel()
         {
             // Create context from current FrmSkeletonEditor state and delegate
+            var modelData = new SkeletonModelData()
+            {
+                FieldSkeleton = fSkeleton,
+                FieldAnimation = fAnimation,
+                BattleSkeleton = bSkeleton,
+                BattleAnimations = bAnimationsPack,
+                PModel = fPModel,
+                TextureIds = tex_ids
+            };
+
             var ctx = RenderingContext.FromSkeletonEditor(
+                modelData,
                 modelType,
                 bLoaded,
                 (float)alpha, (float)beta, (float)gamma,
@@ -7334,8 +7343,8 @@ namespace KimeraCS
             int itmpbones = bSkeleton.nBones > 1 ? 1 : 0;
 
             // Build root transform (pre-multiply to match OpenGL)
-            BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma, ref rot_mat);
-            Matrix4 currentMatrix = DoubleArrayToMatrix4(rot_mat)
+            //BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma, ref rot_mat);
+            Matrix4 currentMatrix = BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma)
                 * Matrix4.CreateTranslation(bFrame.startX, bFrame.startY, bFrame.startZ);
 
             matrixStack[matrixStackPtr++] = currentMatrix;
@@ -7350,11 +7359,14 @@ namespace KimeraCS
                 }
                 matrixStack[matrixStackPtr++] = currentMatrix;
 
-                BuildRotationMatrixWithQuaternions(bFrame.bones[bi + itmpbones].alpha,
-                                                   bFrame.bones[bi + itmpbones].beta,
-                                                   bFrame.bones[bi + itmpbones].gamma, ref rot_mat);
+                //BuildRotationMatrixWithQuaternions(bFrame.bones[bi + itmpbones].alpha,
+                //                                   bFrame.bones[bi + itmpbones].beta,
+                //                                   bFrame.bones[bi + itmpbones].gamma, ref rot_mat);
                 // Pre-multiply to match OpenGL's transform order
-                currentMatrix = DoubleArrayToMatrix4(rot_mat) * currentMatrix;
+                currentMatrix = BuildRotationMatrixWithQuaternions(bFrame.bones[bi + itmpbones].alpha,
+                                                   bFrame.bones[bi + itmpbones].beta,
+                                                   bFrame.bones[bi + itmpbones].gamma)
+                                * currentMatrix;
 
                 if (bi < boneIndex)
                 {
@@ -7493,9 +7505,9 @@ namespace KimeraCS
             int itmpbones = bSkeleton.nBones > 1 ? 1 : 0;
 
             // Build root transform (pre-multiply to match OpenGL)
-            BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma, ref rot_mat);
-            Matrix4 currentMatrix = DoubleArrayToMatrix4(rot_mat)
-                * Matrix4.CreateTranslation((float)bFrame.startX, (float)bFrame.startY, (float)bFrame.startZ);
+            //BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma, ref rot_mat);
+            Matrix4 currentMatrix = BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma)
+                * Matrix4.CreateTranslation(bFrame.startX, bFrame.startY, bFrame.startZ);
 
             matrixStack[matrixStackPtr++] = currentMatrix;
 
@@ -7526,12 +7538,15 @@ namespace KimeraCS
                     }
                     matrixStack[matrixStackPtr++] = currentMatrix;
 
-                    BuildRotationMatrixWithQuaternions(bFrame.bones[bi + itmpbones].alpha,
-                                                       bFrame.bones[bi + itmpbones].beta,
-                                                       bFrame.bones[bi + itmpbones].gamma,
-                                                       ref rot_mat);
+                    //BuildRotationMatrixWithQuaternions(bFrame.bones[bi + itmpbones].alpha,
+                    //                                   bFrame.bones[bi + itmpbones].beta,
+                    //                                   bFrame.bones[bi + itmpbones].gamma,
+                    //                                   ref rot_mat);
                     // Pre-multiply to match OpenGL's transform order
-                    currentMatrix = DoubleArrayToMatrix4(rot_mat) * currentMatrix;
+                    currentMatrix = BuildRotationMatrixWithQuaternions(bFrame.bones[bi + itmpbones].alpha,
+                                                       bFrame.bones[bi + itmpbones].beta,
+                                                       bFrame.bones[bi + itmpbones].gamma)
+                                  * currentMatrix;
 
                     if (RayIntersectsBattleBone(rayOrigin, rayDir, bSkeleton.bones[bi], currentMatrix, out float dist))
                     {
@@ -7556,8 +7571,9 @@ namespace KimeraCS
                 if (wpModel.Polys != null)
                 {
                     // Build weapon transform (pre-multiply to match OpenGL)
-                    BuildRotationMatrixWithQuaternions(wpFrame.bones[0].alpha, wpFrame.bones[0].beta, wpFrame.bones[0].gamma, ref rot_mat);
-                    Matrix4 wpTransform = DoubleArrayToMatrix4(rot_mat)
+                    //BuildRotationMatrixWithQuaternions(wpFrame.bones[0].alpha, wpFrame.bones[0].beta, wpFrame.bones[0].gamma, ref rot_mat);
+                    Matrix4 wpTransform = BuildRotationMatrixWithQuaternions(wpFrame.bones[0].alpha,
+                                            wpFrame.bones[0].beta, wpFrame.bones[0].gamma)
                         * Matrix4.CreateTranslation(wpFrame.startX, wpFrame.startY, wpFrame.startZ);
 
                     // Apply model's local transforms (scale, rotation, translation in reverse order)

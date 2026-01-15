@@ -135,6 +135,24 @@ namespace KimeraCS.Core
             BuildMatrixFromQuaternion(quat_xyz, ref mat_res);
         }
 
+        /// <summary>
+        /// Create a rotation matrix from Euler angles using quaternions.
+        /// </summary>
+        public static Matrix4 BuildRotationMatrixWithQuaternions(double alpha, double beta, double gamma)
+        {
+            // Convert to radians and create rotation
+            float alphaRad = (float)(alpha * Math.PI / 180.0);
+            float betaRad = (float)(beta * Math.PI / 180.0);
+            float gammaRad = (float)(gamma * Math.PI / 180.0);
+
+            // Build rotation in YXZ order (matches legacy code)
+            Matrix4 rotY = Matrix4.CreateRotationY(betaRad);
+            Matrix4 rotX = Matrix4.CreateRotationX(alphaRad);
+            Matrix4 rotZ = Matrix4.CreateRotationZ(gammaRad);
+
+            return rotZ * rotX * rotY;
+        }
+
 
         public static void MultiplyPoint3DByOGLMatrix(double[] matA, Vector3 p_in, ref Vector3 p_out)
         {
@@ -625,7 +643,7 @@ namespace KimeraCS.Core
                 mvArray[12], mvArray[13], mvArray[14], mvArray[15]);
 
             GLRenderer.ModelMatrix = Matrix4.Identity;
-            GLRenderer.ViewPosition = new OpenTK.Mathematics.Vector3(cX, cY, -cZ);
+            GLRenderer.ViewPosition = new Vector3(cX, cY, -cZ);
         }
 
 
@@ -670,7 +688,7 @@ namespace KimeraCS.Core
                 mvArray[12], mvArray[13], mvArray[14], mvArray[15]);
 
             GLRenderer.ModelMatrix = Matrix4.Identity;
-            GLRenderer.ViewPosition = new OpenTK.Mathematics.Vector3(cX, cY, -cZ);
+            GLRenderer.ViewPosition = new Vector3(cX, cY, -cZ);
         }
 
         public static void SetCameraAroundModelQuat(ref Vector3 p_min, ref Vector3 p_max,
@@ -714,7 +732,7 @@ namespace KimeraCS.Core
                 mvArray[12], mvArray[13], mvArray[14], mvArray[15]);
 
             GLRenderer.ModelMatrix = Matrix4.Identity;
-            GLRenderer.ViewPosition = new OpenTK.Mathematics.Vector3(cX, cY, -cZ);
+            GLRenderer.ViewPosition = new Vector3(cX, cY, -cZ);
         }
 
         public static bool IsCameraUnderGround()
@@ -1714,7 +1732,7 @@ namespace KimeraCS.Core
         /// <summary>
         /// Creates a view matrix looking at a target (replaces gluLookAt)
         /// </summary>
-        public static Matrix4 CreateLookAtMatrix(OpenTK.Mathematics.Vector3 eye, OpenTK.Mathematics.Vector3 target, OpenTK.Mathematics.Vector3 up)
+        public static Matrix4 CreateLookAtMatrix(Vector3 eye, Vector3 target, Vector3 up)
         {
             return Matrix4.LookAt(eye, target, up);
         }
@@ -1728,20 +1746,20 @@ namespace KimeraCS.Core
         /// <param name="projection">Projection matrix</param>
         /// <param name="viewport">Viewport (x, y, width, height)</param>
         /// <returns>Screen coordinates (x, y, depth)</returns>
-        public static OpenTK.Mathematics.Vector3 Project(OpenTK.Mathematics.Vector3 worldPos, Matrix4 model, Matrix4 view, Matrix4 projection, Vector4 viewport)
+        public static Vector3 Project(Vector3 worldPos, Matrix4 model, Matrix4 view, Matrix4 projection, Vector4 viewport)
         {
             Vector4 clipPos = new Vector4(worldPos, 1.0f) * model * view * projection;
 
             if (Math.Abs(clipPos.W) < float.Epsilon)
-                return OpenTK.Mathematics.Vector3.Zero;
+                return Vector3.Zero;
 
-            OpenTK.Mathematics.Vector3 ndc = clipPos.Xyz / clipPos.W;
+            Vector3 ndc = clipPos.Xyz / clipPos.W;
 
             float winX = viewport.Z * (ndc.X + 1.0f) / 2.0f + viewport.X;
             float winY = viewport.W * (ndc.Y + 1.0f) / 2.0f + viewport.Y;
             float winZ = (ndc.Z + 1.0f) / 2.0f;
 
-            return new OpenTK.Mathematics.Vector3(winX, winY, winZ);
+            return new Vector3(winX, winY, winZ);
         }
 
         /// <summary>
@@ -1753,7 +1771,7 @@ namespace KimeraCS.Core
         /// <param name="projection">Projection matrix</param>
         /// <param name="viewport">Viewport (x, y, width, height)</param>
         /// <returns>World coordinates</returns>
-        public static OpenTK.Mathematics.Vector3 Unproject(OpenTK.Mathematics.Vector3 screenPos, Matrix4 model, Matrix4 view, Matrix4 projection, Vector4 viewport)
+        public static Vector3 Unproject(Vector3 screenPos, Matrix4 model, Matrix4 view, Matrix4 projection, Vector4 viewport)
         {
             // Use row-vector convention to match Project function: pos * M * V * P
             Matrix4 mvp = model * view * projection;
@@ -1769,7 +1787,7 @@ namespace KimeraCS.Core
             Vector4 worldPos = ndc * invMvp;
 
             if (Math.Abs(worldPos.W) < float.Epsilon)
-                return OpenTK.Mathematics.Vector3.Zero;
+                return Vector3.Zero;
 
             return worldPos.Xyz / worldPos.W;
         }
@@ -1782,9 +1800,9 @@ namespace KimeraCS.Core
                                                      float scaleX, float scaleY, float scaleZ)
         {
             // Build rotation from quaternions (matching existing BuildRotationMatrixWithQuaternionsXYZ)
-            var quatX = OpenTK.Mathematics.Quaternion.FromAxisAngle(OpenTK.Mathematics.Vector3.UnitX, MathHelper.DegreesToRadians(alpha));
-            var quatY = OpenTK.Mathematics.Quaternion.FromAxisAngle(OpenTK.Mathematics.Vector3.UnitY, MathHelper.DegreesToRadians(beta));
-            var quatZ = OpenTK.Mathematics.Quaternion.FromAxisAngle(OpenTK.Mathematics.Vector3.UnitZ, MathHelper.DegreesToRadians(gamma));
+            var quatX = Quaternion.FromAxisAngle(Vector3.UnitX, MathHelper.DegreesToRadians(alpha));
+            var quatY = Quaternion.FromAxisAngle(Vector3.UnitY, MathHelper.DegreesToRadians(beta));
+            var quatZ = Quaternion.FromAxisAngle(Vector3.UnitZ, MathHelper.DegreesToRadians(gamma));
             var rotation = quatX * quatY * quatZ;
 
             Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(rotation);
@@ -1801,7 +1819,7 @@ namespace KimeraCS.Core
                                                          Quaterniond quat,
                                                          float scaleX, float scaleY, float scaleZ)
         {
-            var openTkQuat = new OpenTK.Mathematics.Quaternion((float)quat.X, (float)quat.Y, (float)quat.Z, (float)quat.W);
+            var openTkQuat = new Quaternion((float)quat.X, (float)quat.Y, (float)quat.Z, (float)quat.W);
 
             Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(openTkQuat);
             Matrix4 translationMatrix = Matrix4.CreateTranslation(cX, cY, cZ);
@@ -1834,14 +1852,6 @@ namespace KimeraCS.Core
                 mat.M31, mat.M32, mat.M33, mat.M34,
                 mat.M41, mat.M42, mat.M43, mat.M44
             };
-        }
-
-        /// <summary>
-        /// Alias for ToMatrix4 - converts double[] matrix to OpenTK Matrix4
-        /// </summary>
-        public static Matrix4 DoubleArrayToMatrix4(double[] mat)
-        {
-            return ToMatrix4(mat);
         }
 
 
@@ -1995,8 +2005,8 @@ namespace KimeraCS.Core
 
             Vector4 viewport = new Vector4(vp[0], vp[1], vp[2], vp[3]);
             // Note: Y coordinate is flipped in screen space
-            OpenTK.Mathematics.Vector3 screenPos = new OpenTK.Mathematics.Vector3(p.X, vp[3] - p.Y, p.Z);
-            OpenTK.Mathematics.Vector3 result = Unproject(screenPos, Matrix4.Identity, modelView, projection, viewport);
+            Vector3 screenPos = new Vector3(p.X, vp[3] - p.Y, p.Z);
+            Vector3 result = Unproject(screenPos, Matrix4.Identity, modelView, projection, viewport);
 
             return new Vector3(result.X, result.Y, result.Z);
         }

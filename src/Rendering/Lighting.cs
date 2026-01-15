@@ -1,6 +1,5 @@
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
-using KimeraCS.Core;
 
 namespace KimeraCS.Rendering
 {
@@ -72,7 +71,7 @@ namespace KimeraCS.Rendering
             }
         }
 
-        public static void SetLighting(OpenTK.Graphics.OpenGL.Compatibility.LightName lightNumber, float x, float y, float z, float red, float green, float blue, bool infinityFarQ)
+        public static void SetLighting(LightName lightNumber, float x, float y, float z, float red, float green, float blue, bool infinityFarQ)
         {
             float[] l_color = new float[4];
             float[] l_pos = new float[4];

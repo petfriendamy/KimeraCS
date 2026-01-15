@@ -35,7 +35,9 @@ dotnet run --project src/KimeraCS.csproj
 ## Project Structure
 ```
 src/
-├── Core/                    # Core utilities and modern rendering
+├── Core/                    # Core utilities
+│   └── FF7*.cs              # File format handlers
+├── Rendering/               # Modern rendering
 │   ├── GLRenderer.cs        # Modern OpenGL renderer with mesh caching
 │   ├── Mesh.cs              # GPU mesh classes (PModelMesh, GroupMesh, LineMesh, etc.)
 │   ├── ShaderProgram.cs     # Shader compilation and uniforms
@@ -47,8 +49,7 @@ src/
 ├── resources/               # UI assets (icons, cursors)
 ├── frmSkeletonEditor.cs     # Main window - skeleton/animation viewing
 ├── frmPEditor.cs            # Polygon editor - vertex/texture/color editing
-├── frm*.cs                  # Various dialog forms
-└── FF7*.cs                  # File format handlers
+└── frm*.cs                  # Various dialog forms
 ```
 
 ## Key Namespaces
@@ -56,7 +57,7 @@ src/
 |-----------|---------|
 | `KimeraCS` | Main UI forms and FF7 format handlers |
 | `KimeraCS.Core` | Utilities and enums |
-| `KimeraCS.Rendering` | Modern OpenGL rendering (GLRenderer, Mesh, ShaderProgram) - located in Core/ folder |
+| `KimeraCS.Rendering` | Modern OpenGL rendering (GLRenderer, Mesh, ShaderProgram) |
 
 ## FF7 File Formats
 
@@ -91,27 +92,27 @@ src/
 ### Data Structures
 | Class | File | Purpose |
 |-------|------|---------|
-| `FF7PModel` | FF7PModel.cs | P-format 3D models (vertices, polygons, groups, textures) |
-| `FF7TMDModel` | FF7TMDModel.cs | TMD format models |
-| `FF7Skeleton` | FF7Skeleton.cs | Static orchestrator for skeleton loading/rendering |
-| `FF7FieldSkeleton` | FF7FieldSkeleton.cs | Field character skeletons (.HRC) |
-| `FF7BattleSkeleton` | FF7BattleSkeleton.cs | Battle/enemy skeletons |
-| `FF7FieldAnimation` | FF7FieldAnimation.cs | Field animations (.A files) |
-| `FF7BattleAnimation` | FF7BattleAnimation.cs | Battle animations |
-| `FF7TEXTexture` | FF7TEXTexture.cs | TEX texture format |
+| `FF7PModel` | Core/FF7PModel.cs | P-format 3D models (vertices, polygons, groups, textures) |
+| `FF7TMDModel` | Core/FF7TMDModel.cs | TMD format models |
+| `FF7Skeleton` | Core/FF7Skeleton.cs | Static orchestrator for skeleton loading/rendering |
+| `FF7FieldSkeleton` | Core/FF7FieldSkeleton.cs | Field character skeletons (.HRC) |
+| `FF7BattleSkeleton` | Core/FF7BattleSkeleton.cs | Battle/enemy skeletons |
+| `FF7FieldAnimation` | Core/FF7FieldAnimation.cs | Field animations (.A files) |
+| `FF7BattleAnimation` | Core/FF7BattleAnimation.cs | Battle animations |
+| `FF7TEXTexture` | Core/FF7TEXTexture.cs | TEX texture format |
 
 ### Rendering
 | Class | File | Purpose |
 |-------|------|---------|
 | `GLRenderer` | Core/GLRenderer.cs | Modern OpenGL renderer with mesh caching (vertex colors + polygon colors) |
-| `Mesh`/`GroupMesh`/`PModelMesh` | Core/Mesh.cs | GPU mesh abstraction (VAO/VBO/EBO) |
-| `LineMesh`/`PointMesh` | Core/Mesh.cs | Line and point rendering for debug visuals |
-| `ShaderProgram` | Core/ShaderProgram.cs | Shader compilation and uniforms |
-| `MatrixStack`/`MatrixManager` | Core/MatrixStack.cs | CPU-side matrix stack (replaces GL.PushMatrix/PopMatrix) |
-| `VisualizationHelpers` | Core/VisualizationHelpers.cs | Creates meshes for normals, bounding boxes, axes, wireframes |
-| `SkeletonRenderer` | Core/SkeletonRenderer.cs | Modern skeleton bone rendering (computes transforms on CPU) |
-| `ModelDrawing` | Core/ModelDrawing.cs | Vertex/polygon operations, matrix syncing wrappers for GLRenderer |
-| `Lighting` | Lighting.cs | 4 configurable lights; `SetLightsModern()` for shaders, `SetLights()` for legacy |
+| `Mesh`/`GroupMesh`/`PModelMesh` | Renering/Mesh.cs | GPU mesh abstraction (VAO/VBO/EBO) |
+| `LineMesh`/`PointMesh` | Rendering/Mesh.cs | Line and point rendering for debug visuals |
+| `ShaderProgram` | Rendering/ShaderProgram.cs | Shader compilation and uniforms |
+| `MatrixStack`/`MatrixManager` | Rendering/MatrixStack.cs | CPU-side matrix stack (replaces GL.PushMatrix/PopMatrix) |
+| `VisualizationHelpers` | Rendering/VisualizationHelpers.cs | Creates meshes for normals, bounding boxes, axes, wireframes |
+| `SkeletonRenderer` | Rendering/SkeletonRenderer.cs | Modern skeleton bone rendering (computes transforms on CPU) |
+| `ModelDrawing` | Rendering/ModelDrawing.cs | Vertex/polygon operations, matrix syncing wrappers for GLRenderer |
+| `Lighting` | Rendering/Lighting.cs | 4 configurable lights; `SetLightsModern()` for shaders, `SetLights()` for legacy |
 
 ### UI Forms
 | Form | Purpose |
@@ -127,10 +128,10 @@ src/
 ### Utilities
 | Class | File | Purpose |
 |-------|------|---------|
-| `Utils` | Utils.cs | Math (Point2D, Point3D, Quaternion), vectors, bounding boxes |
-| `FileTools` | FileTools.cs | Config file handling, database management |
-| `UndoRedo` | UndoRedo.cs | Skeleton editor undo/redo |
-| `UndoRedoPE` | UndoRedoPE.cs | Polygon editor undo/redo |
+| `Utils` | Core/Utils.cs | Math (Point2D, Point3D, Quaternion), vectors, bounding boxes |
+| `FileTools` | Core/FileTools.cs | Config file handling, database management |
+| `UndoRedo` | Core/UndoRedo.cs | Skeleton editor undo/redo |
+| `UndoRedoPE` | Core/UndoRedoPE.cs | P editor undo/redo |
 
 ## Configuration
 

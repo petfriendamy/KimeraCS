@@ -662,16 +662,16 @@ namespace KimeraCS.Core
 
             try
             {
-                string strFieldSkeletonFolder = strFileFullPath;
+                string strFieldAnimFolder = strFileFullPath;
 
-                if (string.IsNullOrEmpty(strFieldSkeletonFolder))
+                if (string.IsNullOrEmpty(strFieldAnimFolder))
                 {
-                    if (strGlobalPathFieldSkeletonFolder != "")
-                        strGlobalPathFieldAnimationFolder = strGlobalPathFieldSkeletonFolder;
-                    else strGlobalPathFieldAnimationFolder = strGlobalPath;
+                    if (!string.IsNullOrEmpty(strGlobalPathFieldSkeletonFolder))
+                        strFieldAnimFolder = strGlobalPathFieldSkeletonFolder;
+                    else strFieldAnimFolder = strGlobalPath;
                 }
 
-                lstFieldAnimsFiles = Directory.GetFiles(strGlobalPathFieldAnimationFolder, "*.A", SearchOption.TopDirectoryOnly);
+                lstFieldAnimsFiles = Directory.GetFiles(strFieldAnimFolder, "*.A", SearchOption.TopDirectoryOnly);
 
                 if (lstFieldAnimsFiles != null && lstFieldAnimsFiles.Length > 0)
                 {

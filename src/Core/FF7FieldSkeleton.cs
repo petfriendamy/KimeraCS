@@ -284,8 +284,8 @@ namespace KimeraCS.Core
             currentMatrix *= Matrix4.CreateTranslation(0, (float)(-fFrame.rootTranslationY), 0);
             currentMatrix *= Matrix4.CreateTranslation(0, 0, (float)fFrame.rootTranslationZ);
 
-            BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma, ref rot_mat);
-            Matrix4 rotMatrix = DoubleArrayToMatrix4(rot_mat);
+            //BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma, ref rot_mat);
+            Matrix4 rotMatrix = BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma);
             currentMatrix *= rotMatrix;
 
             matrixStack[matrixStackPtr++] = currentMatrix;
@@ -300,9 +300,10 @@ namespace KimeraCS.Core
                 }
                 matrixStack[matrixStackPtr++] = currentMatrix;
 
-                BuildRotationMatrixWithQuaternions(fFrame.rotations[bi].alpha, fFrame.rotations[bi].beta,
-                                                         fFrame.rotations[bi].gamma, ref rot_mat);
-                rotMatrix = DoubleArrayToMatrix4(rot_mat);
+                //BuildRotationMatrixWithQuaternions(fFrame.rotations[bi].alpha, fFrame.rotations[bi].beta,
+                //                                         fFrame.rotations[bi].gamma, ref rot_mat);
+                rotMatrix = BuildRotationMatrixWithQuaternions(fFrame.rotations[bi].alpha, fFrame.rotations[bi].beta,
+                                                               fFrame.rotations[bi].gamma);
                 currentMatrix *= rotMatrix;
 
                 ComputeFieldBoneBoundingBox(fSkeleton.bones[bi], ref p_min_bone, ref p_max_bone);
@@ -540,8 +541,8 @@ namespace KimeraCS.Core
             // OpenGL: M = M * T * R means v' = M * T * R * v (R applied first, then T)
             // Row-vector equivalent: v * R_row * T_row requires building R * T
             double[] rot_mat = new double[16];
-            BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma, ref rot_mat);
-            Matrix4 rotMatrix = DoubleArrayToMatrix4(rot_mat);
+            //BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma, ref rot_mat);
+            Matrix4 rotMatrix = BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma);
 
             // Build root transform: rotation first, then translations (in reverse order of OpenGL calls)
             Matrix4 rootTransform = rotMatrix
@@ -578,8 +579,8 @@ namespace KimeraCS.Core
                 }
                 matrixStack[matrixStackPtr++] = currentMatrix;
 
-                BuildRotationMatrixWithQuaternions(fFrame.rotations[bi].alpha, fFrame.rotations[bi].beta, fFrame.rotations[bi].gamma, ref rot_mat);
-                rotMatrix = DoubleArrayToMatrix4(rot_mat);
+                //BuildRotationMatrixWithQuaternions(fFrame.rotations[bi].alpha, fFrame.rotations[bi].beta, fFrame.rotations[bi].gamma, ref rot_mat);
+                rotMatrix = BuildRotationMatrixWithQuaternions(fFrame.rotations[bi].alpha, fFrame.rotations[bi].beta, fFrame.rotations[bi].gamma);
                 // Pre-multiply to match OpenGL's transform order
                 currentMatrix = rotMatrix * currentMatrix;
 
@@ -687,8 +688,8 @@ namespace KimeraCS.Core
 
             // Build skeleton root transform (pre-multiply to match OpenGL)
             double[] rot_mat = new double[16];
-            BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma, ref rot_mat);
-            Matrix4 rotMatrix = DoubleArrayToMatrix4(rot_mat);
+            //BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma, ref rot_mat);
+            Matrix4 rotMatrix = BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma);
 
             Matrix4 rootTransform = rotMatrix
                 * Matrix4.CreateTranslation((float)fFrame.rootTranslationX,
@@ -715,10 +716,12 @@ namespace KimeraCS.Core
                 }
                 matrixStack[matrixStackPtr++] = currentMatrix;
 
-                BuildRotationMatrixWithQuaternions(fFrame.rotations[iBoneIdx].alpha,
+                //BuildRotationMatrixWithQuaternions(fFrame.rotations[iBoneIdx].alpha,
+                //                                   fFrame.rotations[iBoneIdx].beta,
+                //                                   fFrame.rotations[iBoneIdx].gamma, ref rot_mat);
+                rotMatrix = BuildRotationMatrixWithQuaternions(fFrame.rotations[iBoneIdx].alpha,
                                                    fFrame.rotations[iBoneIdx].beta,
-                                                   fFrame.rotations[iBoneIdx].gamma, ref rot_mat);
-                rotMatrix = DoubleArrayToMatrix4(rot_mat);
+                                                   fFrame.rotations[iBoneIdx].gamma);
                 // Pre-multiply to match OpenGL's transform order
                 currentMatrix = rotMatrix * currentMatrix;
 
@@ -738,10 +741,12 @@ namespace KimeraCS.Core
             }
 
             // Apply selected bone's rotation (pre-multiply)
-            BuildRotationMatrixWithQuaternions(fFrame.rotations[iBoneSelected].alpha,
+            //BuildRotationMatrixWithQuaternions(fFrame.rotations[iBoneSelected].alpha,
+            //                                   fFrame.rotations[iBoneSelected].beta,
+            //                                   fFrame.rotations[iBoneSelected].gamma, ref rot_mat);
+            rotMatrix = BuildRotationMatrixWithQuaternions(fFrame.rotations[iBoneSelected].alpha,
                                                fFrame.rotations[iBoneSelected].beta,
-                                               fFrame.rotations[iBoneSelected].gamma, ref rot_mat);
-            rotMatrix = DoubleArrayToMatrix4(rot_mat);
+                                               fFrame.rotations[iBoneSelected].gamma);
             currentMatrix = rotMatrix * currentMatrix;
 
             // Unproject to create ray

@@ -39,7 +39,7 @@ namespace KimeraCS.Rendering
         // Cache for normals mesh
         private static LineMesh? _normalsMesh;
 
-        public static void ShowNormals(PGroup Group, PPolygon[] Polys, Vector3[] Verts,
+        private static void ShowNormals(PGroup Group, PPolygon[] Polys, Vector3[] Verts,
                                        Vector3[] Normals, int[] NormalsIndex,
                                        NormalsDisplayMode showNormals = NormalsDisplayMode.None,
                                        float normalsScale = DEFAULT_NORMAL_SCALE,
@@ -82,8 +82,8 @@ namespace KimeraCS.Rendering
             GLRenderer.ModelMatrix = savedModel;
         }
 
-        public static void DrawPModel(ref PModel Model, ref uint[] tex_ids, bool HideHiddenGroupsQ,
-                                      RenderingContext? renderContext = null)
+        private static void DrawPModel(ref PModel Model, ref uint[] tex_ids, bool HideHiddenGroupsQ,
+                                      RenderingOptions renderOptions)
         {
             // Get current legacy matrices - these contain the full camera + bone transforms
             double[] projMatrix = new double[16];
@@ -108,15 +108,15 @@ namespace KimeraCS.Rendering
             GLRenderer.DrawPModelModern(ref Model, tex_ids, HideHiddenGroupsQ);
 
             // Show normals if enabled (must be done after model drawing)
-            if (renderContext != null && renderContext.Options.NormalsDisplayMode != NormalsDisplayMode.None)
+            if (renderOptions.NormalsDisplayMode != NormalsDisplayMode.None)
             {
                 for (int g = 0; g < Model.Header.numGroups; g++)
                 {
                     ShowNormals(Model.Groups[g], Model.Polys, Model.Verts,
                                 Model.Normals, Model.NormalIndex,
-                                renderContext.Options.NormalsDisplayMode,
-                                renderContext.Options.NormalsScale,
-                                renderContext.Options.NormalsColor);
+                                renderOptions.NormalsDisplayMode,
+                                renderOptions.NormalsScale,
+                                renderOptions.NormalsColor);
                 }
             }
 
@@ -126,7 +126,7 @@ namespace KimeraCS.Rendering
             GLRenderer.ModelMatrix = savedModel;
         }
 
-        public static void DrawPModelWireframe(ref PModel Model, bool HideHiddenGroupsQ)
+        private static void DrawPModelWireframe(ref PModel Model, bool HideHiddenGroupsQ)
         {
             // Get current legacy matrices - these contain the full camera + bone transforms
             double[] projMatrix = new double[16];
@@ -156,7 +156,7 @@ namespace KimeraCS.Rendering
             GLRenderer.ModelMatrix = savedModel;
         }
 
-        public static void DrawPModelPolygonColors(ref PModel Model, bool HideHiddenGroupsQ)
+        private static void DrawPModelPolygonColors(ref PModel Model, bool HideHiddenGroupsQ)
         {
             // Get current legacy matrices - these contain the full camera + bone transforms
             double[] projMatrix = new double[16];
@@ -186,8 +186,8 @@ namespace KimeraCS.Rendering
             GLRenderer.ModelMatrix = savedModel;
         }
 
-        public static void DrawPModelDLists(ref PModel Model, ref uint[] tex_ids,
-                                            RenderingContext renderContext)
+        private static void DrawPModelDLists(ref PModel Model, ref uint[] tex_ids,
+                                            RenderingOptions renderOptions)
         {
             // Get current legacy matrices - these contain the full camera + bone transforms
             double[] projMatrix = new double[16];
@@ -212,15 +212,15 @@ namespace KimeraCS.Rendering
             GLRenderer.DrawPModelModern(ref Model, tex_ids, false);
 
             // Show normals if enabled (must be done after model drawing)
-            if (renderContext.Options.NormalsDisplayMode != NormalsDisplayMode.None)
+            if (renderOptions.NormalsDisplayMode != NormalsDisplayMode.None)
             {
                 for (int g = 0; g < Model.Header.numGroups; g++)
                 {
                     ShowNormals(Model.Groups[g], Model.Polys, Model.Verts,
                                 Model.Normals, Model.NormalIndex,
-                                renderContext.Options.NormalsDisplayMode,
-                                renderContext.Options.NormalsScale,
-                                renderContext.Options.NormalsColor);
+                                renderOptions.NormalsDisplayMode,
+                                renderOptions.NormalsScale,
+                                renderOptions.NormalsColor);
                 }
             }
 
@@ -230,7 +230,7 @@ namespace KimeraCS.Rendering
             GLRenderer.ModelMatrix = savedModel;
         }
 
-        public static void DrawPModelBoundingBox(PModel Model)
+        private static void DrawPModelBoundingBox(PModel Model)
         {
             GL.Begin(PrimitiveType.Lines);
             GL.Disable(EnableCap.DepthTest);
@@ -295,7 +295,7 @@ namespace KimeraCS.Rendering
         // Cache for bounding box mesh
         private static LineMesh? _boundingBoxMesh;
 
-        public static void DrawBox(float max_x, float max_y, float max_z,
+        private static void DrawBox(float max_x, float max_y, float max_z,
                                    float min_x, float min_y, float min_z,
                                    float red, float green, float blue)
         {
@@ -413,7 +413,7 @@ namespace KimeraCS.Rendering
             }
         }
 
-        public static void DrawFieldSkeletonBones(FieldSkeleton fSkeleton, FieldFrame fFrame)
+        private static void DrawFieldSkeletonBones(FieldSkeleton fSkeleton, FieldFrame fFrame)
         {
             int iBoneIdx, jsp;
             string[] joint_stack = new string[fSkeleton.bones.Count + 1];
@@ -479,8 +479,8 @@ namespace KimeraCS.Rendering
             GL.PopMatrix();
         }
 
-        public static void DrawRSDResource(FieldRSDResource fRSDResource, bool bDListsEnable,
-                                           RenderingContext renderContext)
+        private static void DrawRSDResource(FieldRSDResource fRSDResource, bool bDListsEnable,
+                                           RenderingContext ctx)
         {
             int iTextureIdx;
             uint[] tex_ids;
@@ -505,13 +505,13 @@ namespace KimeraCS.Rendering
 
             SetDefaultOGLRenderState();
 
-            if (!bDListsEnable) DrawPModel(ref fRSDResource.Model, ref tex_ids, false, renderContext);
-            else DrawPModelDLists(ref fRSDResource.Model, ref tex_ids, renderContext);
+            if (!bDListsEnable) DrawPModel(ref fRSDResource.Model, ref tex_ids, false, ctx.Options);
+            else DrawPModelDLists(ref fRSDResource.Model, ref tex_ids, ctx.Options);
 
             GL.PopMatrix();
         }
 
-        public static void DrawFieldBone(FieldBone bone, bool bDListsEnable, RenderingContext renderContext)
+        private static void DrawFieldBone(FieldBone bone, bool bDListsEnable, RenderingContext renderContext)
         {
 
             int iResourceIdx;
@@ -528,69 +528,81 @@ namespace KimeraCS.Rendering
             GL.PopMatrix();
         }
 
-        public static void DrawFieldSkeleton(FieldSkeleton fSkeleton, FieldFrame fFrame,
-                                             bool bDListsEnable, RenderingContext renderContext)
+        private static void DrawFieldSkeleton(RenderingContext ctx, int currFrame = -1)
         {
-            int iBoneIdx;
-            string[] joint_stack = new string[fSkeleton.bones.Count + 1];
-            int jsp;
-            double[] rot_mat = new double[16];
-
-            GL.MatrixMode(MatrixMode.Modelview);
-
-            GL.PushMatrix();
-            GL.Translated(fFrame.rootTranslationX, 0, 0);
-            GL.Translated(0, -fFrame.rootTranslationY, 0);
-            GL.Translated(0, 0, fFrame.rootTranslationZ);
-
-            BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma, ref rot_mat);
-
-            GL.MultMatrixd(rot_mat);
-
-            jsp = 0;
-            joint_stack[jsp] = fSkeleton.bones[0].joint_f;
-
-            //for (bi = 0; bi < Skeleton.nBones; bi++)
-            for (iBoneIdx = 0; iBoneIdx < fSkeleton.bones.Count; iBoneIdx++)
+            var modelData = ctx.ModelData;
+            if (modelData != null)
             {
-                while (!(fSkeleton.bones[iBoneIdx].joint_f == joint_stack[jsp]) && jsp > 0)
+                var fSkeleton = modelData.FieldSkeleton;
+                var fAnimation = modelData.FieldAnimation;
+                if (currFrame < 0 || currFrame >= fAnimation.nFrames)
+                {
+                    currFrame = ctx.Animation.CurrentFrame;
+                }
+                var fFrame = modelData.FieldAnimation.frames[currFrame];
+                bool bDListsEnable = ctx.Options.EnableDisplayLists;
+
+                int iBoneIdx;
+                string[] joint_stack = new string[fSkeleton.bones.Count + 1];
+                int jsp;
+                double[] rot_mat = new double[16];
+
+                GL.MatrixMode(MatrixMode.Modelview);
+
+                GL.PushMatrix();
+                GL.Translated(fFrame.rootTranslationX, 0, 0);
+                GL.Translated(0, -fFrame.rootTranslationY, 0);
+                GL.Translated(0, 0, fFrame.rootTranslationZ);
+
+                BuildRotationMatrixWithQuaternions(fFrame.rootRotationAlpha, fFrame.rootRotationBeta, fFrame.rootRotationGamma, ref rot_mat);
+
+                GL.MultMatrixd(rot_mat);
+
+                jsp = 0;
+                joint_stack[jsp] = fSkeleton.bones[0].joint_f;
+
+                //for (bi = 0; bi < Skeleton.nBones; bi++)
+                for (iBoneIdx = 0; iBoneIdx < fSkeleton.bones.Count; iBoneIdx++)
+                {
+                    while (!(fSkeleton.bones[iBoneIdx].joint_f == joint_stack[jsp]) && jsp > 0)
+                    {
+                        GL.PopMatrix();
+                        jsp--;
+                    }
+
+                    //if (jsp == 0) SetDefaultOGLRenderState();
+
+                    GL.PushMatrix();
+
+                    BuildRotationMatrixWithQuaternions(fFrame.rotations[iBoneIdx].alpha,
+                                                       fFrame.rotations[iBoneIdx].beta,
+                                                       fFrame.rotations[iBoneIdx].gamma,
+                                                       ref rot_mat);
+
+                    GL.MultMatrixd(rot_mat);
+
+                    DrawFieldBone(fSkeleton.bones[iBoneIdx], bDListsEnable, ctx);
+
+                    GL.Translated(0, 0, -fSkeleton.bones[iBoneIdx].len);
+
+                    jsp++;
+                    joint_stack[jsp] = fSkeleton.bones[iBoneIdx].joint_i;
+                }
+
+                while (jsp > 0)
                 {
                     GL.PopMatrix();
                     jsp--;
                 }
-
-                //if (jsp == 0) SetDefaultOGLRenderState();
-
-                GL.PushMatrix();
-
-                BuildRotationMatrixWithQuaternions(fFrame.rotations[iBoneIdx].alpha, 
-                                                   fFrame.rotations[iBoneIdx].beta, 
-                                                   fFrame.rotations[iBoneIdx].gamma, 
-                                                   ref rot_mat);
-
-                GL.MultMatrixd(rot_mat);
-
-                DrawFieldBone(fSkeleton.bones[iBoneIdx], bDListsEnable, renderContext);
-
-                GL.Translated(0, 0, -fSkeleton.bones[iBoneIdx].len);
-
-                jsp++;
-                joint_stack[jsp] = fSkeleton.bones[iBoneIdx].joint_i;
-            }
-
-            while (jsp > 0)
-            {
                 GL.PopMatrix();
-                jsp--;
             }
-            GL.PopMatrix();
         }
 
 
         //  ---------------------------------------------------------------------------------------------------
         //  ======================================== BATTLE DRAW  =============================================
         //  ---------------------------------------------------------------------------------------------------
-        public static int MoveToBattleBone(BattleSkeleton bSkeleton, BattleFrame bFrame, int boneIndex)
+        private static int MoveToBattleBone(BattleSkeleton bSkeleton, BattleFrame bFrame, int boneIndex)
         {
             int iBoneIdx, jsp, itmpbones;
             int[] joint_stack = new int[bSkeleton.nBones * 4];
@@ -679,7 +691,7 @@ namespace KimeraCS.Rendering
             return iMoveToBattleBoneEndResult;
         }
 
-        public static void DrawBattleBoneModelBoundingBox(BattleBone bBone, int partIndex)
+        private static void DrawBattleBoneModelBoundingBox(BattleBone bBone, int partIndex)
         {
             double[] rot_mat = new double[16];
 
@@ -700,7 +712,7 @@ namespace KimeraCS.Rendering
             GL.Enable(EnableCap.DepthTest);
         }
 
-        public static void DrawBattleBoneBoundingBox(BattleBone bBone)
+        private static void DrawBattleBoneBoundingBox(BattleBone bBone)
         {
 
             GL.Disable(EnableCap.DepthTest);
@@ -733,7 +745,7 @@ namespace KimeraCS.Rendering
             GL.Enable(EnableCap.DepthTest);
         }
 
-        public static void DrawBattleWeaponBoundingBox(BattleSkeleton bSkeleton, BattleFrame wpFrame,
+        private static void DrawBattleWeaponBoundingBox(BattleSkeleton bSkeleton, BattleFrame wpFrame,
                                                        int weaponIndex, int animWeaponIndex)
         {
             double[] rot_mat = new double[16];
@@ -771,7 +783,7 @@ namespace KimeraCS.Rendering
             }
         }
 
-        public static void SelectBattleBoneAndModel(BattleSkeleton bSkeleton, BattleFrame bFrame, BattleFrame wpFrame,
+        private static void SelectBattleBoneAndModel(BattleSkeleton bSkeleton, BattleFrame bFrame, BattleFrame wpFrame,
                                                     int weaponIndex, int boneIndex, int partIndex)
         {
             int i, jsp;
@@ -793,7 +805,7 @@ namespace KimeraCS.Rendering
             }
         }
 
-        public static void DrawBattleSkeletonBones(BattleSkeleton bSkeleton, BattleFrame bFrame)
+        private static void DrawBattleSkeletonBones(BattleSkeleton bSkeleton, BattleFrame bFrame)
         {
             int iBoneIdx, jsp, itmpbones;
             int[] joint_stack;
@@ -863,189 +875,206 @@ namespace KimeraCS.Rendering
             GL.PopMatrix();
         }
 
-        public static void DrawBattleSkeletonBone(BattleBone bBone, uint[] texIDS, bool bDListsEnable,
-                                                  RenderingContext renderContext)
+        private static void DrawBattleSkeletonBone(RenderingContext ctx, int boneIndex)
         {
-            int iModelIdx;
-            PModel tmpbModel = new PModel();
-
-            GL.MatrixMode(MatrixMode.Modelview);
-            GL.PushMatrix();
-            GL.Scaled(bBone.resizeX, bBone.resizeY, bBone.resizeZ);
-
-            if (bBone.hasModel > 0)
+            var modelData = ctx.ModelData;
+            if (modelData != null)
             {
+                var bBone = modelData.BattleSkeleton.bones[boneIndex];
+                PModel tmpbModel = new PModel();
+                var texIDS = modelData.BattleSkeleton.TexIDS;
+                bool bDListsEnable = ctx.Options.EnableDisplayLists;
+                int iModelIdx;
 
-                if (!bDListsEnable)
+                GL.MatrixMode(MatrixMode.Modelview);
+                GL.PushMatrix();
+                GL.Scaled(bBone.resizeX, bBone.resizeY, bBone.resizeZ);
+
+                if (bBone.hasModel > 0)
                 {
-                    for (iModelIdx = 0; iModelIdx < bBone.nModels; iModelIdx++)
+
+                    if (!bDListsEnable)
                     {
+                        for (iModelIdx = 0; iModelIdx < bBone.nModels; iModelIdx++)
+                        {
 
-                        GL.PushMatrix();
-                        GL.Translated(bBone.Models[iModelIdx].repositionX, 
-                                     bBone.Models[iModelIdx].repositionY, 
-                                     bBone.Models[iModelIdx].repositionZ);
+                            GL.PushMatrix();
+                            GL.Translated(bBone.Models[iModelIdx].repositionX,
+                                         bBone.Models[iModelIdx].repositionY,
+                                         bBone.Models[iModelIdx].repositionZ);
 
-                        GL.Rotated(bBone.Models[iModelIdx].rotateAlpha, 1, 0, 0);
-                        GL.Rotated(bBone.Models[iModelIdx].rotateBeta, 0, 1, 0);
-                        GL.Rotated(bBone.Models[iModelIdx].rotateGamma, 0, 0, 1);
+                            GL.Rotated(bBone.Models[iModelIdx].rotateAlpha, 1, 0, 0);
+                            GL.Rotated(bBone.Models[iModelIdx].rotateBeta, 0, 1, 0);
+                            GL.Rotated(bBone.Models[iModelIdx].rotateGamma, 0, 0, 1);
 
-                        GL.Scaled(bBone.Models[iModelIdx].resizeX, 
-                                 bBone.Models[iModelIdx].resizeY, 
-                                 bBone.Models[iModelIdx].resizeZ);
-                        
-                        SetDefaultOGLRenderState();
+                            GL.Scaled(bBone.Models[iModelIdx].resizeX,
+                                     bBone.Models[iModelIdx].resizeY,
+                                     bBone.Models[iModelIdx].resizeZ);
 
-                        tmpbModel = bBone.Models[iModelIdx];
-                        DrawPModel(ref tmpbModel, ref texIDS, false, renderContext);
-                        bBone.Models[iModelIdx] = tmpbModel;
+                            SetDefaultOGLRenderState();
 
-                        GL.PopMatrix();
+                            tmpbModel = bBone.Models[iModelIdx];
+                            DrawPModel(ref tmpbModel, ref texIDS, false, ctx.Options);
+                            bBone.Models[iModelIdx] = tmpbModel;
+
+                            GL.PopMatrix();
+                        }
+                    }
+                    else
+                    {
+                        for (iModelIdx = 0; iModelIdx < bBone.nModels; iModelIdx++)
+                        {
+                            GL.PushMatrix();
+                            GL.Translated(bBone.Models[iModelIdx].repositionX,
+                                         bBone.Models[iModelIdx].repositionY,
+                                         bBone.Models[iModelIdx].repositionZ);
+
+                            GL.Rotated(bBone.Models[iModelIdx].rotateAlpha, 1, 0, 0);
+                            GL.Rotated(bBone.Models[iModelIdx].rotateBeta, 0, 1, 0);
+                            GL.Rotated(bBone.Models[iModelIdx].rotateGamma, 0, 0, 1);
+
+                            GL.Scaled(bBone.Models[iModelIdx].resizeX,
+                                     bBone.Models[iModelIdx].resizeY,
+                                     bBone.Models[iModelIdx].resizeZ);
+
+                            tmpbModel = bBone.Models[iModelIdx];
+                            DrawPModelDLists(ref tmpbModel, ref texIDS, ctx.Options);
+                            bBone.Models[iModelIdx] = tmpbModel;
+
+                            GL.PopMatrix();
+                        }
                     }
                 }
-                else
-                {
-                    for (iModelIdx = 0; iModelIdx < bBone.nModels; iModelIdx++)
-                    {
-                        GL.PushMatrix();
-                        GL.Translated(bBone.Models[iModelIdx].repositionX, 
-                                     bBone.Models[iModelIdx].repositionY, 
-                                     bBone.Models[iModelIdx].repositionZ);
 
-                        GL.Rotated(bBone.Models[iModelIdx].rotateAlpha, 1, 0, 0);
-                        GL.Rotated(bBone.Models[iModelIdx].rotateBeta, 0, 1, 0);
-                        GL.Rotated(bBone.Models[iModelIdx].rotateGamma, 0, 0, 1);
-
-                        GL.Scaled(bBone.Models[iModelIdx].resizeX, 
-                                 bBone.Models[iModelIdx].resizeY, 
-                                 bBone.Models[iModelIdx].resizeZ);
-
-                        tmpbModel = bBone.Models[iModelIdx];
-                        DrawPModelDLists(ref tmpbModel, ref texIDS, renderContext);
-                        bBone.Models[iModelIdx] = tmpbModel;
-
-                        GL.PopMatrix();
-                    }
-                }
+                GL.PopMatrix();
             }
-
-            GL.PopMatrix();
         }
 
-        public static void DrawBattleSkeleton(BattleSkeleton bSkeleton, BattleFrame bFrame, BattleFrame wpFrame,
-                                              int weaponIndex, int animWeaponIndex, bool bDListsEnable,
-                                              RenderingContext renderContext)
+        private static void DrawBattleSkeleton(RenderingContext ctx, BattleFrame wpFrame, int weaponIndex, int currentFrame = -1)
         {
-            int iBoneIdx, jsp, itmpbones;
-            int[] joint_stack = new int[bSkeleton.nBones + 1];
-            double[] rot_mat = new double[16];
-
-            jsp = 0;
-            joint_stack[jsp] = -1;
-
-            if (bSkeleton.nBones > 1) itmpbones = 1;
-            else itmpbones = 0;
-
-            GL.MatrixMode(MatrixMode.Modelview);
-            GL.PushMatrix();
-            GL.Translated(bFrame.startX, bFrame.startY, bFrame.startZ);
-
-            // Debug.Print bFrame.bones[0].alpha; ", "; bFrame.bones[0].Beta; ", "; bFrame.bones[0].Gamma
-            BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma, ref rot_mat);
-            GL.MultMatrixd(rot_mat);
-
-            for (iBoneIdx = 0; iBoneIdx < bSkeleton.nBones; iBoneIdx++)
+            var modelData = ctx.ModelData;
+            if (modelData != null)
             {
-                if (bSkeleton.IsBattleLocation)
+                var bSkeleton = modelData.BattleSkeleton;
+                var bAnimationsPack = modelData.BattleAnimations;
+                var anim = ctx.Animation;
+                var skAnim = bAnimationsPack.SkeletonAnimations[anim.AnimationIndex];
+                if (currentFrame < 0 || currentFrame >= skAnim.numFrames)
+                    currentFrame = anim.CurrentFrame;
+                var bFrame = skAnim.frames[currentFrame];
+                int animWeaponIndex = anim.WeaponAnimationIndex;
+                bool bDListsEnable = ctx.Options.EnableDisplayLists;
+
+                int iBoneIdx, jsp, itmpbones;
+                int[] joint_stack = new int[bSkeleton.nBones + 1];
+                double[] rot_mat = new double[16];
+
+                jsp = 0;
+                joint_stack[jsp] = -1;
+
+                if (bSkeleton.nBones > 1) itmpbones = 1;
+                else itmpbones = 0;
+
+                GL.MatrixMode(MatrixMode.Modelview);
+                GL.PushMatrix();
+                GL.Translated(bFrame.startX, bFrame.startY, bFrame.startZ);
+
+                // Debug.Print bFrame.bones[0].alpha; ", "; bFrame.bones[0].Beta; ", "; bFrame.bones[0].Gamma
+                BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma, ref rot_mat);
+                GL.MultMatrixd(rot_mat);
+
+                for (iBoneIdx = 0; iBoneIdx < bSkeleton.nBones; iBoneIdx++)
                 {
-                    DrawBattleSkeletonBone(bSkeleton.bones[iBoneIdx], bSkeleton.TexIDS, false, renderContext);
+                    if (bSkeleton.IsBattleLocation)
+                    {
+                        DrawBattleSkeletonBone(ctx, iBoneIdx);
+                    }
+                    else
+                    {
+                        while (!(bSkeleton.bones[iBoneIdx].parentBone == joint_stack[jsp]) && jsp > 0)
+                        {
+                            GL.PopMatrix();
+                            jsp--;
+                        }
+
+                        GL.PushMatrix();
+
+                        // -- Commented in KimeraVB6
+                        //GL.Rotated(bFrame.bones[bi + 1].beta, 0, 1, 0);
+                        //GL.Rotated(bFrame.bones[bi + 1].alpha, 1, 0, 0);
+                        //GL.Rotated(bFrame.bones[bi + 1].gamma, 0, 0, 1);
+
+                        BuildRotationMatrixWithQuaternions(bFrame.bones[iBoneIdx + itmpbones].alpha,
+                                                           bFrame.bones[iBoneIdx + itmpbones].beta,
+                                                           bFrame.bones[iBoneIdx + itmpbones].gamma,
+                                                           ref rot_mat);
+                        GL.MultMatrixd(rot_mat);
+
+                        DrawBattleSkeletonBone(ctx, iBoneIdx);
+
+                        GL.Translated(0, 0, bSkeleton.bones[iBoneIdx].len);
+
+                        jsp++;
+                        joint_stack[jsp] = iBoneIdx;
+                    }
                 }
-                else
+
+                if (!bSkeleton.IsBattleLocation)
                 {
-                    while (!(bSkeleton.bones[iBoneIdx].parentBone == joint_stack[jsp]) && jsp > 0)
+                    while (jsp > 0)
                     {
                         GL.PopMatrix();
                         jsp--;
                     }
+                }
+                GL.PopMatrix();
 
+                //if (weaponIndex > -1 && bSkeleton.nWeapons > 0)       // -- Commented in KimeraVB6
+                if (animWeaponIndex > -1 && bSkeleton.wpModels.Count > 0 && bAnimationsPack.WeaponAnimations.Count > 0)
+                {
                     GL.PushMatrix();
+                    GL.Translated(wpFrame.startX, wpFrame.startY, wpFrame.startZ);
 
                     // -- Commented in KimeraVB6
-                    //GL.Rotated(bFrame.bones[bi + 1].beta, 0, 1, 0);
-                    //GL.Rotated(bFrame.bones[bi + 1].alpha, 1, 0, 0);
-                    //GL.Rotated(bFrame.bones[bi + 1].gamma, 0, 0, 1);
+                    //GL.Rotated(wpFrame.bones[0].beta, 0, 1, 0);
+                    //GL.Rotated(wpFrame.bones[0].alpha, 1, 0, 0);
+                    //GL.Rotated(wpFrame.bones[0].gamma, 0, 0, 1);
 
-                    BuildRotationMatrixWithQuaternions(bFrame.bones[iBoneIdx + itmpbones].alpha,
-                                                       bFrame.bones[iBoneIdx + itmpbones].beta,
-                                                       bFrame.bones[iBoneIdx + itmpbones].gamma,
-                                                       ref rot_mat);
+                    BuildRotationMatrixWithQuaternions(wpFrame.bones[0].alpha, wpFrame.bones[0].beta, wpFrame.bones[0].gamma, ref rot_mat);
                     GL.MultMatrixd(rot_mat);
 
-                    DrawBattleSkeletonBone(bSkeleton.bones[iBoneIdx], bSkeleton.TexIDS, bDListsEnable,
-                                           renderContext);
+                    GL.MatrixMode(MatrixMode.Modelview);
+                    GL.PushMatrix();
 
-                    GL.Translated(0, 0, bSkeleton.bones[iBoneIdx].len);
+                    GL.Translated(bSkeleton.wpModels[weaponIndex].repositionX,
+                                 bSkeleton.wpModels[weaponIndex].repositionY,
+                                 bSkeleton.wpModels[weaponIndex].repositionZ);
 
-                    jsp++;
-                    joint_stack[jsp] = iBoneIdx;
-                }
-            }
+                    GL.Rotated(bSkeleton.wpModels[weaponIndex].rotateAlpha, 1, 0, 0);
+                    GL.Rotated(bSkeleton.wpModels[weaponIndex].rotateBeta, 0, 1, 0);
+                    GL.Rotated(bSkeleton.wpModels[weaponIndex].rotateGamma, 0, 0, 1);
 
-            if (!bSkeleton.IsBattleLocation)
-            {
-                while (jsp > 0)
-                {
+                    GL.Scaled(bSkeleton.wpModels[weaponIndex].resizeX, bSkeleton.wpModels[weaponIndex].resizeY, bSkeleton.wpModels[weaponIndex].resizeZ);
+
+                    SetDefaultOGLRenderState();
+
+                    PModel tmpwpModel = new PModel();
+                    if (bDListsEnable)
+                    {
+                        tmpwpModel = bSkeleton.wpModels[weaponIndex];
+                        DrawPModelDLists(ref tmpwpModel, ref bSkeleton.TexIDS, ctx.Options);
+                        bSkeleton.wpModels[weaponIndex] = tmpwpModel;
+                    }
+                    else
+                    {
+                        tmpwpModel = bSkeleton.wpModels[weaponIndex];
+                        DrawPModel(ref tmpwpModel, ref bSkeleton.TexIDS, false, ctx.Options);
+                        bSkeleton.wpModels[weaponIndex] = tmpwpModel;
+                    }
                     GL.PopMatrix();
-                    jsp--;
+
+                    GL.PopMatrix();
                 }
-            }
-            GL.PopMatrix();
-
-            //if (weaponIndex > -1 && bSkeleton.nWeapons > 0)       // -- Commented in KimeraVB6
-            if (animWeaponIndex > -1 && bSkeleton.wpModels.Count > 0 && bAnimationsPack.WeaponAnimations.Count > 0)
-            {
-                GL.PushMatrix();
-                GL.Translated(wpFrame.startX, wpFrame.startY, wpFrame.startZ);
-
-                // -- Commented in KimeraVB6
-                //GL.Rotated(wpFrame.bones[0].beta, 0, 1, 0);
-                //GL.Rotated(wpFrame.bones[0].alpha, 1, 0, 0);
-                //GL.Rotated(wpFrame.bones[0].gamma, 0, 0, 1);
-
-                BuildRotationMatrixWithQuaternions(wpFrame.bones[0].alpha, wpFrame.bones[0].beta, wpFrame.bones[0].gamma, ref rot_mat);
-                GL.MultMatrixd(rot_mat);
-
-                GL.MatrixMode(MatrixMode.Modelview);
-                GL.PushMatrix();
-
-                GL.Translated(bSkeleton.wpModels[weaponIndex].repositionX,
-                             bSkeleton.wpModels[weaponIndex].repositionY,
-                             bSkeleton.wpModels[weaponIndex].repositionZ);
-
-                GL.Rotated(bSkeleton.wpModels[weaponIndex].rotateAlpha, 1, 0, 0);
-                GL.Rotated(bSkeleton.wpModels[weaponIndex].rotateBeta, 0, 1, 0);
-                GL.Rotated(bSkeleton.wpModels[weaponIndex].rotateGamma, 0, 0, 1);
-
-                GL.Scaled(bSkeleton.wpModels[weaponIndex].resizeX, bSkeleton.wpModels[weaponIndex].resizeY, bSkeleton.wpModels[weaponIndex].resizeZ);
-
-                SetDefaultOGLRenderState();
-
-                PModel tmpwpModel = new PModel();
-                if (bDListsEnable)
-                {
-                    tmpwpModel = bSkeleton.wpModels[weaponIndex];
-                    DrawPModelDLists(ref tmpwpModel, ref bSkeleton.TexIDS, renderContext);
-                    bSkeleton.wpModels[weaponIndex] = tmpwpModel;
-                }
-                else
-                {
-                    tmpwpModel = bSkeleton.wpModels[weaponIndex];
-                    DrawPModel(ref tmpwpModel, ref bSkeleton.TexIDS, false, renderContext);
-                    bSkeleton.wpModels[weaponIndex] = tmpwpModel;
-                }
-                GL.PopMatrix();
-
-                GL.PopMatrix();
             }
         }
 
@@ -1057,189 +1086,184 @@ namespace KimeraCS.Rendering
 
         /// <summary>
         /// Draws the current skeleton/model using the provided context.
-        /// If ctx.ModelData is set, uses that model data (fully decoupled).
-        /// Otherwise falls back to static model data for backward compatibility.
         /// </summary>
         public static void DrawSkeletonModel(RenderingContext ctx)
         {
             double[] rot_mat = new double[16];
-            BattleFrame tmpbFrame;
 
             Vector3 p_min = new Vector3();
             Vector3 p_max = new Vector3();
 
-            // Use context model data if provided, otherwise fall back to statics
             var modelData = ctx.ModelData;
-            PModel pModel = modelData?.PModel ?? fPModel;
-            uint[] texIds = modelData?.TextureIds ?? tex_ids;
-            FieldSkeleton fieldSkel = modelData?.FieldSkeleton ?? fSkeleton;
-            FieldAnimation fieldAnim = modelData?.FieldAnimation ?? fAnimation;
-            BattleSkeleton battleSkel = modelData?.BattleSkeleton ?? bSkeleton;
-            BattleAnimationsPack battleAnims = modelData?.BattleAnimations ?? bAnimationsPack;
-
-            try
+            if (modelData != null)
             {
-                switch (ctx.ModelType)
+                PModel pModel = modelData.PModel;
+                uint[] texIds = modelData.TextureIds;
+                FieldSkeleton fieldSkel = modelData.FieldSkeleton;
+                FieldAnimation fieldAnim = modelData.FieldAnimation;
+                BattleSkeleton battleSkel = modelData.BattleSkeleton;
+                BattleAnimationsPack battleAnims = modelData.BattleAnimations;
+
+                try
                 {
-                    case ModelType.K_3DS_MODEL:
-                    case ModelType.K_P_FIELD_MODEL:
-                    case ModelType.K_P_BATTLE_MODEL:
-                    case ModelType.K_P_MAGIC_MODEL:
-                        ComputePModelBoundingBox(pModel, ref p_min, ref p_max);
+                    switch (ctx.ModelType)
+                    {
+                        case ModelType.K_3DS_MODEL:
+                        case ModelType.K_P_FIELD_MODEL:
+                        case ModelType.K_P_BATTLE_MODEL:
+                        case ModelType.K_P_MAGIC_MODEL:
+                            ComputePModelBoundingBox(pModel, ref p_min, ref p_max);
 
-                        SetCameraAroundModel(ref p_min, ref p_max,
-                                             ctx.Camera.PanX, ctx.Camera.PanY, ctx.Camera.PanZ + ctx.Camera.Distance,
-                                             ctx.Camera.Alpha, ctx.Camera.Beta, ctx.Camera.Gamma, 1, 1, 1);
+                            SetCameraAroundModel(ref p_min, ref p_max,
+                                                 ctx.Camera.PanX, ctx.Camera.PanY, ctx.Camera.PanZ + ctx.Camera.Distance,
+                                                 ctx.Camera.Alpha, ctx.Camera.Beta, ctx.Camera.Gamma, 1, 1, 1);
 
-                        if (ctx.Options.ShowGround)
-                        {
-                            GL.Disable(EnableCap.Lighting);
-                            DrawGround();
-                            DrawShadow(ref p_min, ref p_max);
-                        }
-
-                        SetLights(ctx.Lighting, (float)(-2 * ComputeSceneRadius(p_min, p_max)));
-
-                        GL.MatrixMode(MatrixMode.Modelview);
-                        GL.PushMatrix();
-
-                        GL.Translated(pModel.repositionX,
-                                     pModel.repositionY,
-                                     pModel.repositionZ);
-
-                        BuildRotationMatrixWithQuaternionsXYZ(pModel.rotateAlpha,
-                                                              pModel.rotateBeta,
-                                                              pModel.rotateGamma,
-                                                              ref rot_mat);
-
-                        GL.MultMatrixd(rot_mat);
-                        GL.Scaled(pModel.resizeX,
-                                 pModel.resizeY,
-                                 pModel.resizeZ);
-
-                        DrawPModel(ref pModel, ref texIds, false, ctx);
-
-                        GL.PopMatrix();
-
-                        break;
-
-                    case ModelType.K_HRC_SKELETON:
-                        ComputeFieldBoundingBox(fieldSkel, fieldAnim.frames[ctx.Animation.CurrentFrame],
-                                                ref p_min, ref p_max);
-
-                        SetCameraAroundModel(ref p_min, ref p_max,
-                                             ctx.Camera.PanX, ctx.Camera.PanY, ctx.Camera.PanZ + ctx.Camera.Distance,
-                                             ctx.Camera.Alpha, ctx.Camera.Beta, ctx.Camera.Gamma, 1, 1, 1);
-
-                        if (ctx.Options.ShowGround)
-                        {
-                            GL.Disable(EnableCap.Lighting);
-                            DrawGround();
-                            DrawShadow(ref p_min, ref p_max);
-                        }
-
-                        SetLights(ctx.Lighting, (float)(-2 * ComputeSceneRadius(p_min, p_max)));
-
-                        DrawFieldSkeleton(fieldSkel, fieldAnim.frames[ctx.Animation.CurrentFrame],
-                                          ctx.Options.EnableDisplayLists, ctx);
-
-                        if (ctx.Options.ShowLastFrameGhost)
-                        {
-
-                            GL.ColorMask(true, true, false, true);
-                            if (ctx.Animation.CurrentFrame == 0)
-                                DrawFieldSkeleton(fieldSkel, fieldAnim.frames[fieldAnim.nFrames - 1],
-                                                  ctx.Options.EnableDisplayLists, ctx);
-                            else
-                                DrawFieldSkeleton(fieldSkel, fieldAnim.frames[ctx.Animation.CurrentFrame - 1],
-                                                  ctx.Options.EnableDisplayLists, ctx);
-
-                            GL.ColorMask(true, true, true, true);
-                        }
-
-                        GL.Disable(EnableCap.Lighting);
-
-                        if (ctx.Options.ShowBones)
-                        {
-                            GL.Disable(EnableCap.DepthTest);
-
-                            SkeletonRenderer.RenderFieldSkeletonBones(fieldSkel,
-                                fieldAnim.frames[ctx.Animation.CurrentFrame], 0, 1, 0, 1, 0, 0);
-
-                            GL.Enable(EnableCap.DepthTest);
-                        }
-
-                        SelectFieldBoneAndPiece(fieldSkel, fieldAnim.frames[ctx.Animation.CurrentFrame],
-                                                ctx.Selection.SelectedBone, ctx.Selection.SelectedBonePiece);
-                        break;
-
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-                        ComputeBattleBoundingBox(battleSkel, battleAnims.SkeletonAnimations[ctx.Animation.AnimationIndex].frames[ctx.Animation.CurrentFrame],
-                                                 ref p_min, ref p_max);
-
-                        SetCameraAroundModel(ref p_min, ref p_max,
-                                             ctx.Camera.PanX, ctx.Camera.PanY, ctx.Camera.PanZ + ctx.Camera.Distance,
-                                             ctx.Camera.Alpha, ctx.Camera.Beta, ctx.Camera.Gamma, 1, 1, 1);
-
-                        if (ctx.Options.ShowGround)
-                        {
-                            GL.Disable(EnableCap.Lighting);
-                            DrawGround();
-                            DrawShadow(ref p_min, ref p_max);
-                        }
-
-                        SetLights(ctx.Lighting, (float)(-2 * ComputeSceneRadius(p_min, p_max)));
-
-                        tmpbFrame = new BattleFrame();
-                        if (battleSkel.wpModels.Count > 0 && battleAnims.WeaponAnimations.Count > 0)
-                        {
-                            tmpbFrame = battleAnims.WeaponAnimations[ctx.Animation.AnimationIndex].frames[ctx.Animation.CurrentFrame];
-                        }
-
-                        DrawBattleSkeleton(battleSkel, battleAnims.SkeletonAnimations[ctx.Animation.AnimationIndex].frames[ctx.Animation.CurrentFrame],
-                                           tmpbFrame, 0, ctx.Animation.WeaponAnimationIndex, ctx.Options.EnableDisplayLists,
-                                           ctx);
-
-                        if (ctx.Options.ShowLastFrameGhost && !battleSkel.IsBattleLocation)
-                        {
-                            GL.ColorMask(true, true, false, true);
-
-                            if (ctx.Animation.CurrentFrame == 0)
+                            if (ctx.Options.ShowGround)
                             {
-                                DrawBattleSkeleton(battleSkel, battleAnims.SkeletonAnimations[ctx.Animation.AnimationIndex].frames[ctx.Animation.CurrentFrame],
-                                                   tmpbFrame, 0, ctx.Animation.WeaponAnimationIndex, ctx.Options.EnableDisplayLists,
-                                                   ctx);
+                                GL.Disable(EnableCap.Lighting);
+                                DrawGround();
+                                DrawShadow(ref p_min, ref p_max);
                             }
-                            else
-                                DrawBattleSkeleton(battleSkel, battleAnims.SkeletonAnimations[ctx.Animation.AnimationIndex].frames[ctx.Animation.CurrentFrame - 1],
-                                                   tmpbFrame, 0, ctx.Animation.WeaponAnimationIndex, ctx.Options.EnableDisplayLists,
-                                                   ctx);
 
-                            GL.ColorMask(true, true, true, true);
-                        }
+                            SetLights(ctx.Lighting, (float)(-2 * ComputeSceneRadius(p_min, p_max)));
 
-                        GL.Disable(EnableCap.Lighting);
+                            GL.MatrixMode(MatrixMode.Modelview);
+                            GL.PushMatrix();
 
-                        if (ctx.Options.ShowBones)
-                        {
-                            GL.Disable(EnableCap.DepthTest);
+                            GL.Translated(pModel.repositionX,
+                                         pModel.repositionY,
+                                         pModel.repositionZ);
 
-                            SkeletonRenderer.RenderBattleSkeletonBones(battleSkel,
-                                battleAnims.SkeletonAnimations[ctx.Animation.AnimationIndex].frames[ctx.Animation.CurrentFrame],
-                                0, 1, 0, 1, 0, 0);
+                            BuildRotationMatrixWithQuaternionsXYZ(pModel.rotateAlpha,
+                                                                  pModel.rotateBeta,
+                                                                  pModel.rotateGamma,
+                                                                  ref rot_mat);
 
-                            GL.Enable(EnableCap.DepthTest);
-                        }
+                            GL.MultMatrixd(rot_mat);
+                            GL.Scaled(pModel.resizeX,
+                                     pModel.resizeY,
+                                     pModel.resizeZ);
 
-                        SelectBattleBoneAndModel(battleSkel, battleAnims.SkeletonAnimations[ctx.Animation.AnimationIndex].frames[ctx.Animation.CurrentFrame],
-                            tmpbFrame, ctx.Animation.WeaponAnimationIndex, ctx.Selection.SelectedBone, ctx.Selection.SelectedBonePiece);
-                        break;
+                            DrawPModel(ref pModel, ref texIds, false, ctx.Options);
+
+                            GL.PopMatrix();
+
+                            break;
+
+                        case ModelType.K_HRC_SKELETON:
+                            ComputeFieldBoundingBox(fieldSkel, fieldAnim.frames[ctx.Animation.CurrentFrame],
+                                                    ref p_min, ref p_max);
+
+                            SetCameraAroundModel(ref p_min, ref p_max,
+                                                 ctx.Camera.PanX, ctx.Camera.PanY, ctx.Camera.PanZ + ctx.Camera.Distance,
+                                                 ctx.Camera.Alpha, ctx.Camera.Beta, ctx.Camera.Gamma, 1, 1, 1);
+
+                            if (ctx.Options.ShowGround)
+                            {
+                                GL.Disable(EnableCap.Lighting);
+                                DrawGround();
+                                DrawShadow(ref p_min, ref p_max);
+                            }
+
+                            SetLights(ctx.Lighting, (float)(-2 * ComputeSceneRadius(p_min, p_max)));
+
+                            DrawFieldSkeleton(ctx);
+
+                            if (ctx.Options.ShowLastFrameGhost)
+                            {
+
+                                GL.ColorMask(true, true, false, true);
+                                if (ctx.Animation.CurrentFrame == 0)
+                                    DrawFieldSkeleton(ctx, fieldAnim.nFrames - 1);
+                                else
+                                    DrawFieldSkeleton(ctx, ctx.Animation.CurrentFrame - 1);
+
+                                GL.ColorMask(true, true, true, true);
+                            }
+
+                            GL.Disable(EnableCap.Lighting);
+
+                            if (ctx.Options.ShowBones)
+                            {
+                                GL.Disable(EnableCap.DepthTest);
+
+                                SkeletonRenderer.RenderFieldSkeletonBones(fieldSkel,
+                                    fieldAnim.frames[ctx.Animation.CurrentFrame], 0, 1, 0, 1, 0, 0);
+
+                                GL.Enable(EnableCap.DepthTest);
+                            }
+
+                            SelectFieldBoneAndPiece(fieldSkel, fieldAnim.frames[ctx.Animation.CurrentFrame],
+                                                    ctx.Selection.SelectedBone, ctx.Selection.SelectedBonePiece);
+                            break;
+
+                        case ModelType.K_AA_SKELETON:
+                        case ModelType.K_MAGIC_SKELETON:
+                            ComputeBattleBoundingBox(battleSkel, battleAnims.SkeletonAnimations[ctx.Animation.AnimationIndex].frames[ctx.Animation.CurrentFrame],
+                                                     ref p_min, ref p_max);
+
+                            SetCameraAroundModel(ref p_min, ref p_max,
+                                                 ctx.Camera.PanX, ctx.Camera.PanY, ctx.Camera.PanZ + ctx.Camera.Distance,
+                                                 ctx.Camera.Alpha, ctx.Camera.Beta, ctx.Camera.Gamma, 1, 1, 1);
+
+                            if (ctx.Options.ShowGround)
+                            {
+                                GL.Disable(EnableCap.Lighting);
+                                DrawGround();
+                                DrawShadow(ref p_min, ref p_max);
+                            }
+
+                            SetLights(ctx.Lighting, (float)(-2 * ComputeSceneRadius(p_min, p_max)));
+
+                            var wpFrame = new BattleFrame();
+                            if (bSkeleton.wpModels.Count > 0 && bAnimationsPack.WeaponAnimations.Count > 0)
+                            {
+                                wpFrame = bAnimationsPack.WeaponAnimations[ctx.Animation.AnimationIndex].frames[ctx.Animation.CurrentFrame];
+                            }
+
+                            DrawBattleSkeleton(ctx, wpFrame, 0);
+
+                            if (ctx.Options.ShowLastFrameGhost && !battleSkel.IsBattleLocation)
+                            {
+                                GL.ColorMask(true, true, false, true);
+
+                                if (ctx.Animation.CurrentFrame == 0)
+                                {
+                                    int frame = modelData.BattleAnimations.SkeletonAnimations[ctx.Animation.AnimationIndex].numFrames - 1;
+                                    DrawBattleSkeleton(ctx, wpFrame, 0, frame);
+                                }
+                                else
+                                    DrawBattleSkeleton(ctx, wpFrame, 0, ctx.Animation.CurrentFrame - 1);
+
+                                GL.ColorMask(true, true, true, true);
+                            }
+
+                            GL.Disable(EnableCap.Lighting);
+
+                            if (ctx.Options.ShowBones)
+                            {
+                                GL.Disable(EnableCap.DepthTest);
+
+                                SkeletonRenderer.RenderBattleSkeletonBones(battleSkel,
+                                    battleAnims.SkeletonAnimations[ctx.Animation.AnimationIndex].frames[ctx.Animation.CurrentFrame],
+                                    0, 1, 0, 1, 0, 0);
+
+                                GL.Enable(EnableCap.DepthTest);
+                            }
+
+                            SelectBattleBoneAndModel(battleSkel, battleAnims.SkeletonAnimations[ctx.Animation.AnimationIndex].frames[ctx.Animation.CurrentFrame],
+                                wpFrame, ctx.Animation.WeaponAnimationIndex, ctx.Selection.SelectedBone, ctx.Selection.SelectedBonePiece);
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new KimeraException("Error Drawing current model.", ex);
                 }
             }
-            catch (Exception ex)
+            else
             {
-                throw new KimeraException("Error Drawing current model.", ex);
+                throw new KimeraException("No model data provided!");
             }
         }
 
@@ -1248,7 +1272,7 @@ namespace KimeraCS.Rendering
         //  ---------------------------------------------------------------------------------------------------
         //  ============================ DRAWING EXTENSIONS (GROUND/SHADOW)  ==================================
         //  ---------------------------------------------------------------------------------------------------
-        public static void DrawGround()
+        private static void DrawGround()
         {
             int gi, lw;
             float r, g, b;
@@ -1291,7 +1315,7 @@ namespace KimeraCS.Rendering
             //glDisable(GLCapability.GL_LINE_SMOOTH);
         }
 
-        public static void DrawShadow(ref Vector3 p_min, ref Vector3 p_max)
+        private static void DrawShadow(ref Vector3 p_min, ref Vector3 p_max)
         {
             float ground_radius, sub_y, cx, cz;
             int numSegments, si;
@@ -1563,7 +1587,6 @@ namespace KimeraCS.Rendering
 
         /// <summary>
         /// Draws a P-model in the editor using the provided context.
-        /// This overload is decoupled from FrmPEditor and can be used in other applications.
         /// </summary>
         public static void DrawPModelEditor(PEditorContext ctx, Control pbIn)
         {
@@ -1635,7 +1658,7 @@ namespace KimeraCS.Rendering
                     break;
 
                 case Core.DrawMode.K_VCOLORS:
-                    DrawPModel(ref model, ref texIds, true);
+                    DrawPModel(ref model, ref texIds, true, RenderingOptions.Default);
                     break;
             }
 
@@ -1735,7 +1758,7 @@ namespace KimeraCS.Rendering
             GL.Enable(EnableCap.DepthTest);
         }
 
-        public static int AddPaintVertex(ref PModel Model, int iGroupIdx, Vector3 vPoint3D, Color vColor)
+        private static int AddPaintVertex(ref PModel Model, int iGroupIdx, Vector3 vPoint3D, Color vColor)
         {
             int iAddVertexResult = -1;
             //  -------- Warning! Causes the Normals to be inconsistent if lights are disabled.------------------
@@ -1821,7 +1844,7 @@ namespace KimeraCS.Rendering
             return iAddVertexResult;
         }
 
-        public static int PaintVertex(ref PModel Model, int iGroupIdx, int iPolyIdx, int iVertIdx,
+        private static int PaintVertex(ref PModel Model, int iGroupIdx, int iPolyIdx, int iVertIdx,
                                       byte bR, byte bG, byte bB, bool bTextured)
         {
 
@@ -1922,10 +1945,6 @@ namespace KimeraCS.Rendering
 
             return Color.FromArgb(iTmpA / 3, iTmpR / 3, iTmpG / 3, iTmpB / 3);
         }
-
-
-
-
     }
 }
 

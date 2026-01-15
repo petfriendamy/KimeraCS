@@ -53,7 +53,7 @@ namespace KimeraCS.Rendering
                 (float)-fFrame.rootTranslationY,
                 (float)fFrame.rootTranslationZ);
 
-            Matrix4 rootRotation = CreateRotationMatrixFromQuaternions(
+            Matrix4 rootRotation = BuildRotationMatrixWithQuaternions(
                 fFrame.rootRotationAlpha,
                 fFrame.rootRotationBeta,
                 fFrame.rootRotationGamma);
@@ -77,7 +77,7 @@ namespace KimeraCS.Rendering
                 matrixStack.Push(currentMatrix);
 
                 // Apply bone rotation
-                Matrix4 boneRotation = CreateRotationMatrixFromQuaternions(
+                Matrix4 boneRotation = BuildRotationMatrixWithQuaternions(
                     fFrame.rotations[iBoneIdx].alpha,
                     fFrame.rotations[iBoneIdx].beta,
                     fFrame.rotations[iBoneIdx].gamma);
@@ -133,7 +133,7 @@ namespace KimeraCS.Rendering
                 (float)bFrame.startY,
                 (float)bFrame.startZ);
 
-            Matrix4 rootRotation = CreateRotationMatrixFromQuaternions(
+            Matrix4 rootRotation = BuildRotationMatrixWithQuaternions(
                 bFrame.bones[0].alpha,
                 bFrame.bones[0].beta,
                 bFrame.bones[0].gamma);
@@ -156,7 +156,7 @@ namespace KimeraCS.Rendering
                 // Apply bone rotation (skip first bone as it's handled by root)
                 if (bi > 0 && bi + 1 < bFrame.bones.Count)
                 {
-                    Matrix4 boneRotation = CreateRotationMatrixFromQuaternions(
+                    Matrix4 boneRotation = BuildRotationMatrixWithQuaternions(
                         bFrame.bones[bi + 1].alpha,
                         bFrame.bones[bi + 1].beta,
                         bFrame.bones[bi + 1].gamma);
@@ -181,24 +181,6 @@ namespace KimeraCS.Rendering
 
                 jsp++;
             }
-        }
-
-        /// <summary>
-        /// Create a rotation matrix from Euler angles using quaternions (matches legacy BuildRotationMatrixWithQuaternions).
-        /// </summary>
-        private static Matrix4 CreateRotationMatrixFromQuaternions(double alpha, double beta, double gamma)
-        {
-            // Convert to radians and create rotation
-            float alphaRad = (float)(alpha * Math.PI / 180.0);
-            float betaRad = (float)(beta * Math.PI / 180.0);
-            float gammaRad = (float)(gamma * Math.PI / 180.0);
-
-            // Build rotation in YXZ order (matches legacy code)
-            Matrix4 rotY = Matrix4.CreateRotationY(betaRad);
-            Matrix4 rotX = Matrix4.CreateRotationX(alphaRad);
-            Matrix4 rotZ = Matrix4.CreateRotationZ(gammaRad);
-
-            return rotZ * rotX * rotY;
         }
 
         /// <summary>

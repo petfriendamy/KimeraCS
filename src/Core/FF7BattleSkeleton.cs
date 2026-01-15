@@ -500,8 +500,8 @@ namespace KimeraCS.Core
             Matrix4 currentMatrix = Matrix4.Identity;
             currentMatrix *= Matrix4.CreateTranslation((float)bFrame.startX, (float)bFrame.startY, (float)bFrame.startZ);
 
-            BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma, ref rot_mat);
-            Matrix4 rotMatrix = DoubleArrayToMatrix4(rot_mat);
+            //BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma, ref rot_mat);
+            Matrix4 rotMatrix = BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma);
             currentMatrix *= rotMatrix;
 
             matrixStack[matrixStackPtr++] = currentMatrix;
@@ -518,10 +518,12 @@ namespace KimeraCS.Core
 
                 if (bSkeleton.nBones > 1) iframeCnt = 1;
                 else iframeCnt = 0;
-                BuildRotationMatrixWithQuaternions(bFrame.bones[bi + iframeCnt].alpha,
+                //BuildRotationMatrixWithQuaternions(bFrame.bones[bi + iframeCnt].alpha,
+                //                                   bFrame.bones[bi + iframeCnt].beta,
+                //                                   bFrame.bones[bi + iframeCnt].gamma, ref rot_mat);
+                rotMatrix = BuildRotationMatrixWithQuaternions(bFrame.bones[bi + iframeCnt].alpha,
                                                    bFrame.bones[bi + iframeCnt].beta,
-                                                   bFrame.bones[bi + iframeCnt].gamma, ref rot_mat);
-                rotMatrix = DoubleArrayToMatrix4(rot_mat);
+                                                   bFrame.bones[bi + iframeCnt].gamma);
                 currentMatrix *= rotMatrix;
 
                 ComputeBattleBoneBoundingBox(bSkeleton.bones[bi], ref p_min_bone, ref p_max_bone);

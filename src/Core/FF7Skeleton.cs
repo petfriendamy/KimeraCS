@@ -101,6 +101,7 @@ namespace KimeraCS.Core
 
                             break;
                     }
+                    bLoaded = true;
                 }
                 else
                 {
@@ -213,6 +214,7 @@ namespace KimeraCS.Core
                 iDestroySkeletonResult = -1;
             }
 
+            bLoaded = false;
             return iDestroySkeletonResult;
         }
 

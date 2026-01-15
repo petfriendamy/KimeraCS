@@ -51,14 +51,13 @@ namespace KimeraCS.Core
             public int nbWeaponAnims;
             public List<BattleAnimation> SkeletonAnimations;
             public List<BattleAnimation> WeaponAnimations;
+            public string strBattleAnimPackFileName;
+            public string strAnimsPackFullFileName;
             public bool IsLimit;
             public readonly bool WrongAnimationCount;
 
             public BattleAnimationsPack(BattleSkeleton bSkeleton, string strFileName)
             {
-                string strBattleAnimPackFileName;
-                string strAnimsPackFullFileName;                             
-
                 nAnimations = 0;
                 nbSkeletonAnims = 0;
                 nbWeaponAnims = 0;
@@ -92,7 +91,6 @@ namespace KimeraCS.Core
                             strBattleAnimPackFileName = Path.GetFileNameWithoutExtension(strFileName).ToUpper() + ".A00";
                             break;
                     }
-
 
                     strAnimsPackFullFileName = Path.GetDirectoryName(strFileName) + "\\" + strBattleAnimPackFileName;
 

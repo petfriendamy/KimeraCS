@@ -691,7 +691,7 @@ namespace KimeraCS
                                 }
 
 
-                                strGlobalBattleAnimationName = strBattleAnimPackFileName;
+                                strGlobalBattleAnimationName = Path.GetFileNameWithoutExtension(strBattleAnimPackFileName);
                                 break;
 
                             default:

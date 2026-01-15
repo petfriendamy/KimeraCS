@@ -1,5 +1,7 @@
 using KimeraCS.Core;
+using System;
 
+#nullable enable
 namespace KimeraCS.Rendering
 {
     using static FF7PModel;
@@ -149,7 +151,7 @@ namespace KimeraCS.Rendering
     {
         // P-Model data (for K_P_FIELD_MODEL, K_P_BATTLE_MODEL, K_P_MAGIC_MODEL, K_3DS_MODEL)
         public PModel PModel { get; set; }
-        public uint[] TextureIds { get; set; }
+        public uint[] TextureIds { get; set; } = Array.Empty<uint>();
 
         // Field skeleton data (for K_HRC_SKELETON)
         public FieldSkeleton FieldSkeleton { get; set; }
@@ -174,7 +176,7 @@ namespace KimeraCS.Rendering
         public LightingConfig Lighting { get; set; }
         public AnimationState Animation { get; set; }
         public SelectionState Selection { get; set; }
-        public SkeletonModelData ModelData { get; set; }
+        public SkeletonModelData? ModelData { get; set; }
 
         public RenderingContext()
         {
@@ -192,6 +194,7 @@ namespace KimeraCS.Rendering
         /// Call this from the form to get a snapshot of current state.
         /// </summary>
         public static RenderingContext FromSkeletonEditor(
+            SkeletonModelData modelData,
             ModelType modelType,
             bool isLoaded,
             float alpha, float beta, float gamma,
@@ -219,6 +222,7 @@ namespace KimeraCS.Rendering
         {
             return new RenderingContext
             {
+                ModelData = modelData,
                 ModelType = modelType,
                 IsLoaded = isLoaded,
                 Camera = new CameraState
@@ -298,7 +302,7 @@ namespace KimeraCS.Rendering
     public class PEditorContext
     {
         public PModel EditedModel { get; set; }
-        public uint[] TextureIds { get; set; }
+        public uint[] TextureIds { get; set; } = Array.Empty<uint>();
         public CameraState Camera { get; set; }
         public ModelTransform Transform { get; set; }
         public DrawMode DrawMode { get; set; }

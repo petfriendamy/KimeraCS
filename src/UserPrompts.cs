@@ -100,7 +100,11 @@ namespace KimeraCS
                     break;
 
                 case ModelType.K_AA_SKELETON:
+                    strGlobalBattleAnimationName = bAnimationsPack.strBattleAnimPackFileName;
+                    BattleSkeletonPolyCheck(ref bSkeleton);
+                    break;
                 case ModelType.K_MAGIC_SKELETON:
+                    strGlobalMagicAnimationName = bAnimationsPack.strBattleAnimPackFileName;
                     BattleSkeletonPolyCheck(ref bSkeleton);
                     break;
             }
