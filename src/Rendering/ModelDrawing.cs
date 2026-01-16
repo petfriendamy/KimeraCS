@@ -232,7 +232,6 @@ namespace KimeraCS.Rendering
 
         private static void DrawPModelBoundingBox(PModel Model)
         {
-            GL.Begin(PrimitiveType.Lines);
             GL.Disable(EnableCap.DepthTest);
 
             DrawBox(Model.BoundingBox.max_x, Model.BoundingBox.max_y, Model.BoundingBox.max_z,
@@ -240,8 +239,6 @@ namespace KimeraCS.Rendering
                     1, 1, 0);
 
             GL.Enable(EnableCap.DepthTest);
-            GL.End();
-            // GL.PopMatrix();
         }
 
  
@@ -746,12 +743,11 @@ namespace KimeraCS.Rendering
         }
 
         private static void DrawBattleWeaponBoundingBox(BattleSkeleton bSkeleton, BattleFrame wpFrame,
-                                                       int weaponIndex, int animWeaponIndex)
+                                                       int weaponIndex)
         {
             double[] rot_mat = new double[16];
 
-            //if (weaponIndex > -1 && bSkeleton.nWeapons > 0)       // -- Commented in KimeraVB6
-            if (animWeaponIndex > -1 && bSkeleton.wpModels.Count > 0 && bAnimationsPack.WeaponAnimations.Count > 0)
+            if (weaponIndex >= 0 && weaponIndex < bSkeleton.wpModels.Count)
             {
                 GL.PushMatrix();
                 GL.Translated(wpFrame.startX, wpFrame.startY, wpFrame.startZ);
@@ -801,7 +797,7 @@ namespace KimeraCS.Rendering
             else
             {
                 if (boneIndex == bSkeleton.nBones)
-                    DrawBattleWeaponBoundingBox(bSkeleton, wpFrame, weaponIndex, weaponIndex);
+                    DrawBattleWeaponBoundingBox(bSkeleton, wpFrame, weaponIndex);
             }
         }
 
@@ -950,7 +946,7 @@ namespace KimeraCS.Rendering
             }
         }
 
-        private static void DrawBattleSkeleton(RenderingContext ctx, BattleFrame wpFrame, int weaponIndex, int currentFrame = -1)
+        private static void DrawBattleSkeleton(RenderingContext ctx, BattleFrame wpFrame, int currentFrame = -1)
         {
             var modelData = ctx.ModelData;
             if (modelData != null)
@@ -962,7 +958,7 @@ namespace KimeraCS.Rendering
                 if (currentFrame < 0 || currentFrame >= skAnim.numFrames)
                     currentFrame = anim.CurrentFrame;
                 var bFrame = skAnim.frames[currentFrame];
-                int animWeaponIndex = anim.WeaponAnimationIndex;
+                int weaponIndex = anim.WeaponAnimationIndex;
                 bool bDListsEnable = ctx.Options.EnableDisplayLists;
 
                 int iBoneIdx, jsp, itmpbones;
@@ -1030,7 +1026,7 @@ namespace KimeraCS.Rendering
                 GL.PopMatrix();
 
                 //if (weaponIndex > -1 && bSkeleton.nWeapons > 0)       // -- Commented in KimeraVB6
-                if (animWeaponIndex > -1 && bSkeleton.wpModels.Count > 0 && bAnimationsPack.WeaponAnimations.Count > 0)
+                if (weaponIndex > -1 && bSkeleton.wpModels.Count > 0 && bAnimationsPack.WeaponAnimations.Count > 0)
                 {
                     GL.PushMatrix();
                     GL.Translated(wpFrame.startX, wpFrame.startY, wpFrame.startZ);
@@ -1221,7 +1217,7 @@ namespace KimeraCS.Rendering
                                 wpFrame = bAnimationsPack.WeaponAnimations[ctx.Animation.AnimationIndex].frames[ctx.Animation.CurrentFrame];
                             }
 
-                            DrawBattleSkeleton(ctx, wpFrame, 0);
+                            DrawBattleSkeleton(ctx, wpFrame);
 
                             if (ctx.Options.ShowLastFrameGhost && !battleSkel.IsBattleLocation)
                             {
@@ -1230,10 +1226,10 @@ namespace KimeraCS.Rendering
                                 if (ctx.Animation.CurrentFrame == 0)
                                 {
                                     int frame = modelData.BattleAnimations.SkeletonAnimations[ctx.Animation.AnimationIndex].numFrames - 1;
-                                    DrawBattleSkeleton(ctx, wpFrame, 0, frame);
+                                    DrawBattleSkeleton(ctx, wpFrame, frame);
                                 }
                                 else
-                                    DrawBattleSkeleton(ctx, wpFrame, 0, ctx.Animation.CurrentFrame - 1);
+                                    DrawBattleSkeleton(ctx, wpFrame, ctx.Animation.CurrentFrame - 1);
 
                                 GL.ColorMask(true, true, true, true);
                             }
