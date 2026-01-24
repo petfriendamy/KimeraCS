@@ -1,17 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Numerics;
+using KimeraCS.Rendering;
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
-using KimeraCS.Rendering;
 
 namespace KimeraCS.Core
 {
-    using static FF7Skeleton;
+    using static FF7BattleSkeleton;
     using static FF7FieldSkeleton;
     using static FF7PModel;
-
-    using static FF7BattleSkeleton;
+    using static FF7Skeleton;
 
     public static class Utils
     {
@@ -52,7 +52,7 @@ namespace KimeraCS.Core
         // Helper Functions
         //public static bool IsNumeric(string val) => int.TryParse(val, out int _);
 
-        public static void BuildQuaternionFromAxis(ref Vector3 vec, double angle, ref Quaterniond res_quat)
+        public static void BuildQuaternionFromAxis(ref OpenTK.Mathematics.Vector3 vec, double angle, ref Quaterniond res_quat)
         {
             double sinAngle;
             angle = angle * PIOVER180 / 2;
@@ -121,9 +121,9 @@ namespace KimeraCS.Core
             Quaterniond quat_xy = new Quaterniond();
             Quaterniond quat_xyz = new Quaterniond();
 
-            Vector3 px = new Vector3(1, 0, 0);
-            Vector3 py = new Vector3(0, 1, 0);
-            Vector3 pz = new Vector3(0, 0, 1);
+            var px = new OpenTK.Mathematics.Vector3(1, 0, 0);
+            var py = new OpenTK.Mathematics.Vector3(0, 1, 0);
+            var pz = new OpenTK.Mathematics.Vector3(0, 0, 1);
 
             BuildQuaternionFromAxis(ref px, alpha, ref quat_x);
             BuildQuaternionFromAxis(ref py, beta, ref quat_y);
@@ -154,19 +154,19 @@ namespace KimeraCS.Core
         }
 
 
-        public static void MultiplyPoint3DByOGLMatrix(double[] matA, Vector3 p_in, ref Vector3 p_out)
+        public static void MultiplyPoint3DByOGLMatrix(double[] matA, OpenTK.Mathematics.Vector3 p_in, ref OpenTK.Mathematics.Vector3 p_out)
         {
             p_out.X = (float)(p_in.X * matA[0] + p_in.Y * matA[4] + p_in.Z * matA[8] + matA[12]);
             p_out.Y = (float)(p_in.X * matA[1] + p_in.Y * matA[5] + p_in.Z * matA[9] + matA[13]);
             p_out.Z = (float)(p_in.X * matA[2] + p_in.Y * matA[6] + p_in.Z * matA[10] + matA[14]);
         }
 
-        public static void ComputeTransformedBoxBoundingBox(double[] MV_matrix, ref Vector3 p_min, ref Vector3 p_max,
-                                                            ref Vector3 p_min_trans, ref Vector3 p_max_trans)
+        public static void ComputeTransformedBoxBoundingBox(double[] MV_matrix, ref OpenTK.Mathematics.Vector3 p_min, ref OpenTK.Mathematics.Vector3 p_max,
+                                                            ref OpenTK.Mathematics.Vector3 p_min_trans, ref OpenTK.Mathematics.Vector3 p_max_trans)
         {
 
-            Vector3[] box_pointsV = new Vector3[8];
-            Vector3 p_aux_trans = new Vector3();
+            var box_pointsV = new OpenTK.Mathematics.Vector3[8];
+            var p_aux_trans = new OpenTK.Mathematics.Vector3();
             int iBoxPoints;
 
             p_max_trans.X = float.NegativeInfinity;
@@ -227,9 +227,9 @@ namespace KimeraCS.Core
             Quaterniond quat_xy = new Quaterniond();
             Quaterniond quat_xyz = new Quaterniond();
             
-            Vector3 px = new Vector3(1, 0, 0);
-            Vector3 py = new Vector3(0, 1, 0);
-            Vector3 pz = new Vector3(0, 0, 1);
+            var px = new OpenTK.Mathematics.Vector3(1, 0, 0);
+            var py = new OpenTK.Mathematics.Vector3(0, 1, 0);
+            var pz = new OpenTK.Mathematics.Vector3(0, 0, 1);
 
             BuildQuaternionFromAxis(ref px, alpha, ref quat_x);
             BuildQuaternionFromAxis(ref py, beta, ref quat_y);
@@ -415,10 +415,10 @@ namespace KimeraCS.Core
             return GetQuaternionFromEulerUniversal(DegToRad(x), DegToRad(y), DegToRad(z), 2, 0, 1, 0, 0, 1);
         }
 
-        public static Vector3 GetEulerFormMatrixUniversal(double[] mat, int i, int j, int k, int n, int s, int f)
+        public static OpenTK.Mathematics.Vector3 GetEulerFormMatrixUniversal(double[] mat, int i, int j, int k, int n, int s, int f)
         {
             double sy, cy, t;
-            Vector3 up3DGetEulerFormMatrixUniversalResult = new Vector3();
+            var up3DGetEulerFormMatrixUniversalResult = new OpenTK.Mathematics.Vector3();
 
             if (s == EulRepYes)
             {
@@ -474,12 +474,12 @@ namespace KimeraCS.Core
             return up3DGetEulerFormMatrixUniversalResult;
         }
 
-        public static Vector3 GetEulerXYZrFromMatrix(double[] mat)
+        public static OpenTK.Mathematics.Vector3 GetEulerXYZrFromMatrix(double[] mat)
         {
             return GetEulerFormMatrixUniversal(mat, 2, 1, 0, 1, 0, 1);
         }
 
-        public static Vector3 GetEulerYXZrFromMatrix(double[] mat)
+        public static OpenTK.Mathematics.Vector3 GetEulerYXZrFromMatrix(double[] mat)
         {
             return GetEulerFormMatrixUniversal(mat, 2, 0, 1, 0, 0, 1);
         }
@@ -503,9 +503,9 @@ namespace KimeraCS.Core
             Quaterniond quat_z = new Quaterniond();
             Quaterniond quat_xy = new Quaterniond();
 
-            Vector3 px = new Vector3(1, 0, 0);
-            Vector3 py = new Vector3(0, 1, 0);
-            Vector3 pz = new Vector3(0, 0, 1);
+            var px = new OpenTK.Mathematics.Vector3(1, 0, 0);
+            var py = new OpenTK.Mathematics.Vector3(0, 1, 0);
+            var pz = new OpenTK.Mathematics.Vector3(0, 0, 1);
 
             BuildQuaternionFromAxis(ref px, alpha, ref quat_x);
             BuildQuaternionFromAxis(ref py, beta, ref quat_y);
@@ -515,6 +515,45 @@ namespace KimeraCS.Core
             MultiplyQuaternions(quat_xy, quat_z, ref res_quat);
 
             NormalizeQuaternion(ref res_quat);
+        }
+
+        /// <summary>
+        /// Converts Euler angles (in degrees) to a System.Numerics.Quaternion using FF7's rotation order.
+        /// FF7 applies rotations in the order: Z first, then X, then Y (ZXY application order).
+        /// This matches BuildRotationMatrixWithQuaternions in Utils.cs.
+        /// </summary>
+        /// <param name="alpha">X rotation in degrees</param>
+        /// <param name="beta">Y rotation in degrees</param>
+        /// <param name="gamma">Z rotation in degrees</param>
+        /// <param name="mirrorZ">If true, adjust for Z-axis mirroring (negate X and Y rotations)</param>
+        public static System.Numerics.Quaternion EulerToQuaternionFF7(float alpha, float beta, float gamma, bool mirrorZ = false)
+        {
+            // When Z axis is mirrored, rotations around X and Y need to be negated
+            // (rotation around Z stays the same since it's in the XY plane)
+            if (mirrorZ)
+            {
+                alpha = -alpha;
+                beta = -beta;
+            }
+
+            // Convert degrees to radians
+            float alphaRad = alpha * (float)(Math.PI / 180.0);
+            float betaRad = beta * (float)(Math.PI / 180.0);
+            float gammaRad = gamma * (float)(Math.PI / 180.0);
+
+            // Create rotation quaternion matching FF7's rotation order
+            // FF7's BuildRotationMatrixWithQuaternions does: (Y * X) * Z in Hamilton convention
+            // When applied to a point, this means: Z first, then X, then Y
+            var rotY = System.Numerics.Quaternion.CreateFromAxisAngle(System.Numerics.Vector3.UnitY, betaRad);
+            var rotX = System.Numerics.Quaternion.CreateFromAxisAngle(System.Numerics.Vector3.UnitX, alphaRad);
+            var rotZ = System.Numerics.Quaternion.CreateFromAxisAngle(System.Numerics.Vector3.UnitZ, gammaRad);
+
+            // Concatenate(a, b) means "apply a first, then b"
+            // We need: Z first, then X, then Y
+            var combined = System.Numerics.Quaternion.Concatenate(
+                System.Numerics.Quaternion.Concatenate(rotZ, rotX), rotY);
+
+            return System.Numerics.Quaternion.Normalize(combined);
         }
 
 
@@ -593,9 +632,9 @@ namespace KimeraCS.Core
                                            float rszX, float rszY, float rszZ)
         {
 
-            Vector3 p_min = new Vector3();
-            Vector3 p_max = new Vector3();
-            Vector3 center_model, origin;
+            var p_min = new OpenTK.Mathematics.Vector3();
+            var p_max = new OpenTK.Mathematics.Vector3();
+            OpenTK.Mathematics.Vector3 center_model, origin;
 
             int width, height;
 
@@ -611,11 +650,11 @@ namespace KimeraCS.Core
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadIdentity();
 
-            center_model = new Vector3((p_min.X + p_max.X) / 2,
+            center_model = new OpenTK.Mathematics.Vector3((p_min.X + p_max.X) / 2,
                                        (p_min.Y + p_max.Y) / 2,
                                        (p_min.Z + p_max.Z) / 2);
 
-            origin = new Vector3();
+            origin = new OpenTK.Mathematics.Vector3();
 
             model_radius = CalculateDistance(p_min, p_max) / 2;
             distance_origin = CalculateDistance(center_model, origin);
@@ -643,11 +682,12 @@ namespace KimeraCS.Core
                 mvArray[12], mvArray[13], mvArray[14], mvArray[15]);
 
             GLRenderer.ModelMatrix = Matrix4.Identity;
-            GLRenderer.ViewPosition = new Vector3(cX, cY, -cZ);
+            GLRenderer.ViewPosition = new OpenTK.Mathematics.Vector3(cX, cY, -cZ);
         }
 
 
-        public static void SetCameraAroundModel(ref Vector3 p_min, ref Vector3 p_max,
+        public static void SetCameraAroundModel(ref OpenTK.Mathematics.Vector3 p_min,
+                                                ref OpenTK.Mathematics.Vector3 p_max,
                                                 float cX, float cY, float cZ,
                                                 float alpha, float beta, float gamma,
                                                 float rszX, float rszY, float rszZ)
@@ -688,10 +728,11 @@ namespace KimeraCS.Core
                 mvArray[12], mvArray[13], mvArray[14], mvArray[15]);
 
             GLRenderer.ModelMatrix = Matrix4.Identity;
-            GLRenderer.ViewPosition = new Vector3(cX, cY, -cZ);
+            GLRenderer.ViewPosition = new OpenTK.Mathematics.Vector3(cX, cY, -cZ);
         }
 
-        public static void SetCameraAroundModelQuat(ref Vector3 p_min, ref Vector3 p_max,
+        public static void SetCameraAroundModelQuat(ref OpenTK.Mathematics.Vector3 p_min,
+                                                    ref OpenTK.Mathematics.Vector3 p_max,
                                                     float cX, float cY, float cZ,
                                                     Quaterniond quat,
                                                     float rszX, float rszY, float rszZ)
@@ -732,13 +773,13 @@ namespace KimeraCS.Core
                 mvArray[12], mvArray[13], mvArray[14], mvArray[15]);
 
             GLRenderer.ModelMatrix = Matrix4.Identity;
-            GLRenderer.ViewPosition = new Vector3(cX, cY, -cZ);
+            GLRenderer.ViewPosition = new OpenTK.Mathematics.Vector3(cX, cY, -cZ);
         }
 
         public static bool IsCameraUnderGround()
         {
-            Vector3 origin = new Vector3();
-            Vector3 originTrans = new Vector3();
+            var origin = new OpenTK.Mathematics.Vector3();
+            var originTrans = new OpenTK.Mathematics.Vector3();
             double[] MV_matrix = new double[16];
 
             GL.GetDouble(GetPName.ModelviewMatrix,MV_matrix);
@@ -754,8 +795,8 @@ namespace KimeraCS.Core
                                        ref float panX, ref float panY, ref float panZ,
                                        ref double DIST, int animIndex, int currFrame)
         {
-            Vector3 p_min = new Vector3();
-            Vector3 p_max = new Vector3();
+            var p_min = new OpenTK.Mathematics.Vector3();
+            var p_max = new OpenTK.Mathematics.Vector3();
 
             //int animIndex;
 
@@ -799,39 +840,44 @@ namespace KimeraCS.Core
 
         ///////////////////////////////////////////
         // Geometric
-        public static float CalculateLength3D(Vector3 v)
+        public static float CalculateLength3D(OpenTK.Mathematics.Vector3 v)
         {
             return (float)Math.Sqrt(v.X * v.X + v.Y * v.Y + v.Z * v.Z);
         }
 
-        public static Vector3 AddPoint3D(Vector3 v1, Vector3 v2)
+        public static OpenTK.Mathematics.Vector3 AddPoint3D(OpenTK.Mathematics.Vector3 v1,
+            OpenTK.Mathematics.Vector3 v2)
         {
-            return new Vector3(v1.X + v2.X, v1.Y + v2.Y, v1.Z + v2.Z);
+            return new OpenTK.Mathematics.Vector3(v1.X + v2.X, v1.Y + v2.Y, v1.Z + v2.Z);
         }
 
-        public static Vector3 SubstractPoint3D(Vector3 v1, Vector3 v2)
+        public static OpenTK.Mathematics.Vector3 SubstractPoint3D(OpenTK.Mathematics.Vector3 v1,
+            OpenTK.Mathematics.Vector3 v2)
         {
-            return new Vector3(v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z);
+            return new OpenTK.Mathematics.Vector3(v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z);
         }
 
-        public static float DotProduct3D(Vector3 v1, Vector3 v2)
+        public static float DotProduct3D(OpenTK.Mathematics.Vector3 v1, OpenTK.Mathematics.Vector3 v2)
         {
             return v1.X * v2.X + v1.Y * v2.Y + v1.Z * v2.Z;
         }
 
-        public static Vector3 CrossProduct3D(Vector3 v1, Vector3 v2)
+        public static OpenTK.Mathematics.Vector3 CrossProduct3D(OpenTK.Mathematics.Vector3 v1,
+            OpenTK.Mathematics.Vector3 v2)
         {
-            return new Vector3(v1.Y * v2.Z - v1.Z * v2.Y,
+            return new OpenTK.Mathematics.Vector3(v1.Y * v2.Z - v1.Z * v2.Y,
                                v1.Z * v2.X - v1.X * v2.Z,
                                v1.X * v2.Y - v1.Y * v2.X);
         }
 
-        public static Vector3 DividePoint3D(Vector3 v, float fScalar)
+        public static OpenTK.Mathematics.Vector3 DividePoint3D(OpenTK.Mathematics.Vector3 v,
+            float fScalar)
         {
-            return new Vector3(v.X / fScalar, v.Y / fScalar, v.Z / fScalar);
+            return new OpenTK.Mathematics.Vector3(v.X / fScalar, v.Y / fScalar, v.Z / fScalar);
         }
 
-        public static float CalculateAngle2Vectors3D(Vector3 v1, Vector3 v2)
+        public static float CalculateAngle2Vectors3D(OpenTK.Mathematics.Vector3 v1,
+            OpenTK.Mathematics.Vector3 v2)
         {
             double dAngleRadians;
             float fCalculateAngle2Vectors3DResult;
@@ -847,7 +893,8 @@ namespace KimeraCS.Core
             return fCalculateAngle2Vectors3DResult;
         }
 
-        public static float CalculateAreaPoly3D(Vector3 v0, Vector3 v1, Vector3 v2)
+        public static float CalculateAreaPoly3D(OpenTK.Mathematics.Vector3 v0,
+            OpenTK.Mathematics.Vector3 v1, OpenTK.Mathematics.Vector3 v2)
         {
             float a = CalculateDistance(v0, v1);
             float b = CalculateDistance(v1, v2);
@@ -857,7 +904,7 @@ namespace KimeraCS.Core
             return (float)Math.Sqrt(s * (s - a) * (s - b) * (s - c));
         }
 
-        public static Vector3 Normalize(Vector3 v)
+        public static OpenTK.Mathematics.Vector3 Normalize(OpenTK.Mathematics.Vector3 v)
         {
             float fLength;
 
@@ -878,7 +925,7 @@ namespace KimeraCS.Core
             //else return new Point3D(0.0f, 0.0f, 0.0f);
         }
 
-        public static float CalculateDistance(Vector3 v0, Vector3 v1)
+        public static float CalculateDistance(OpenTK.Mathematics.Vector3 v0, OpenTK.Mathematics.Vector3 v1)
         {
             float fDeltaX = v1.X - v0.X;
             float fDeltaY = v1.Y - v0.Y;
@@ -887,15 +934,15 @@ namespace KimeraCS.Core
             return (float)Math.Sqrt(fDeltaX * fDeltaX + fDeltaY * fDeltaY + fDeltaZ * fDeltaZ);
         }
 
-        public static float ComputeSceneRadius(Vector3 p_min, Vector3 p_max)
+        public static float ComputeSceneRadius(OpenTK.Mathematics.Vector3 p_min, OpenTK.Mathematics.Vector3 p_max)
         {
             float model_radius, distance_origin;
 
-            Vector3 center_model = new Vector3((p_min.X + p_max.X) / 2.0f,
+            var center_model = new OpenTK.Mathematics.Vector3((p_min.X + p_max.X) / 2.0f,
                                                (p_min.Y + p_max.Y) / 2.0f,
                                                (p_min.Z + p_max.Z) / 2.0f);
 
-            Vector3 origin = new Vector3(0, 0, 0);
+            var origin = new OpenTK.Mathematics.Vector3(0, 0, 0);
 
             model_radius = CalculateDistance(p_min, p_max) / 2;
             distance_origin = CalculateDistance(center_model, origin);
@@ -903,9 +950,10 @@ namespace KimeraCS.Core
             return model_radius + distance_origin;
         }
 
-        public static Vector3 CalculateNormal(Vector3 p1, Vector3 p2, Vector3 p3)
+        public static OpenTK.Mathematics.Vector3 CalculateNormal(OpenTK.Mathematics.Vector3 p1,
+            OpenTK.Mathematics.Vector3 p2, OpenTK.Mathematics.Vector3 p3)
         {
-            Vector3 v1, v2;
+            OpenTK.Mathematics.Vector3 v1, v2;
 
             v1 = SubstractPoint3D(p2, p1);
             v2 = SubstractPoint3D(p3, p1);
@@ -913,14 +961,15 @@ namespace KimeraCS.Core
             return CrossProduct3D(v1, v2);
         }
 
-        public static bool ComparePoints3D(Vector3 a, Vector3 b)
+        public static bool ComparePoints3D(OpenTK.Mathematics.Vector3 a, OpenTK.Mathematics.Vector3 b)
         {
             return (a.X == b.X) && (a.Y == b.Y) && (a.Z == b.Z);
         }
 
-        public static Vector3 CalculateCenteroid(Vector3 p1, Vector3 p2, Vector3 p3)
+        public static OpenTK.Mathematics.Vector3 CalculateCenteroid(OpenTK.Mathematics.Vector3 p1,
+            OpenTK.Mathematics.Vector3 p2, OpenTK.Mathematics.Vector3 p3)
         {
-            return new Vector3((p1.X + p2.X + p3.X) / 3.0f,
+            return new OpenTK.Mathematics.Vector3((p1.X + p2.X + p3.X) / 3.0f,
                                (p1.Y + p2.Y + p3.Y) / 3.0f,
                                (p1.Z + p2.Z + p3.Z) / 3.0f);
         }
@@ -1638,10 +1687,11 @@ namespace KimeraCS.Core
             }
         }
 
-        public static float CalculatePoint2LineProjectionPosition(Vector3 q, Vector3 p1, Vector3 p2)
+        public static float CalculatePoint2LineProjectionPosition(OpenTK.Mathematics.Vector3 q,
+            OpenTK.Mathematics.Vector3 p1, OpenTK.Mathematics.Vector3 p2)
         {
             float alpha;
-            Vector3 vdUP3D = new Vector3(p2.X - p1.X, p2.Y - p1.Y, p2.Z - p1.Z);
+            var vdUP3D = new OpenTK.Mathematics.Vector3(p2.X - p1.X, p2.Y - p1.Y, p2.Z - p1.Z);
 
             alpha = (float)((vdUP3D.X * (q.X - p1.X) + vdUP3D.Y * (q.Y - p1.Y) + vdUP3D.Z * (q.Z - p1.Z)) /
                             (Math.Pow(vdUP3D.X, 2) + Math.Pow(vdUP3D.Y, 2) + Math.Pow(vdUP3D.Z, 2)));
@@ -1652,7 +1702,10 @@ namespace KimeraCS.Core
             return alpha;
         }
 
-        public static Vector3 CalculatePoint2LineProjection(Vector3 q, Vector3 p1, Vector3 p2)
+        public static OpenTK.Mathematics.Vector3 CalculatePoint2LineProjection(
+            OpenTK.Mathematics.Vector3 q,
+            OpenTK.Mathematics.Vector3 p1,
+            OpenTK.Mathematics.Vector3 p2)
         {
             float alpha;
 
@@ -1668,7 +1721,7 @@ namespace KimeraCS.Core
         {
             bool bValidateVerts = true;
             int iGrpv0, iGrpv1, iGrpv2;
-            Vector3 p3Dv0, p3Dv1, p3Dv2;
+            OpenTK.Mathematics.Vector3 p3Dv0, p3Dv1, p3Dv2;
 
             if (iVCNP > 1)
             {
@@ -1732,7 +1785,8 @@ namespace KimeraCS.Core
         /// <summary>
         /// Creates a view matrix looking at a target (replaces gluLookAt)
         /// </summary>
-        public static Matrix4 CreateLookAtMatrix(Vector3 eye, Vector3 target, Vector3 up)
+        public static Matrix4 CreateLookAtMatrix(OpenTK.Mathematics.Vector3 eye,
+            OpenTK.Mathematics.Vector3 target, OpenTK.Mathematics.Vector3 up)
         {
             return Matrix4.LookAt(eye, target, up);
         }
@@ -1746,20 +1800,23 @@ namespace KimeraCS.Core
         /// <param name="projection">Projection matrix</param>
         /// <param name="viewport">Viewport (x, y, width, height)</param>
         /// <returns>Screen coordinates (x, y, depth)</returns>
-        public static Vector3 Project(Vector3 worldPos, Matrix4 model, Matrix4 view, Matrix4 projection, Vector4 viewport)
+        public static OpenTK.Mathematics.Vector3 Project(
+            OpenTK.Mathematics.Vector3 worldPos,
+            Matrix4 model, Matrix4 view, Matrix4 projection,
+            OpenTK.Mathematics.Vector4 viewport)
         {
-            Vector4 clipPos = new Vector4(worldPos, 1.0f) * model * view * projection;
+            var clipPos = new OpenTK.Mathematics.Vector4(worldPos, 1.0f) * model * view * projection;
 
             if (Math.Abs(clipPos.W) < float.Epsilon)
-                return Vector3.Zero;
+                return OpenTK.Mathematics.Vector3.Zero;
 
-            Vector3 ndc = clipPos.Xyz / clipPos.W;
+            OpenTK.Mathematics.Vector3 ndc = clipPos.Xyz / clipPos.W;
 
             float winX = viewport.Z * (ndc.X + 1.0f) / 2.0f + viewport.X;
             float winY = viewport.W * (ndc.Y + 1.0f) / 2.0f + viewport.Y;
             float winZ = (ndc.Z + 1.0f) / 2.0f;
 
-            return new Vector3(winX, winY, winZ);
+            return new OpenTK.Mathematics.Vector3(winX, winY, winZ);
         }
 
         /// <summary>
@@ -1771,23 +1828,24 @@ namespace KimeraCS.Core
         /// <param name="projection">Projection matrix</param>
         /// <param name="viewport">Viewport (x, y, width, height)</param>
         /// <returns>World coordinates</returns>
-        public static Vector3 Unproject(Vector3 screenPos, Matrix4 model, Matrix4 view, Matrix4 projection, Vector4 viewport)
+        public static OpenTK.Mathematics.Vector3 Unproject(OpenTK.Mathematics.Vector3 screenPos,
+            Matrix4 model, Matrix4 view, Matrix4 projection, OpenTK.Mathematics.Vector4 viewport)
         {
             // Use row-vector convention to match Project function: pos * M * V * P
             Matrix4 mvp = model * view * projection;
             Matrix4 invMvp = mvp.Inverted();
 
-            Vector4 ndc = new Vector4(
+            var ndc = new OpenTK.Mathematics.Vector4(
                 2.0f * (screenPos.X - viewport.X) / viewport.Z - 1.0f,
                 2.0f * (screenPos.Y - viewport.Y) / viewport.W - 1.0f,
                 2.0f * screenPos.Z - 1.0f,
                 1.0f);
 
             // Row vector multiplication: ndc * invMvp
-            Vector4 worldPos = ndc * invMvp;
+            OpenTK.Mathematics.Vector4 worldPos = ndc * invMvp;
 
             if (Math.Abs(worldPos.W) < float.Epsilon)
-                return Vector3.Zero;
+                return OpenTK.Mathematics.Vector3.Zero;
 
             return worldPos.Xyz / worldPos.W;
         }
@@ -1800,9 +1858,9 @@ namespace KimeraCS.Core
                                                      float scaleX, float scaleY, float scaleZ)
         {
             // Build rotation from quaternions (matching existing BuildRotationMatrixWithQuaternionsXYZ)
-            var quatX = Quaternion.FromAxisAngle(Vector3.UnitX, MathHelper.DegreesToRadians(alpha));
-            var quatY = Quaternion.FromAxisAngle(Vector3.UnitY, MathHelper.DegreesToRadians(beta));
-            var quatZ = Quaternion.FromAxisAngle(Vector3.UnitZ, MathHelper.DegreesToRadians(gamma));
+            var quatX = OpenTK.Mathematics.Quaternion.FromAxisAngle(OpenTK.Mathematics.Vector3.UnitX, MathHelper.DegreesToRadians(alpha));
+            var quatY = OpenTK.Mathematics.Quaternion.FromAxisAngle(OpenTK.Mathematics.Vector3.UnitY, MathHelper.DegreesToRadians(beta));
+            var quatZ = OpenTK.Mathematics.Quaternion.FromAxisAngle(OpenTK.Mathematics.Vector3.UnitZ, MathHelper.DegreesToRadians(gamma));
             var rotation = quatX * quatY * quatZ;
 
             Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(rotation);
@@ -1819,7 +1877,7 @@ namespace KimeraCS.Core
                                                          Quaterniond quat,
                                                          float scaleX, float scaleY, float scaleZ)
         {
-            var openTkQuat = new Quaternion((float)quat.X, (float)quat.Y, (float)quat.Z, (float)quat.W);
+            var openTkQuat = new OpenTK.Mathematics.Quaternion((float)quat.X, (float)quat.Y, (float)quat.Z, (float)quat.W);
 
             Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(openTkQuat);
             Matrix4 translationMatrix = Matrix4.CreateTranslation(cX, cY, cZ);
@@ -1852,6 +1910,30 @@ namespace KimeraCS.Core
                 mat.M31, mat.M32, mat.M33, mat.M34,
                 mat.M41, mat.M42, mat.M43, mat.M44
             };
+        }
+
+        /// <summary>
+        /// Converts an OpenTK Matrix4 to an Matrix4x4.
+        /// </summary>
+        public static Matrix4x4 ToMatrix4x4(Matrix4 m)
+        {
+            return new Matrix4x4(
+                m.M11, m.M21, m.M31, m.M41,
+                m.M12, m.M22, m.M32, m.M42,
+                m.M13, m.M23, m.M33, m.M43,
+                m.M14, m.M24, m.M34, m.M44);
+        }
+
+        /// <summary>
+        /// Converts a Matrix4x4 to an OpenTK Matrix4.
+        /// </summary>
+        public static Matrix4 ToMatrix4(Matrix4x4 m)
+        {
+            return new Matrix4(
+                m[0, 0], m[1, 0], m[2, 0], m[3, 0],
+                m[0, 1], m[1, 1], m[2, 1], m[3, 1],
+                m[0, 2], m[1, 2], m[2, 2], m[3, 2],
+                m[0, 3], m[1, 3], m[2, 3], m[3, 3]);
         }
 
 
@@ -1950,7 +2032,7 @@ namespace KimeraCS.Core
         /// <summary>
         /// Get projected coordinates (world to screen)
         /// </summary>
-        public static Vector3 GetProjectedCoords(Vector3 p)
+        public static OpenTK.Mathematics.Vector3 GetProjectedCoords(OpenTK.Mathematics.Vector3 p)
         {
             float[] mm = new float[16];
             float[] pm = new float[16];
@@ -1972,16 +2054,16 @@ namespace KimeraCS.Core
                 pm[8], pm[9], pm[10], pm[11],
                 pm[12], pm[13], pm[14], pm[15]);
 
-            Vector4 viewport = new Vector4(vp[0], vp[1], vp[2], vp[3]);
-            Vector3 result = Project(p, Matrix4.Identity, modelView, projection, viewport);
+            var viewport = new OpenTK.Mathematics.Vector4(vp[0], vp[1], vp[2], vp[3]);
+            var result = Project(p, Matrix4.Identity, modelView, projection, viewport);
 
-            return new Vector3(result.X, result.Y, result.Z);
+            return new OpenTK.Mathematics.Vector3(result.X, result.Y, result.Z);
         }
 
         /// <summary>
         /// Get unprojected coordinates (screen to world)
         /// </summary>
-        public static Vector3 GetUnProjectedCoords(Vector3 p)
+        public static OpenTK.Mathematics.Vector3 GetUnProjectedCoords(OpenTK.Mathematics.Vector3 p)
         {
             float[] mm = new float[16];
             float[] pm = new float[16];
@@ -2003,18 +2085,19 @@ namespace KimeraCS.Core
                 pm[8], pm[9], pm[10], pm[11],
                 pm[12], pm[13], pm[14], pm[15]);
 
-            Vector4 viewport = new Vector4(vp[0], vp[1], vp[2], vp[3]);
+            var viewport = new OpenTK.Mathematics.Vector4(vp[0], vp[1], vp[2], vp[3]);
             // Note: Y coordinate is flipped in screen space
-            Vector3 screenPos = new Vector3(p.X, vp[3] - p.Y, p.Z);
-            Vector3 result = Unproject(screenPos, Matrix4.Identity, modelView, projection, viewport);
+            var screenPos = new OpenTK.Mathematics.Vector3(p.X, vp[3] - p.Y, p.Z);
+            var result = Unproject(screenPos, Matrix4.Identity, modelView, projection, viewport);
 
-            return new Vector3(result.X, result.Y, result.Z);
+            return new OpenTK.Mathematics.Vector3(result.X, result.Y, result.Z);
         }
 
         /// <summary>
         /// Get projected vertex coordinates
         /// </summary>
-        public static Vector3 GetVertexProjectedCoords(Vector3[] lstVerts, int iVertIdx)
+        public static OpenTK.Mathematics.Vector3 GetVertexProjectedCoords(
+            OpenTK.Mathematics.Vector3[] lstVerts, int iVertIdx)
         {
             GL.Clear(ClearBufferMask.DepthBufferBit);
             return GetProjectedCoords(lstVerts[iVertIdx]);
@@ -2023,7 +2106,7 @@ namespace KimeraCS.Core
         /// <summary>
         /// Get depth Z of a point
         /// </summary>
-        public static float GetDepthZ(Vector3 pUP3D)
+        public static float GetDepthZ(OpenTK.Mathematics.Vector3 pUP3D)
         {
             return GetProjectedCoords(pUP3D).Z;
         }
@@ -2031,12 +2114,12 @@ namespace KimeraCS.Core
         /// <summary>
         /// Get eye space coordinates
         /// </summary>
-        public static Vector3 GetEyeSpaceCoords(Vector3 p)
+        public static OpenTK.Mathematics.Vector3 GetEyeSpaceCoords(OpenTK.Mathematics.Vector3 p)
         {
             float[] mm = new float[16];
             GL.GetFloat(GetPName.ModelviewMatrix, mm);
 
-            return new Vector3(
+            return new OpenTK.Mathematics.Vector3(
                 p.X * mm[0] + p.Y * mm[4] + p.Z * mm[8] + mm[12],
                 p.X * mm[1] + p.Y * mm[5] + p.Z * mm[9] + mm[13],
                 p.X * mm[2] + p.Y * mm[6] + p.Z * mm[10] + mm[14]);
@@ -2045,7 +2128,8 @@ namespace KimeraCS.Core
         /// <summary>
         /// Get vertex color with lighting applied
         /// </summary>
-        public static Color GetVertColor(Vector3 p, Vector3 n, Color c)
+        public static Color GetVertColor(OpenTK.Mathematics.Vector3 p, OpenTK.Mathematics.Vector3 n,
+            Color c)
         {
             byte[] pcolor = new byte[4];
             int[] vp0 = new int[4];

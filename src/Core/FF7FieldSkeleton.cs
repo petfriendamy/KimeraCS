@@ -35,14 +35,17 @@ namespace KimeraCS.Core
             public List<FieldBone> bones;
             public List<TEX> textures_pool;
 
-            public FieldSkeleton(string strfileName, bool loadGeometryQ, bool ignoreMissingPFiles,
-                                 bool repairPolys, bool removeTextureCoords)
+            public FieldSkeleton(string strfileName,
+                                 bool loadGeometryQ = true,
+                                 bool ignoreMissingPFiles = true,
+                                 bool repairPolys = false,
+                                 bool removeTextureCoords = false)
             {
                 string strFileDirectoryName = Path.GetDirectoryName(strfileName);
 
                 textures_pool = new List<TEX>();
 
-                fileName = Path.GetFileName(strfileName).ToUpper();
+                fileName = Path.GetFileNameWithoutExtension(strfileName).ToUpper();
 
                 // Let's read HRC file into memory.
                 string[] hrcString = File.ReadAllLines(strfileName);

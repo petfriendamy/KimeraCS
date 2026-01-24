@@ -36,7 +36,8 @@ dotnet run --project src/KimeraCS.csproj
 ```
 src/
 ├── Core/                    # Core utilities
-│   └── FF7*.cs              # File format handlers
+│   ├── FF7*.cs              # File format handlers
+│   └── ModelConverter.cs    # Converts FF7 file formats to and from other 3D formats using Assimp
 ├── Rendering/               # Modern rendering
 │   ├── GLRenderer.cs        # Modern OpenGL renderer with mesh caching
 │   ├── Mesh.cs              # GPU mesh classes (PModelMesh, GroupMesh, LineMesh, etc.)
@@ -316,3 +317,49 @@ GLRenderer.ModelMatrix = savedModel;
 ```
 
 **Functions that require this pattern:** `DrawBox`, `ShowNormals`, `SkeletonRenderer.RenderFieldSkeletonBones`, `SkeletonRenderer.RenderBattleSkeletonBones`
+
+## Model Export (ModelConverter.cs)
+
+### Assimp Integration
+The `ModelConverter` class uses AssimpNet to import/export 3D models in standard formats (FBX, glTF, etc.).
+
+### FF7 Rotation Order
+FF7 applies Euler rotations in **Z→X→Y order** (Z first, then X, then Y). This is implemented in `BuildRotationMatrixWithQuaternions` (Utils.cs) which does `(Y * X) * Z` in Hamilton quaternion convention.
+
+When converting to quaternions for export:
+```csharp
+// System.Numerics.Quaternion.Concatenate(a, b) means "apply a first, then b"
+var combined = Quaternion.Concatenate(
+    Quaternion.Concatenate(rotZ, rotX), rotY);  // Z first, X second, Y third
+```
+
+### Coordinate System Adjustments (bAdjust)
+When `bAdjust` is true, the following transformations are applied for export to glTF/Blender:
+
+| Component | Transformation | Reason |
+|-----------|----------------|--------|
+| Vertex X, Z | Negate both | 180° rotation around Y axis |
+| Vertex normals | No change | Keep original direction |
+| Winding order | Reverse {0,1,2} → {0,2,1} | Maintain correct face orientation |
+| Bone translation Z | Negate | Match vertex coordinate flip |
+| Root translation X, Z | Negate | Match vertex coordinate flip |
+| All bone rotations | Negate alpha (X) and gamma (Z) | Compensate for coordinate system change |
+| Armature static transform | 180° Z rotation | Orient model correctly in Blender |
+| Armature animation rotation | Apply 180° Z rotation to each keyframe | Animation overrides static transform |
+
+**Important:** Animation keyframes replace static node transforms during playback. Any rotation applied to the Armature's static transform must also be baked into each animation keyframe.
+
+### Field Skeleton Bone Hierarchy
+Field skeletons use `joint_i` (this bone's name) and `joint_f` (parent bone's name) for hierarchy:
+- **Root-level bones**: Those whose `joint_f` doesn't appear as any bone's `joint_i` (e.g., "root", "hip")
+
+### Animation Export
+Animation keyframes must include position keys that match the static bone transforms:
+- Root bones: Position at origin (0, 0, 0)
+- Child bones: Position at parent's bone length along Z axis (direction depends on bAdjust)
+
+The 180° Z rotation is applied to Armature animation keyframes like this:
+```csharp
+var rot180Z = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, (float)Math.PI);
+rootQuat = Quaternion.Concatenate(rootQuat, rot180Z);
+```

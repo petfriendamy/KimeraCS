@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using OpenTK.Mathematics;
+using OpenTK.Windowing.Common;
 using KimeraCS.Core;
 
 namespace KimeraCS
@@ -19,7 +20,7 @@ namespace KimeraCS
     using static FF7PModel;
     using static FF7Skeleton;
     using static FileTools;
-    using static Model_3DS;
+    using static ModelConverter;
     using static UndoRedoPE;
     using static Utils;
 
@@ -144,6 +145,8 @@ namespace KimeraCS
             Owner = frmSkelEdit;
 
             EditedPModel = CopyPModel(ModelIn);
+
+            panelEditorPModel.Profile = ContextProfile.Compatability; //force compatibility mode
         }
 
 
@@ -156,7 +159,7 @@ namespace KimeraCS
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Lequal);
 
-            SetBlendMode(BlendMode.None);
+            SetBlendMode(Core.BlendMode.None);
 
             GL.CullFace(TriangleFace.Front);
             GL.Enable(EnableCap.CullFace);
@@ -1455,7 +1458,7 @@ namespace KimeraCS
 
             // Set filter options and filter index.
             openFile.Title = "Open Model (PEditor)";
-            openFile.Filter = "FF7 Field Model|*.P|FF7 Battle Model (*.*)|*.*|FF7 Magic Model|*.P??|FF7 3DS Model|*.3DS|All files|*.*";
+            openFile.Filter = $"FF7 Field Model|*.P|FF7 Battle Model (*.*)|*.*|FF7 Magic Model|*.P??|{GetFileFilter()}|All files|*.*";
 
             if (iPEFilterIdx == -1)
             {
@@ -1503,16 +1506,17 @@ namespace KimeraCS
 
                         WriteCFGFile();
 
-                        // Load the Model (We need to check if we have a .3DS or a .P file
+                        // Load the Model (We need to check if we have an Assimp-supported format or a .P file)
                         tmpFileName = EditedPModel.fileName;
 
                         DestroyPModelResources(ref EditedPModel);
                         EditedPModel = new PModel();
 
-                        if (Path.GetExtension(openFile.FileName).ToUpper() == ".3DS")
+                        if (IsValidImport(openFile.FileName))
                         {
-                            Load3DS(openFile.FileName, out Model3DS[] tmpModel3DS);
-                            ConvertModels3DSToPModel(tmpModel3DS, ref EditedPModel, bAdjust3DSImport);
+                            // Use Assimp for 3D model formats
+                            var scene = LoadSceneFromFile(openFile.FileName);
+                            ConvertSceneToPModel(scene, ref EditedPModel, bAdjust3DSImport);
                         }
                         else
                         {
@@ -1557,7 +1561,7 @@ namespace KimeraCS
 
             // Set filter options and filter index.
             openFile.Title = "Open Model as new Group (PEditor)";
-            openFile.Filter = "FF7 Field Model|*.P|FF7 Battle Model (*.*)|*.*|FF7 Magic Model|*.P??|FF7 3DS Model|*.3DS|All files|*.*";
+            openFile.Filter = $"FF7 Field Model|*.P|FF7 Battle Model (*.*)|*.*|FF7 Magic Model|*.P??|{GetFileFilter()}|All files|*.*";
 
             if (iPEFilterIdx == -1)
             {
@@ -1605,13 +1609,15 @@ namespace KimeraCS
 
                         WriteCFGFile();
 
-                        // Load the Model (We need to check if we have a .3DS or a .P file
+                        // Load the Model (We need to check if we have an Assimp-supported format or a .P file)
                         GroupModel = new PModel();
 
-                        if (Path.GetExtension(openFile.FileName).ToUpper() == ".3DS")
+                        bool isAssimpFormat = IsValidImport(openFile.FileName);
+                        if (isAssimpFormat)
                         {
-                            Load3DS(openFile.FileName, out Model3DS[] tmpModel3DS);
-                            ConvertModels3DSToPModel(tmpModel3DS, ref GroupModel, bAdjust3DSImport);
+                            // Use Assimp for 3D model formats
+                            var scene = LoadSceneFromFile(openFile.FileName);
+                            ConvertSceneToPModel(scene, ref GroupModel, bAdjust3DSImport);
                         }
                         else
                         {
@@ -1656,10 +1662,9 @@ namespace KimeraCS
                                     EditedPModel.Hundrets[iEditedPModelGroupIdx] = CopyPHundret(GroupModel.Hundrets[iGroupIdx]);
                                 }
 
-                                // We need to adjust the 3DS here also, because we are adding a new
+                                // We need to adjust for Assimp formats here also, because we are adding a new
                                 // Group to the main .P EditedPModel, and the rotGroupGamma would be 0.
-                                if (Path.GetExtension(openFile.FileName).ToUpper() == ".3DS" &&
-                                    bAdjust3DSImport)
+                                if (isAssimpFormat && bAdjust3DSImport)
                                 {
                                     EditedPModel.Groups[iEditedPModelGroupIdx].rotGroupGamma = 180;
                                 }
@@ -1698,7 +1703,8 @@ namespace KimeraCS
         {
             // Set filter options and filter index.
             saveFile.Title = "Save Model As... (PEditor)";
-            saveFile.Filter = "FF7 Field Model|*.P|FF7 Battle Model (*.*)|*.*|FF7 Magic Model (*.P??)|*.P??|All files|*.*";
+            //P model exports don't work well, so I'm disabling it for now
+            saveFile.Filter = $"FF7 Field Model|*.P|FF7 Battle Model (*.*)|*.*|FF7 Magic Model (*.P??)|*.P??"; //|{GetExportFileFilter()}";
 
             switch (modelType)
             {
@@ -1738,7 +1744,12 @@ namespace KimeraCS
                         saveFile.FileName = strGlobalPathSaveModelFolderPE + "\\" + Path.GetFileName(saveFile.FileName).ToUpper();
 
                         // We save the Model.
-                        WriteGlobalPModel(ref EditedPModel, saveFile.FileName);
+                        if (IsValidExport(saveFile.FileName))
+                        {
+                            bool result = ExportPModel(fPModel, saveFile.FileName, true);
+                        }
+                        else
+                            WriteGlobalPModel(ref EditedPModel, saveFile.FileName);
 
                         MessageBox.Show("Model part " + Path.GetFileName(saveFile.FileName).ToUpper() + " of P Editor saved.",
                                         "Information");

@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using KimeraCS.Core;
+using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
-using KimeraCS.Core;
 
+#nullable enable
 namespace KimeraCS
 {
     using static FF7BattleSkeleton;
@@ -94,7 +95,8 @@ namespace KimeraCS
             switch (modelType)
             {
                 case ModelType.K_HRC_SKELETON:
-                    fAnimation = GetFieldAnimationFromFolder(ref fSkeleton, Path.GetDirectoryName(strFileName));
+                    var dirName = Path.GetDirectoryName(strFileName);
+                    fAnimation = GetFieldAnimationFromFolder(ref fSkeleton, dirName ?? string.Empty);
                     strGlobalFieldAnimationName = fAnimation.strFieldAnimationFile;
                     FieldSkeletonPolyCheck(ref fSkeleton);
                     break;
@@ -111,19 +113,19 @@ namespace KimeraCS
             return result;
         }
 
-        public static int LoadSkeletonFromDB(string strFileName, string strAnimFileName, bool loadGeometryQ)
+        public static int LoadSkeletonFromDB(string strFileName, string strAnimFileName)
         {
             int result;
             bool isLimitBreak = CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strFileName).ToUpper());
             try
             {
-                result = FF7Skeleton.LoadSkeletonFromDB(strFileName, strAnimFileName, loadGeometryQ, isLimitBreak,
+                result = FF7Skeleton.LoadSkeletonFromDB(strFileName, strAnimFileName, true, isLimitBreak,
                                                  false, false, TEXTURE_REMOVE_CHECK);
             }
             catch (PFileNotFoundException ex) //missing P files
             {
                 if (MissingPFilePrompt(ex.Message))
-                    result = FF7Skeleton.LoadSkeletonFromDB(strFileName, strAnimFileName, loadGeometryQ, isLimitBreak,
+                    result = FF7Skeleton.LoadSkeletonFromDB(strFileName, strAnimFileName, true, isLimitBreak,
                                                      false, false, TEXTURE_REMOVE_CHECK);
                 else
                     throw new FileLoadException("File could not be loaded.", ex);
@@ -174,7 +176,8 @@ namespace KimeraCS
                 else
                     throw new FileLoadException("File could not be loaded.", ex);
             }
-            fAnimation = GetFieldAnimationFromFolder(ref fSkeleton, Path.GetDirectoryName(strfileName));
+            var dirName = Path.GetDirectoryName(strfileName);
+            fAnimation = GetFieldAnimationFromFolder(ref fSkeleton, dirName ?? string.Empty);
             strGlobalFieldAnimationName = Path.GetFileName(fAnimation.strFieldAnimationFile);
             FieldSkeletonPolyCheck(ref fSkeleton);
             return fSkeleton;
@@ -274,18 +277,24 @@ namespace KimeraCS
 
         public static bool TextureCoordinateCheck(ref PModel pModel)
         {
-            for (int i = 0; i < pModel.Groups.Length; ++i)
+            if (pModel.Groups != null)
             {
-                if (TextureCoordinateCheck(ref pModel, i))
-                    return true;
+                for (int i = 0; i < pModel.Groups.Length; ++i)
+                {
+                    if (TextureCoordinateCheck(ref pModel, i))
+                        return true;
+                }
             }
             return false;
         }
 
         public static bool TextureCoordinateCheck(ref PModel pModel, int index)
         {
-            if (pModel.Groups[index].texID > 0)
-                return RemoveTextureCoordsPrompt(index);
+            if (pModel.Groups != null)
+            {
+                if (pModel.Groups[index].texID > 0)
+                    return RemoveTextureCoordsPrompt(index);
+            }
             return false;
         }
     }

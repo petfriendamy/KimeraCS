@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
 using OpenTK.Mathematics;
+using OpenTK.Windowing.Common;
 using KimeraCS.Core;
 using KimeraCS.Rendering;
 
@@ -26,7 +27,7 @@ namespace KimeraCS
     using static FileTools;
     using static FrmPEditor;
     using static InputBoxCS;
-    using static Model_3DS;
+    using static ModelConverter;
     using static ModelDrawing;
     using static UndoRedo;
     using static Utils;
@@ -145,6 +146,8 @@ namespace KimeraCS
             InitializeComponent();
 
             strGlobalPath = Application.StartupPath;
+
+            panelModel.Profile = ContextProfile.Compatability; //force compatibility mode
         }
 
         /////////////////////////////////////////////////////////////
@@ -157,7 +160,7 @@ namespace KimeraCS
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Lequal);
 
-            SetBlendMode(BlendMode.None);
+            SetBlendMode(Core.BlendMode.None);
 
             GL.CullFace(TriangleFace.Front);
             GL.Enable(EnableCap.CullFace);
@@ -2228,7 +2231,7 @@ namespace KimeraCS
 
             // Set filter options and filter index.
             openFile.Title = "Open Model";
-            openFile.Filter = "FF7 Field Model|*.P|FF7 Battle Model (*.*)|*.*|FF7 Magic Model|*.P??|All files|*.*";
+            openFile.Filter = "FF7 Field Model|*.P|FF7 Battle Model (*.*)|*.*|FF7 Magic Model|*.P??";
             openFile.FilterIndex = 4;
             openFile.FileName = null;
 
@@ -2329,10 +2332,10 @@ namespace KimeraCS
             if (CheckChangesCommittedPEditor()) return;
 
             // Set filter options and filter index.
-            openFile.Title = "Load 3DS Model";
-            openFile.Filter = "FF7 3DS Model|*.3DS|All files|*.*";
+            openFile.Title = "Load External Model";
+            openFile.Filter = $"{GetFileFilter()}|All files|*.*";
             openFile.FilterIndex = 1;
-            openFile.FileName = null;
+            openFile.FileName = string.Empty;
 
             // Check Initial Directory
             if (strGlobalPath3DSModelFolder != null)
@@ -2376,44 +2379,177 @@ namespace KimeraCS
                         strGlobalPath3DSModelFolder = Path.GetDirectoryName(openFile.FileName);
                         strGlobal3DSModelName = Path.GetFileName(openFile.FileName).ToUpper();
 
-                        // We load the 3DS model into memory.
-                        fPModel = new PModel();
-
-                        Load3DS(openFile.FileName, out Model3DS[] model3DS);
-                        ConvertModels3DSToPModel(model3DS, ref fPModel, bAdjust3DSImport);
-
-                        ComputeNormals(ref fPModel);
-                        ComputeEdges(ref fPModel);
-                        ComputeBoundingBox(ref fPModel);
-
-                        if (fPModel.Header.numVerts > 0)
+                        // We load the 3D model into memory using Assimp.
+                        var scene = LoadSceneFromFile(openFile.FileName);
+                        if (scene != null && scene.HasMeshes)
                         {
-                            modelType = ModelType.K_3DS_MODEL;
+                            bool modelLoaded = false;
+                            var type = ModelType.K_3DS_MODEL;
 
-                            // Enable/Make Visible Win Forms Data controls
-                            EnableWinFormsDataControls();
+                            DialogResult result;
+                            using (var chooser = new frmChooseModelType())
+                            {
+                                result = chooser.ShowDialog();
+                                type = chooser.ModelType;
+                            }
 
-                            ComputePModelBoundingBox(fPModel, ref p_min, ref p_max);
-                            diameter = ComputeDiameter(fPModel.BoundingBox);
+                            if (result != DialogResult.OK)
+                                return;
+                                
+                            if (type != ModelType.K_NONE)
+                            {
+                                modelType = type;
 
-                            // Set frame values in frame editor groupbox...
-                            SetFrameEditorFields();
+                                //field skeleton
+                                if (type == ModelType.K_HRC_SKELETON)
+                                {
+                                    fSkeleton = ConvertSceneToFieldSkeleton(scene, openFile.FileName, bAdjust3DSImport);
+                                    fAnimation = ExtractFieldAnimationFromScene(scene, fSkeleton, openFile.FileName, bAdjust3DSImport);
 
-                            // Set texture values in texture editor groupbox...
-                            SetTextureEditorFields();
+                                    strGlobalFieldSkeletonName = fSkeleton.name;
+                                    strGlobalFieldAnimationName = fAnimation.strFieldAnimationFile;
 
-                            // PostLoadModelPreparations
-                            PostLoadModelPreparations(ref p_min, ref p_max);
+                                    ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[0], ref p_min, ref p_max);
+                                    diameter = ComputeFieldDiameter(fSkeleton);
+                                }
+                                //P model (3DS)
+                                else if (type == ModelType.K_3DS_MODEL)
+                                {
+                                    fPModel = new PModel();
+                                    ConvertSceneToPModel(scene, ref fPModel, bAdjust3DSImport);
 
-                            // We can draw the model in panel
-                            PanelModel_Paint(null, null);
+                                    ComputeNormals(ref fPModel);
+                                    ComputeEdges(ref fPModel);
+                                    ComputeBoundingBox(ref fPModel);
+
+                                    if (fPModel.Header.numVerts > 0)
+                                    {
+                                        ComputePModelBoundingBox(fPModel, ref p_min, ref p_max);
+                                        diameter = ComputeDiameter(fPModel.BoundingBox);
+
+                                        modelLoaded = true;
+                                    }
+                                }
+                                //battle skeleton
+                                else
+                                {
+                                    bool animLoaded = false, insertNew = false;
+                                    int animIndex = 0;
+
+                                    var tmpSkeleton = ConvertSceneToBattleSkeleton(scene, openFile.FileName, bAdjust3DSImport);
+
+                                    if (!tmpSkeleton.IsBattleLocation)
+                                    {
+                                        result = MessageBox.Show("Load over an existing model to preserve battle animations?", "Question", MessageBoxButtons.YesNo);
+                                        if (result == DialogResult.Yes)
+                                        {
+                                            bool loaded = false, valid = false;
+                                            while (!valid)
+                                            {
+                                                if (type == ModelType.K_AA_SKELETON)
+                                                {
+                                                    frmBattleDatabase.ShowDialog();
+                                                    loaded = FrmBattleDB.bSelectedBattleFileFromDB;
+                                                    if (loaded)
+                                                    {
+                                                        LoadSkeletonFromBattleDB(FrmBattleDB.strBattleFile, FrmBattleDB.strBattleAnimFile, false);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    frmMagicDatabase.ShowDialog();
+                                                    loaded = FrmMagicDB.bSelectedMagicFileFromDB;
+                                                    if (loaded)
+                                                    {
+                                                        LoadSkeletonFromBattleDB(FrmMagicDB.strMagicFile, FrmMagicDB.strMagicAnimFile, false);
+                                                    }
+                                                }
+
+                                                if (loaded && bSkeleton.nBones != tmpSkeleton.nBones)
+                                                {
+                                                    MessageBox.Show("The selected skeleton has an incorrect number of bones.", "Error");
+                                                }
+                                                else
+                                                    valid = true;
+                                            }
+
+                                            if (loaded && scene.HasAnimations)
+                                            {
+                                                using (var insert = new frmBattleAnimationImport(bSkeleton.nsSkeletonAnims))
+                                                {
+                                                    if (insert.ShowDialog() == DialogResult.OK)
+                                                    {
+                                                        animIndex = insert.AnimationPosition;
+                                                        insertNew = insert.InsertNew;
+                                                        animLoaded = true;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    bSkeleton = tmpSkeleton;
+
+                                    if (scene.HasAnimations)
+                                    {
+                                        //if no animation was loaded, create an empty battle animations pack
+                                        if (!animLoaded)
+                                        {
+                                            bAnimationsPack = new BattleAnimationsPack(bSkeleton, string.Empty);
+                                            bAnimationsPack.strAnimsPackFullFileName = openFile.FileName;
+                                            bAnimationsPack.strBattleAnimPackFileName = Path.GetFileName(openFile.FileName);
+                                        }
+
+                                        //load the animation from the scene
+                                        if (scene.HasAnimations)
+                                            ExtractBattleAnimationsFromScene(scene, ref bSkeleton, ref bAnimationsPack,
+                                                animIndex, insertNew, bAdjust3DSImport);
+                                    }
+
+                                    if (type == ModelType.K_AA_SKELETON)
+                                    {
+                                        strGlobalBattleSkeletonName = bSkeleton.fileName;
+                                        strGlobalBattleAnimationName = bAnimationsPack.strBattleAnimPackFileName;
+                                    }
+                                    else
+                                    {
+                                        strGlobalMagicSkeletonName = bSkeleton.fileName;
+                                        strGlobalMagicAnimationName = bAnimationsPack.strBattleAnimPackFileName;
+                                    }
+
+                                    ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[0].frames[0], ref p_min, ref p_max);
+                                    diameter = ComputeBattleDiameter(bSkeleton);
+                                }
+                                modelLoaded = true;
+                            }
+
+                            if (modelLoaded)
+                            {
+                                // Enable/Make Visible Win Forms Data controls
+                                EnableWinFormsDataControls();
+
+                                // Set frame values in frame editor groupbox...
+                                SetFrameEditorFields();
+
+                                // Set texture values in texture editor groupbox...
+                                SetTextureEditorFields();
+
+                                // PostLoadModelPreparations
+                                PostLoadModelPreparations(ref p_min, ref p_max);
+
+                                // We can draw the model in panel
+                                PanelModel_Paint(null, null);
+                            }
+                        }
+                        else
+                        {
+                            throw new ArgumentNullException();
                         }
                     }
                 }
             }
             catch
             {
-                MessageBox.Show("Error opening .3DS file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
+                MessageBox.Show("Error opening 3D model file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
                                 "Error");
                 return;
             }
@@ -2620,7 +2756,7 @@ namespace KimeraCS
                         {
                             mergeBones = (MessageBox.Show("Merge multi PModels bones in a single file?", "Confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes);
                         }
-                        iSaveResult = WriteSkeleton(saveFileName, mergeBones);
+                        iSaveResult = WriteSkeleton(saveFileName, mergeBones, false);
                     }
 
                     if (iSaveResult == 1)
@@ -2668,7 +2804,7 @@ namespace KimeraCS
                     if (IsRSDResource)
                     {
                         saveFile.Title = "Save RSD Resource As...";
-                        saveFile.Filter = "RSD Resource|*.RSD|All files|*.*";
+                        saveFile.Filter = "RSD Resource|*.RSD";
 
                         if (strGlobalPathRSDResourceFolder == "")
                             strGlobalPathSaveSkeletonFolder = strGlobalPathRSDResourceFolder;
@@ -2679,7 +2815,7 @@ namespace KimeraCS
                     else
                     {
                         saveFile.Title = "Save Field Skeleton As...";
-                        saveFile.Filter = "Field Skeleton|*.HRC|All files|*.*";
+                        saveFile.Filter = $"Field Skeleton|*.HRC|{GetSkeletonExportFileFilter()}";
 
                         if (strGlobalPathSaveSkeletonFolder == "")
                             strGlobalPathSaveSkeletonFolder = strGlobalPathFieldSkeletonFolder;
@@ -2692,7 +2828,7 @@ namespace KimeraCS
 
                 case ModelType.K_AA_SKELETON:
                     saveFile.Title = "Save Battle Skeleton As...";
-                    saveFile.Filter = "Battle Skeleton|*AA|All files|*.*";
+                    saveFile.Filter = $"Battle Skeleton|*AA|{GetSkeletonExportFileFilter()}";
 
                     if (strGlobalPathSaveSkeletonFolder == "")
                         strGlobalPathSaveSkeletonFolder = strGlobalPathBattleSkeletonFolder;
@@ -2704,7 +2840,7 @@ namespace KimeraCS
 
                 case ModelType.K_MAGIC_SKELETON:
                     saveFile.Title = "Save Magic Skeleton As...";
-                    saveFile.Filter = "Magic Skeleton|*.D|All files|*.*";
+                    saveFile.Filter = $"Magic Skeleton|*.D|{GetSkeletonExportFileFilter()}";
 
                     if (strGlobalPathSaveSkeletonFolder == "")
                         strGlobalPathSaveSkeletonFolder = strGlobalPathMagicSkeletonFolder;
@@ -2719,7 +2855,8 @@ namespace KimeraCS
                 case ModelType.K_P_MAGIC_MODEL:
                 case ModelType.K_3DS_MODEL:
                     saveFile.Title = "Save Model As...";
-                    saveFile.Filter = "Field Model|*.P|Battle Model|*.*|Magic Model|*.P??|All files|*.*";
+                    //P model exports don't work well, so I'm disabling it for now
+                    saveFile.Filter = $"Field Model|*.P|Battle Model|*.*|Magic Model|*.P??"; //|{GetExportFileFilter()}";
 
                     if (strGlobalPathSaveModelFolder == "")
                         strGlobalPathSaveModelFolder = strGlobalPathPModelFolder;
@@ -2734,6 +2871,7 @@ namespace KimeraCS
             }
 
             saveFile.FilterIndex = 1;
+            bool isExport = false;
 
             if (modelTypeStr == "Model") saveFile.InitialDirectory = strGlobalPathSaveModelFolder;
             else saveFile.InitialDirectory = strGlobalPathSaveSkeletonFolder;
@@ -2745,6 +2883,8 @@ namespace KimeraCS
                 {
                     if (bLoaded)
                     {
+                        isExport = IsValidExport(saveFile.FileName);
+
                         // I don't think it is needed when saving
                         //AddStateToBuffer(this);
 
@@ -2753,6 +2893,15 @@ namespace KimeraCS
                             case ModelType.K_HRC_SKELETON:
                             case ModelType.K_AA_SKELETON:
                             case ModelType.K_MAGIC_SKELETON:
+                                if (isExport)
+                                {
+                                    if (!(modelType == ModelType.K_AA_SKELETON && bSkeleton.IsBattleLocation))
+                                    {
+                                        if (MessageBox.Show("The skeleton will be exported with the currently selected animation.",
+                                        "Information", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
+                                            return;
+                                    }
+                                }
                                 // Prepare Path
                                 strGlobalPathSaveSkeletonFolder = Path.GetDirectoryName(saveFile.FileName);
                                 saveFile.FileName = strGlobalPathSaveSkeletonFolder + "\\" + Path.GetFileName(saveFile.FileName).ToUpper();
@@ -2772,9 +2921,8 @@ namespace KimeraCS
                                     {
                                         mergeBones = (MessageBox.Show("Merge multi PModels bones in a single file?", "Confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes);
                                     }
-                                    iSaveResult = WriteSkeleton(saveFile.FileName, mergeBones);
+                                    iSaveResult = WriteSkeleton(saveFile.FileName, mergeBones, isExport);
                                 }
-
                                 if (iSaveResult == 1)
                                 {
                                     MessageBox.Show(modelTypeStr + " " + Path.GetFileName(saveFile.FileName).ToUpper() + " saved.",
@@ -2797,7 +2945,13 @@ namespace KimeraCS
                                 saveFile.FileName = strGlobalPathSaveModelFolder + "\\" + Path.GetFileName(saveFile.FileName).ToUpper();
 
                                 // We save the Model.
-                                iSaveResult = WritePModel(saveFile.FileName);
+                                if (isExport)
+                                {
+                                    bool result = ExportPModel(fPModel, saveFile.FileName, true);
+                                    iSaveResult = (result ? 1 : 0);
+                                }
+                                else
+                                    iSaveResult = WritePModel(saveFile.FileName);
 
                                 if (iSaveResult == 1)
                                 {
@@ -2813,7 +2967,8 @@ namespace KimeraCS
                     bChangesDone = false;
                     UpdateMainSkeletonWindowTitle();
 
-                    SetBoneModifiers();
+                    if (!isExport)
+                        SetBoneModifiers();
 
                     PanelModel_Paint(null, null);
                 }
@@ -4071,7 +4226,7 @@ namespace KimeraCS
         {
             if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
 
-            if (Int32.TryParse(txtResizePieceX.Text, out int iResizePieceX))
+            if (int.TryParse(txtResizePieceX.Text, out int iResizePieceX))
             {
                 if (iResizePieceX >= 0 && iResizePieceX <= 400)
                     hsbResizePieceX.Value = iResizePieceX;
@@ -4086,7 +4241,7 @@ namespace KimeraCS
         {
             if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
 
-            if (Int32.TryParse(txtResizePieceY.Text, out int iResizePieceY))
+            if (int.TryParse(txtResizePieceY.Text, out int iResizePieceY))
             {
                 if (iResizePieceY >= 0 && iResizePieceY <= 400)
                     hsbResizePieceY.Value = iResizePieceY;
@@ -4101,7 +4256,7 @@ namespace KimeraCS
         {
             if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
 
-            if (Int32.TryParse(txtResizePieceZ.Text, out int iResizePieceZ))
+            if (int.TryParse(txtResizePieceZ.Text, out int iResizePieceZ))
             {
                 if (iResizePieceZ >= 0 && iResizePieceZ <= 400)
                     hsbResizePieceZ.Value = iResizePieceZ;
@@ -4116,7 +4271,7 @@ namespace KimeraCS
         {
             if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
 
-            if (Int32.TryParse(txtRepositionX.Text, out int iRepositionX))
+            if (int.TryParse(txtRepositionX.Text, out int iRepositionX))
             {
                 if (iRepositionX >= -500 && iRepositionX <= 500)
                     hsbRepositionX.Value = iRepositionX;
@@ -4130,7 +4285,7 @@ namespace KimeraCS
         {
             if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
 
-            if (Int32.TryParse(txtRepositionY.Text, out int iRepositionY))
+            if (int.TryParse(txtRepositionY.Text, out int iRepositionY))
             {
                 if (iRepositionY >= -500 && iRepositionY <= 500)
                     hsbRepositionY.Value = iRepositionY;
@@ -4144,7 +4299,7 @@ namespace KimeraCS
         {
             if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
 
-            if (Int32.TryParse(txtRepositionZ.Text, out int iRepositionZ))
+            if (int.TryParse(txtRepositionZ.Text, out int iRepositionZ))
             {
                 if (iRepositionZ >= -500 && iRepositionZ <= 500)
                     hsbRepositionZ.Value = iRepositionZ;
@@ -4158,7 +4313,7 @@ namespace KimeraCS
         {
             if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
 
-            if (Int32.TryParse(txtRotateAlpha.Text, out int iRotateAlpha))
+            if (int.TryParse(txtRotateAlpha.Text, out int iRotateAlpha))
             {
                 if (iRotateAlpha >= 0 && iRotateAlpha <= 360)
                     hsbRotateAlpha.Value = iRotateAlpha;
@@ -4172,7 +4327,7 @@ namespace KimeraCS
         {
             if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
 
-            if (Int32.TryParse(txtRotateBeta.Text, out int iRotateBeta))
+            if (int.TryParse(txtRotateBeta.Text, out int iRotateBeta))
             {
                 if (iRotateBeta >= 0 && iRotateBeta <= 360)
                     hsbRotateBeta.Value = iRotateBeta;
@@ -4186,7 +4341,7 @@ namespace KimeraCS
         {
             if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
 
-            if (Int32.TryParse(txtRotateGamma.Text, out int iRotateGamma))
+            if (int.TryParse(txtRotateGamma.Text, out int iRotateGamma))
             {
                 if (iRotateGamma >= 0 && iRotateGamma <= 360)
                     hsbRotateGamma.Value = iRotateGamma;
@@ -4393,7 +4548,6 @@ namespace KimeraCS
         {
 
             PModel AdditionalP;
-            int iResult;
 
             if (modelType != ModelType.K_HRC_SKELETON && modelType != ModelType.K_AA_SKELETON && modelType != ModelType.K_MAGIC_SKELETON)
             {
@@ -4403,7 +4557,7 @@ namespace KimeraCS
 
             // Set filter options and filter index.
             openFile.Title = "Add Piece";
-            openFile.Filter = "FF7 Field Part file|*.P|FF7 Battle Part file|*.*|FF7 Magic Part file|*.P*|3D Studio model|*.3DS";
+            openFile.Filter = $"FF7 Field Part file|*.P|FF7 Battle Part file|*.*|FF7 Magic Part file|*.P*|{GetFileFilter()}";
 
             switch (modelType)
             {
@@ -4445,22 +4599,18 @@ namespace KimeraCS
 
                         AdditionalP = new PModel();
 
-                        if (Path.GetExtension(openFile.FileName).ToUpper() == ".3DS")
+                        if (IsValidImport(openFile.FileName))
                         {
-                            iResult = Load3DS(openFile.FileName, out Model3DS[] models3DS_auxV);
-
-                            if (iResult == 1)
+                            // Use Assimp for 3D model formats
+                            var scene = LoadSceneFromFile(openFile.FileName);
+                            if (scene != null)
                             {
-                                ConvertModels3DSToPModel(models3DS_auxV, ref AdditionalP, bAdjust3DSImport);
-
-                                ComputeNormals(ref AdditionalP);
-                                ComputeEdges(ref AdditionalP);
-                                ComputeBoundingBox(ref AdditionalP);
+                                ConvertSceneToPModel(scene, ref AdditionalP, bAdjust3DSImport);
                             }
-
                         }
                         else
                         {
+                            // Use native P-model loader for FF7 formats
                             UserPrompts.PModelLoader(ref AdditionalP, strGlobalPathPartModelFolder, strGlobalPartModelName, true);
                         }
 
@@ -5608,7 +5758,7 @@ namespace KimeraCS
                          "Number of frames to interpolate between each frame:",
                          ref numInterpolatedFramesStr) == DialogResult.OK)
             {
-                if (!Int32.TryParse(numInterpolatedFramesStr, out numInterpolatedFrames))
+                if (!int.TryParse(numInterpolatedFramesStr, out numInterpolatedFrames))
                 {
                     MessageBox.Show("The value entered is not valid.", "Error");
                     return;
@@ -5772,7 +5922,7 @@ namespace KimeraCS
                          "Number of frames to interpolate between each frame:",
                          ref numInterpolatedFramesStr) == DialogResult.OK)
             {
-                if (!Int32.TryParse(numInterpolatedFramesStr, out numInterpolatedFrames))
+                if (!int.TryParse(numInterpolatedFramesStr, out numInterpolatedFrames))
                 {
                     MessageBox.Show("The value entered is not valid.", "Error");
                     return;
@@ -6331,7 +6481,7 @@ namespace KimeraCS
         private void CbWeapon_SelectedIndexChanged(object sender, EventArgs e)
         {
             ianimWeaponIndex = -1;
-            if (cbWeapon.Text != "EMPTY") ianimWeaponIndex = Int32.Parse(cbWeapon.Text);
+            if (cbWeapon.Text != "EMPTY") ianimWeaponIndex = int.Parse(cbWeapon.Text);
 
             PanelModel_Paint(null, null);
         }
@@ -6339,7 +6489,7 @@ namespace KimeraCS
 
         private void CbBattleAnimation_SelectedIndexChanged(object sender, EventArgs e)
         {
-            ianimIndex = Int32.Parse(cbBattleAnimation.Text);
+            ianimIndex = int.Parse(cbBattleAnimation.Text);
 
             bDontRefreshPicture = true;
 
@@ -6430,6 +6580,7 @@ namespace KimeraCS
             try
             {
                 // Set Global Paths
+                strGlobalFieldSkeletonFileName = FrmFieldDB.strFieldFile;
                 strGlobalFieldSkeletonName = Path.GetFileName(FrmFieldDB.strFieldFile).ToUpper();
                 strGlobalFieldAnimationName = Path.GetFileName(FrmFieldDB.strAnimFile).ToUpper();
 
@@ -6443,7 +6594,7 @@ namespace KimeraCS
                 InitializeWinFormsDataControls();
 
                 // Load Field Skeleton
-                iLoadResult = UserPrompts.LoadSkeletonFromDB(FrmFieldDB.strFieldFile, FrmFieldDB.strAnimFile, true);
+                iLoadResult = UserPrompts.LoadSkeletonFromDB(FrmFieldDB.strFieldFile, FrmFieldDB.strAnimFile);
 
                 // Error messages
                 ShowDBErrorMessages(iLoadResult, FrmFieldDB.strFieldFile);
@@ -6475,7 +6626,7 @@ namespace KimeraCS
             }
         }
 
-        private void LoadSkeletonFromBattleDB(string strfileNameModel, string strfileNameAnim)
+        private void LoadSkeletonFromBattleDB(string strfileNameModel, string strfileNameAnim, bool showModel = true)
         {
             Vector3 p_min = new Vector3();
             Vector3 p_max = new Vector3();
@@ -6487,10 +6638,6 @@ namespace KimeraCS
 
             try
             {
-                // Set Global Paths
-                strGlobalBattleSkeletonName = Path.GetFileName(strfileNameModel).ToUpper();
-                strGlobalBattleAnimationName = Path.GetFileName(strfileNameAnim).ToUpper();
-
                 // Initialize OpenGL Context;
                 //InitOpenGLContext();
 
@@ -6501,35 +6648,51 @@ namespace KimeraCS
                 InitializeWinFormsDataControls();
 
                 // Load Battle Skeleton
-                iLoadResult = UserPrompts.LoadSkeletonFromDB(strfileNameModel, strfileNameAnim, true);
+                iLoadResult = UserPrompts.LoadSkeletonFromDB(strfileNameModel, strfileNameAnim);
 
                 // Error messages
                 ShowDBErrorMessages(iLoadResult, strfileNameModel);
                 if (iLoadResult < 1) return;
 
-                // Update Paths
-                WriteCFGFile();
+                if (showModel)
+                {
+                    // Set Global Paths
+                    if (modelType == ModelType.K_AA_SKELETON)
+                    {
+                        strGlobalBattleSkeletonFileName = strfileNameModel;
+                        strGlobalBattleSkeletonName = Path.GetFileName(strfileNameModel).ToUpper();
+                        strGlobalBattleAnimationName = Path.GetFileName(strfileNameAnim).ToUpper();
+                    }
+                    else
+                    {
+                        strGlobalMagicSkeletonFileName = strfileNameModel;
+                        strGlobalMagicSkeletonName = Path.GetFileName(strfileNameModel).ToUpper();
+                        strGlobalMagicAnimationName = Path.GetFileName(strfileNameAnim).ToUpper();
+                    }
 
-                // Enable/Make Visible Win Forms Data controls
-                EnableWinFormsDataControls();
+                    // Update Paths
+                    WriteCFGFile();
 
-                // ComputeBoundingBoxes
-                ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[0], ref p_min, ref p_max);
+                    // Enable/Make Visible Win Forms Data controls
+                    EnableWinFormsDataControls();
 
-                diameter = ComputeBattleDiameter(bSkeleton);
+                    // ComputeBoundingBoxes
+                    ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[0], ref p_min, ref p_max);
 
-                // Set frame values in frame editor groupbox...
-                SetFrameEditorFields();
+                    diameter = ComputeBattleDiameter(bSkeleton);
 
-                // Set texture values in texture editor groupbox...
-                SetTextureEditorFields();
+                    // Set frame values in frame editor groupbox...
+                    SetFrameEditorFields();
 
-                // PostLoadModelPreparations
-                PostLoadModelPreparations(ref p_min, ref p_max);
+                    // Set texture values in texture editor groupbox...
+                    SetTextureEditorFields();
 
-                // We can draw the model in panel
-                PanelModel_Paint(null, null);
+                    // PostLoadModelPreparations
+                    PostLoadModelPreparations(ref p_min, ref p_max);
 
+                    // We can draw the model in panel
+                    PanelModel_Paint(null, null);
+                }
             }
             catch
             {
@@ -7598,7 +7761,7 @@ namespace KimeraCS
             return closestBone;
         }
 
-        private static int WriteSkeleton(string strFileName, bool compileMultiPBones)
+        private static int WriteSkeleton(string strFileName, bool compileMultiPBones, bool isExport)
         {
             Vector3 p_min = new Vector3();
             Vector3 p_max = new Vector3();
@@ -7620,7 +7783,11 @@ namespace KimeraCS
 
                         ApplyFieldChanges(ref fSkeleton, fAnimation.frames[iCurrentFrameScroll], compileMultiPBones);
 
-                        WriteFieldSkeleton(ref fSkeleton, strFileName);
+                        if (isExport)
+                            ExportFieldSkeleton(fSkeleton, fAnimation, strFileName, true);
+                        else
+                            WriteFieldSkeleton(ref fSkeleton, strFileName);
+
                         //  WriteFieldAnimation(fAnimation, saveFile.FileName);
                         CreateDListsFromFieldSkeleton(ref fSkeleton);
 
@@ -7638,12 +7805,23 @@ namespace KimeraCS
 
                         SetLights();
 
+                        BattleAnimation? weaponAnim = null;
                         tmpwpFrame = new BattleFrame();
-                        if (bSkeleton.nsWeaponsAnims > 0) tmpwpFrame = bAnimationsPack.WeaponAnimations[0].frames[0];
+                        if (bSkeleton.nWeapons > 0 && bSkeleton.nsWeaponsAnims > 0)
+                        {
+                            weaponAnim = bAnimationsPack.WeaponAnimations[ianimIndex];
+                            tmpwpFrame = bAnimationsPack.WeaponAnimations[0].frames[0];
+                        }
 
                         ApplyBattleChanges(ref bSkeleton, bAnimationsPack.SkeletonAnimations[0].frames[0], tmpwpFrame);
 
-                        if (modelType == ModelType.K_AA_SKELETON)
+                        if (isExport)
+                        {
+                            // Export
+                            ExportBattleSkeleton(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex],
+                                weaponAnim, strFileName, true);
+                        }
+                        else if (modelType == ModelType.K_AA_SKELETON)
                         {
                             // Battle model (*AA)
                             WriteBattleSkeleton(ref bSkeleton, strFileName);

@@ -56,7 +56,7 @@ namespace KimeraCS.Core
                 {
                     throw new FileLoadException("File: " + in_res_file + ".RSD does not exist.", rsdFileName);
                 }
-
+                else
                 {
                     rsdString = File.ReadAllLines(rsdFileName);
 
@@ -139,6 +139,7 @@ namespace KimeraCS.Core
 
                             // Add TEX Texture to the list of RSDResource textures
                             textures.Add(itmTextureTEX);
+                            textures_pool.Add(itmTextureTEX);
                         }
                     }
                 }

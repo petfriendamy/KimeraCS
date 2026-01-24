@@ -10,8 +10,6 @@ using OpenTK.Mathematics;
 namespace KimeraCS.Core
 {
     using Rendering;
-
-    using static FF7Skeleton;
     using static Utils;
 
     public static class FF7PModel

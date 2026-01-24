@@ -23,7 +23,7 @@ namespace KimeraCS.Core
         public struct BattleSkeleton
         {
             public string fileName;
-            public ModelType skeletonType;                       //  0 - Enemy Model, 1 - Battle Location, 2 - PC Battle Model?
+            public SkeletonType skeletonType;              //  0 - Enemy Model, 1 - Battle Location, 2 - PC Battle Model?
             public int unk1;                               //  Always 1?
             public int unk2;                               //  Always 1?
             public int nBones;
@@ -76,7 +76,7 @@ namespace KimeraCS.Core
                 {
                     using (var memReader = new BinaryReader(fileMemory))
                     {
-                        skeletonType = (ModelType)memReader.ReadInt32();
+                        skeletonType = (SkeletonType)memReader.ReadInt32();
                         unk1 = memReader.ReadInt32();
                         unk2 = memReader.ReadInt32();
                         nBones = memReader.ReadInt32();
@@ -252,7 +252,7 @@ namespace KimeraCS.Core
                 {
                     using (var memReader = new BinaryReader(fileMemory))
                     {
-                        skeletonType = (ModelType)memReader.ReadInt32();
+                        skeletonType = (SkeletonType)memReader.ReadInt32();
                         unk1 = memReader.ReadInt32();
                         unk2 = memReader.ReadInt32();
                         nBones = memReader.ReadInt32();

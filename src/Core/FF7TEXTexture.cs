@@ -212,7 +212,7 @@ namespace KimeraCS.Core
         }
 
         //  Get a 32 bits BGRA (or BGR for 24 bits) version of the image
-        public static void GetTEXTexturev(ref TEX inTEXTexture, ref byte[] textureImg)
+        private static void GetTEXTexturev(ref TEX inTEXTexture, ref byte[] textureImg)
         {
             int imageBytesSize, imageSize, offsetBit, ti, color_offset;
             int col16, b1, b2;
@@ -402,7 +402,7 @@ namespace KimeraCS.Core
         }
 
         // Function to know if a Bitmap has Alpha or not
-        public static bool IsAlphaBitmap(Bitmap bmpTexture, byte[] pictureData)
+        private static bool IsAlphaBitmap(Bitmap bmpTexture, byte[] pictureData)
         {
             // Not an alpha-capable color format. Note that GDI+ indexed images are alpha-capable on the palette.
             if (((ImageFlags)bmpTexture.Flags & ImageFlags.HasAlpha) == 0)
@@ -421,7 +421,7 @@ namespace KimeraCS.Core
             return false;
         }
 
-        public static void GetTEXTextureFromBitmap(ref TEX outTEX, DirectBitmap bmpTexture)
+        private static void GetTEXTextureFromBitmap(ref TEX outTEX, DirectBitmap bmpTexture)
         {
             int li, si, ti, pi, palSize, texBitmapSize, i;
             long lineLength, lineLengthBytes, linePad, linePadUseful, linePadBytes, line_end;

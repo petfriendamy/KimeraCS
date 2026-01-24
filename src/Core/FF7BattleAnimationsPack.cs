@@ -438,8 +438,8 @@ namespace KimeraCS.Core
             tmpnBonesAnim = GetNumBattleBones(strFileAnimationsPack);
 
             if (tmpnBonesAnim > 1 )
-                if (bSkeleton.skeletonType == ModelType.K_P_FIELD_MODEL ||
-                    bSkeleton.skeletonType == ModelType.K_P_MAGIC_MODEL ||
+                if (bSkeleton.skeletonType == SkeletonType.EnemyOrSummon ||
+                    bSkeleton.skeletonType == SkeletonType.PC ||
                     modelType == ModelType.K_MAGIC_SKELETON) 
                     tmpnBonesAnim--;
 
