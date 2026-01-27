@@ -3329,7 +3329,7 @@ namespace KimeraCS.Core
             int iVertIdx, iTexCoordIdx, baseVerts, baseTexCoords;
             int iNextGroup, iExistsVertex;
 
-            // We must be sure that the vertex does not exists
+            // We must be sure that the vertex does not exist
             // If it exists we could reuse an original vertex
             // We can came from CutEdges (-999999) or from PEditor New Poly (iInputVertIdx)
             if (iInputVertIdx == -999999)

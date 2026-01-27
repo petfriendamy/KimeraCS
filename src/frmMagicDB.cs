@@ -1,9 +1,5 @@
-﻿using System;
-using System.IO;
-using System.Data;
-using System.Linq;
+﻿using System.Data;
 using System.Reflection;
-using System.Windows.Forms;
 using KimeraCS.Core;
 
 namespace KimeraCS
@@ -179,14 +175,14 @@ namespace KimeraCS
                 // Check existance of the files.
                 if (!File.Exists(strMagicFile))
                 {
-                    MessageBox.Show("The file selected as Magic Model " + strModelName + ".D does not exists.",
+                    MessageBox.Show("The file selected as Magic Model " + strModelName + ".D does not exist.",
                                     "Error");
                     return;
                 }
 
                 if (!File.Exists(strMagicAnimFile))
                 {
-                    MessageBox.Show("The file selected as Magic Model Animation " + strModelName + ".A00 does not exists.",
+                    MessageBox.Show("The file selected as Magic Model Animation " + strModelName + ".A00 does not exist.",
                                     "Error");
                     return;
                 }

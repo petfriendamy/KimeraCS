@@ -19,6 +19,7 @@ namespace KimeraCS.Core
         private const string CFG_FILE_NAME = "Kimera.cfg";
 
         public const string CHAR_LGP_FILTER_FILE_NAME = "ifalna.fil";
+        public const string WORLD_LGP_FILTER_FILE_NAME = "ifalnaw.fil";
         public const string BATTLEENEMIES_LGP_FILTER_FILE_NAME = "ifalnab.fil";
         public const string BATTLELOCATIONS_LGP_FILTER_FILE_NAME = "ifalnal.fil";
         public const string BATTLEMAINPCS_LGP_FILTER_FILE_NAME = "ifalnap.fil";
@@ -46,6 +47,13 @@ namespace KimeraCS.Core
             public List<string> lstAnims;
         }
 
+        public struct STWorldLGPRegister
+        {
+            public string fileName;
+            public string modelName;
+            public List<string> lstAnims;
+        }
+
         public struct STBattleLGPRegister
         {
             public string fileName;
@@ -60,15 +68,16 @@ namespace KimeraCS.Core
 
         public static Hashtable lstCFGKeys = new();
 
-        public static int numCharLGPRegisters;
-        public static bool bDBLoaded, bDBEnemiesLoaded, bDBLocationsLoaded, bDBMainPCsLoaded, 
-                           bDBMagicLoaded;
+        public static int numCharLGPRegisters, numWorldLGPRegisters;
+        public static bool bDBLoaded, bWorldDBLoaded, bDBEnemiesLoaded, bDBLocationsLoaded,
+                           bDBMainPCsLoaded, bDBMagicLoaded;
 
         public static bool bAdjust3DSImport, bDontCheckRepairPolys;
         public static int iPEFilterIdx;
         public static bool bShowAxesSkeletonWindow;
 
         public static List<STCharLGPRegister> lstCharLGPRegisters = [];
+        public static List<STWorldLGPRegister> lstWorldLGPRegisters = [];
         public static List<STBattleLGPRegister> lstBattleEnemiesLGPRegisters = [];
         public static List<STBattleLGPRegister> lstBattleLocationsLGPRegisters = [];
         public static List<STBattleLGPRegister> lstBattleMainPCsLGPRegisters = [];
@@ -84,8 +93,14 @@ namespace KimeraCS.Core
         public static int iwindowPosX = 0;
         public static int iwindowPosY = 0;
 
-        public static string strCharLGPPathSrc = "", strBattleLGPPathSrc = "", strMagicLGPPathSrc = "";
-        public static string strCharLGPPathDest = "", strBattleLGPPathDest = "", strMagicLGPPathDest = "";
+        public static string strCharLGPPathSrc = "",
+                             strWorldLGPPathSrc = "",
+                             strBattleLGPPathSrc = "",
+                             strMagicLGPPathSrc = "";
+        public static string strCharLGPPathDest = "",
+                             strWorldLGPPathDest = "",
+                             strBattleLGPPathDest = "",
+                             strMagicLGPPathDest = "";
         public static string strGlobalPathTEX2PNGBatch = "";
 
         public static string strGlobalPath = "";
@@ -95,6 +110,8 @@ namespace KimeraCS.Core
         public static string strGlobalPath3DSModelFolder = "", strGlobal3DSModelName = "";
         public static string strGlobalPathFieldSkeletonFolder = "", strGlobalFieldSkeletonFileName = "", strGlobalFieldSkeletonName = "", 
                              strGlobalPathFieldAnimationFolder = "", strGlobalFieldAnimationName = "";
+        public static string strGlobalPathWorldSkeletonFolder = "", strGlobalWorldSkeletonFileName = "", 
+                             strGlobalPathWorldAnimationFolder = "";
         public static string strGlobalPathBattleSkeletonFolder = "", strGlobalBattleSkeletonFileName = "", strGlobalBattleSkeletonName = "", 
                              strGlobalPathBattleAnimationFolder = "", strGlobalBattleAnimationName = "";
         public static string strGlobalPathMagicSkeletonFolder = "", strGlobalMagicSkeletonFileName = "", strGlobalMagicSkeletonName = "",
@@ -125,6 +142,8 @@ namespace KimeraCS.Core
             lstCFGKeys.Add("LGP_CHAR_PATH_DEST", "");
             lstCFGKeys.Add("LGP_MAGIC_PATH", "");
             lstCFGKeys.Add("LGP_MAGIC_PATH_DEST", "");
+            lstCFGKeys.Add("LGP_WORLD_PATH", "");
+            lstCFGKeys.Add("LGP_WORLD_PATH_DEST", "");
 
             lstCFGKeys.Add("PATH_3DSMODEL_FOLDER", "");
             lstCFGKeys.Add("PATH_BATTLESKELETON_FOLDER", "");
@@ -133,6 +152,8 @@ namespace KimeraCS.Core
             lstCFGKeys.Add("PATH_FIELDANIMATION_FOLDER", "");
             lstCFGKeys.Add("PATH_MAGICSKELETON_FOLDER", "");
             lstCFGKeys.Add("PATH_MAGICANIMATION_FOLDER", "");
+            lstCFGKeys.Add("PATH_WORLDSKELETON_FOLDER", "");
+            lstCFGKeys.Add("PATH_WORLDANIMATION_FOLDER", "");
             lstCFGKeys.Add("PATH_PARTMODEL_FOLDER", "");
             lstCFGKeys.Add("PATH_PMODEL_FOLDER", "");
             lstCFGKeys.Add("PATH_TMDMODEL_FOLDER", "");
@@ -201,9 +222,11 @@ namespace KimeraCS.Core
                 if (!int.TryParse(lstCFGKeys["DEFAULT_BATTLE_INTERP_FRAMES"]?.ToString(), out idefaultBattleInterpFrames)) idefaultBattleInterpFrames = 3;
 
                 strCharLGPPathSrc = (lstCFGKeys["LGP_CHAR_PATH"]?.ToString() ?? string.Empty);
+                strWorldLGPPathSrc = (lstCFGKeys["LGP_WORLD_PATH"]?.ToString() ?? string.Empty);
                 strBattleLGPPathSrc = (lstCFGKeys["LGP_BATTLE_PATH"]?.ToString() ?? string.Empty);
                 strMagicLGPPathSrc = (lstCFGKeys["LGP_MAGIC_PATH"]?.ToString() ?? string.Empty);
                 strCharLGPPathDest = (lstCFGKeys["LGP_CHAR_PATH_DEST"]?.ToString() ?? string.Empty);
+                strWorldLGPPathDest = (lstCFGKeys["LGP_WORLD_PATH_DEST"]?.ToString() ?? string.Empty);
                 strBattleLGPPathDest = (lstCFGKeys["LGP_BATTLE_PATH_DEST"]?.ToString() ?? string.Empty);
                 strMagicLGPPathDest = (lstCFGKeys["LGP_MAGIC_PATH_DEST"]?.ToString() ?? string.Empty);
 
@@ -213,6 +236,8 @@ namespace KimeraCS.Core
                 strGlobalPathBattleAnimationFolder = (lstCFGKeys["PATH_BATTLEANIMATION_FOLDER"]?.ToString() ?? string.Empty);
                 strGlobalPathMagicSkeletonFolder = (lstCFGKeys["PATH_MAGICSKELETON_FOLDER"]?.ToString() ?? string.Empty);
                 strGlobalPathMagicAnimationFolder = (lstCFGKeys["PATH_MAGICANIMATION_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathWorldSkeletonFolder = (lstCFGKeys["PATH_WORLDSKELETON_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathWorldAnimationFolder = (lstCFGKeys["PATH_WORLDANIMATION_FOLDER"]?.ToString() ?? string.Empty);
                 strGlobalPathPModelFolder = (lstCFGKeys["PATH_PMODEL_FOLDER"]?.ToString() ?? string.Empty);
                 strGlobalPathRSDResourceFolder = (lstCFGKeys["PATH_RSDRESOURCE_FOLDER"]?.ToString() ?? string.Empty);
                 strGlobalPathPModelFolderPE = (lstCFGKeys["PATH_PMODEL_FOLDERPE"]?.ToString() ?? string.Empty);
@@ -261,6 +286,7 @@ namespace KimeraCS.Core
             lstCFGKeys["DEFAULT_BATTLE_INTERP_FRAMES"] = idefaultBattleInterpFrames;
 
             lstCFGKeys["LGP_CHAR_PATH"] = strCharLGPPathSrc;
+            lstCFGKeys["LGP_WORLD_PATH"] = strWorldLGPPathSrc;
             lstCFGKeys["LGP_BATTLE_PATH"] = strBattleLGPPathSrc;
             lstCFGKeys["LGP_MAGIC_PATH"] = strMagicLGPPathSrc;
             lstCFGKeys["LGP_CHAR_PATH_DEST"] = strCharLGPPathDest;
@@ -269,6 +295,8 @@ namespace KimeraCS.Core
 
             lstCFGKeys["PATH_FIELDSKELETON_FOLDER"] = strGlobalPathFieldSkeletonFolder;
             lstCFGKeys["PATH_FIELDANIMATION_FOLDER"] = strGlobalPathFieldAnimationFolder;
+            lstCFGKeys["PATH_WORLDSKELETON_FOLDER"] = strGlobalPathWorldSkeletonFolder;
+            lstCFGKeys["PATH_WORLDANIMATION_FOLDER"] = strGlobalPathWorldAnimationFolder;
             lstCFGKeys["PATH_BATTLESKELETON_FOLDER"] = strGlobalPathBattleSkeletonFolder;
             lstCFGKeys["PATH_BATTLEANIMATION_FOLDER"] = strGlobalPathBattleAnimationFolder;
             lstCFGKeys["PATH_MAGICSKELETON_FOLDER"] = strGlobalPathMagicSkeletonFolder;
@@ -338,7 +366,7 @@ namespace KimeraCS.Core
                 if (File.Exists(strFileName))
                 {
 
-                    lstCharLGPRegisters = new List<STCharLGPRegister>();
+                    lstCharLGPRegisters = [];
                     stcLGPReg = new STCharLGPRegister();
 
                     strLinesFilterFile = File.ReadAllLines(strFileName);
@@ -368,15 +396,15 @@ namespace KimeraCS.Core
 
                             if (strKey == "Names")
                             {
-                                if (stcLGPReg.lstNames == null) stcLGPReg.lstNames = strLineFilter.Split('=')[1].Split(',').ToList();
-                                else stcLGPReg.lstNames.AddRange(strLineFilter.Split('=')[1].Split(',').ToList());
+                                if (stcLGPReg.lstNames == null) stcLGPReg.lstNames = [];
+                                stcLGPReg.lstNames.AddRange(strLineFilter.Split('=')[1].Split(',').ToList());
                                 
                                 stcLGPReg.lstNames.RemoveAt(stcLGPReg.lstNames.Count - 1);
                             }
                             else if (strKey == "Anims")
                             {
-                                if (stcLGPReg.lstAnims == null) stcLGPReg.lstAnims = strLineFilter.Split('=')[1].Split(',').ToList();
-                                else stcLGPReg.lstAnims.AddRange(strLineFilter.Split('=')[1].Split(',').ToList());
+                                if (stcLGPReg.lstAnims == null) stcLGPReg.lstAnims = [];
+                                stcLGPReg.lstAnims.AddRange(strLineFilter.Split('=')[1].Split(',').ToList());
                                 
                                 stcLGPReg.lstAnims.RemoveAt(stcLGPReg.lstAnims.Count - 1);
                             }
@@ -387,6 +415,78 @@ namespace KimeraCS.Core
 
                     lstCharLGPRegisters.Add(stcLGPReg);
                     lstCharLGPRegisters.Sort((fN1, fN2) => fN1.fileName.CompareTo(fN2.fileName));
+                }
+                else
+                {
+                    iResult = 0;
+                }
+            }
+            catch
+            {
+
+                iResult = -1;
+            }
+
+            return iResult;
+        }
+
+        public static int ReadWorldFilterFile()
+        {
+            int iResult = 1;
+            string strFileName, strLastFileName;
+            string[] strLinesFilterFile;
+            STWorldLGPRegister stwLGPReg;
+
+            try
+            {
+                strFileName = strGlobalPath + "\\" + WORLD_LGP_FILTER_FILE_NAME;
+
+                if (File.Exists(strFileName))
+                {
+
+                    lstWorldLGPRegisters = [];
+                    stwLGPReg = new STWorldLGPRegister();
+
+                    strLinesFilterFile = File.ReadAllLines(strFileName);
+                    strLastFileName = "";
+
+                    foreach (string strLineFilter in strLinesFilterFile)
+                    {
+                        if (strLineFilter.Length > 0)
+                        {
+                            strFileName = strLineFilter.Substring(0, 3);
+
+                            if (strLastFileName != strFileName)
+                            {
+                                if (numWorldLGPRegisters > 0)
+                                {
+                                    if (stwLGPReg.lstAnims != null) stwLGPReg.lstAnims.Sort();
+                                    lstWorldLGPRegisters.Add(stwLGPReg);
+                                    stwLGPReg = new STWorldLGPRegister();
+                                }
+
+                                numWorldLGPRegisters += 1;
+                            }
+
+                            if (strLineFilter.Contains("Anims")) //anims
+                            {
+                                if (stwLGPReg.lstAnims == null) stwLGPReg.lstAnims = [];
+                                stwLGPReg.lstAnims.AddRange(strLineFilter.Split('=')[1].Split(',').ToList());
+
+                                stwLGPReg.lstAnims.RemoveAt(stwLGPReg.lstAnims.Count - 1);
+                            }
+                            else
+                            {
+                                stwLGPReg.fileName = strLineFilter.Split('=')[0];
+                                stwLGPReg.modelName = strLineFilter.Split('=')[1];
+                            }
+
+                            strLastFileName = strFileName;
+                        }
+                    }
+
+                    lstWorldLGPRegisters.Add(stwLGPReg);
+                    lstWorldLGPRegisters.Sort((fN1, fN2) => fN1.fileName.CompareTo(fN2.fileName));
                 }
                 else
                 {
@@ -433,7 +533,7 @@ namespace KimeraCS.Core
                         }
                     }
 
-                    lstCharLGPRegisters.Sort((fN1, fN2) => fN1.fileName.CompareTo(fN2.fileName));
+                    tmpBattleLGPRegister.Sort((fN1, fN2) => fN1.fileName.CompareTo(fN2.fileName));
                 }
                 else
                 {

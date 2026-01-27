@@ -355,7 +355,7 @@ namespace KimeraCS
             // Check existance of the files.
             if (!File.Exists(strBattleFile))
             {
-                MessageBox.Show("The file selected as Battle Model " + strModelName + " does not exists.",
+                MessageBox.Show("The file selected as Battle Model " + strModelName + " does not exist.",
                                 "Error");
                 return;
             }
@@ -364,7 +364,7 @@ namespace KimeraCS
             {
                 if (!File.Exists(strBattleAnimFile))
                 {
-                    MessageBox.Show("The file supposed to be the Battle Animation Pack " + strModelName.Substring(0, 2) + "DA" + " does not exists.",
+                    MessageBox.Show("The file supposed to be the Battle Animation Pack " + strModelName.Substring(0, 2) + "DA" + " does not exist.",
                                     "Error");
                     return;
                 }

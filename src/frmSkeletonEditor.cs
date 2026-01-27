@@ -98,6 +98,7 @@ namespace KimeraCS
 
         // Other forms instances of main frmSkeletonEditor
         FrmFieldDB? frmFieldDatabase;
+        FrmWorldDB? frmWorldDatabase;
         FrmBattleDB? frmBattleDatabase;
         FrmMagicDB? frmMagicDatabase;
         FrmInterpolateAll? frmInterpAll;
@@ -217,7 +218,7 @@ namespace KimeraCS
             switch (ReadCharFilterFile())
             {
                 case 0:
-                    MessageBox.Show("Caution: " + CHAR_LGP_FILTER_FILE_NAME + " file does not exists. Field Database NOT available.", "Warning", MessageBoxButtons.OK);
+                    MessageBox.Show("Caution: " + CHAR_LGP_FILTER_FILE_NAME + " file does not exist. Field Database NOT available.", "Warning", MessageBoxButtons.OK);
 
                     bDBLoaded = false;
                     showCharlgpToolStripMenuItem.Enabled = false;
@@ -237,11 +238,35 @@ namespace KimeraCS
                     break;
             }
 
+            // Instantiate World Database form
+            switch (ReadWorldFilterFile())
+            {
+                case 0:
+                    MessageBox.Show("Caution: " + WORLD_LGP_FILTER_FILE_NAME + " file does not exist. World Database NOT available.", "Warning", MessageBoxButtons.OK);
+
+                    bWorldDBLoaded = false;
+                    showWorldLgpToolStripMenuItem.Enabled = false;
+                    break;
+
+                case -1:
+                    MessageBox.Show("Error reading " + WORLD_LGP_FILTER_FILE_NAME + " file. World Database NOT available.", "Error", MessageBoxButtons.OK);
+
+                    bWorldDBLoaded = false;
+                    showWorldLgpToolStripMenuItem.Enabled = false;
+                    break;
+
+                default:
+                    // Instantiate Database form
+                    bWorldDBLoaded = true;
+                    frmWorldDatabase = new FrmWorldDB();
+                    break;
+            }
+
             // Instantiate Battle Databases (Enemies/Locations/MainPCs) form
             switch (ReadBattleFilterFile(BATTLEENEMIES_LGP_FILTER_FILE_NAME, ref lstBattleEnemiesLGPRegisters))
             {
                 case 0:
-                    MessageBox.Show("Caution: " + BATTLEENEMIES_LGP_FILTER_FILE_NAME + " file does not exists. Battle Enemies Database NOT available.", "Warning", MessageBoxButtons.OK);
+                    MessageBox.Show("Caution: " + BATTLEENEMIES_LGP_FILTER_FILE_NAME + " file does not exist. Battle Enemies Database NOT available.", "Warning", MessageBoxButtons.OK);
 
                     bDBEnemiesLoaded = false;
                     break;
@@ -260,7 +285,7 @@ namespace KimeraCS
             switch (ReadBattleFilterFile(BATTLELOCATIONS_LGP_FILTER_FILE_NAME, ref lstBattleLocationsLGPRegisters))
             {
                 case 0:
-                    MessageBox.Show("Caution: " + BATTLELOCATIONS_LGP_FILTER_FILE_NAME + " file does not exists. Battle Locations Database NOT available.", "Warning", MessageBoxButtons.OK);
+                    MessageBox.Show("Caution: " + BATTLELOCATIONS_LGP_FILTER_FILE_NAME + " file does not exist. Battle Locations Database NOT available.", "Warning", MessageBoxButtons.OK);
 
                     bDBLocationsLoaded = false;
                     break;
@@ -279,7 +304,7 @@ namespace KimeraCS
             switch (ReadBattleFilterFile(BATTLEMAINPCS_LGP_FILTER_FILE_NAME, ref lstBattleMainPCsLGPRegisters))
             {
                 case 0:
-                    MessageBox.Show("Caution: " + BATTLEMAINPCS_LGP_FILTER_FILE_NAME + " file does not exists. Battle Main PCs Database NOT available.", "Warning", MessageBoxButtons.OK);
+                    MessageBox.Show("Caution: " + BATTLEMAINPCS_LGP_FILTER_FILE_NAME + " file does not exist. Battle Main PCs Database NOT available.", "Warning", MessageBoxButtons.OK);
 
                     bDBMainPCsLoaded = false;
                     break;
@@ -309,7 +334,7 @@ namespace KimeraCS
             switch (ReadBattleFilterFile(MAGIC_LGP_FILTER_FILE_NAME, ref lstMagicLGPRegisters))
             {
                 case 0:
-                    MessageBox.Show("Caution: " + MAGIC_LGP_FILTER_FILE_NAME + " file does not exists. Magic Database NOT available.", "Warning", MessageBoxButtons.OK);
+                    MessageBox.Show("Caution: " + MAGIC_LGP_FILTER_FILE_NAME + " file does not exist. Magic Database NOT available.", "Warning", MessageBoxButtons.OK);
 
                     showMagiclgpToolStripMenuItem.Enabled = false;
                     bDBMagicLoaded = false;
@@ -1515,46 +1540,46 @@ namespace KimeraCS
                     switch (modelType)
                     {
                         case ModelType.HRCSkeleton:
-                            /*skeleton.ComputeBoundingBox(animation.Frames[tbCurrentFrameScroll.Value],
-                                                    ref p_min, ref p_max);
+                        /*skeleton.ComputeBoundingBox(animation.Frames[tbCurrentFrameScroll.Value],
+                                                ref p_min, ref p_max);
 
-                            SetCameraAroundModel(ref p_min, ref p_max, panX, panY, (float)(panZ + DIST),
-                                                 (float)alpha, (float)beta, (float)gamma, 1, 1, 1);
+                        SetCameraAroundModel(ref p_min, ref p_max, panX, panY, (float)(panZ + DIST),
+                                             (float)alpha, (float)beta, (float)gamma, 1, 1, 1);
 
-                            iBoneIdx = skeleton.GetClosestBone(animation.Frames[tbCurrentFrameScroll.Value],
-                                                           e.X, e.Y);
+                        iBoneIdx = skeleton.GetClosestBone(animation.Frames[tbCurrentFrameScroll.Value],
+                                                       e.X, e.Y);
 
-                            SelectedBone = iBoneIdx;
-                            cbBoneSelector.SelectedIndex = iBoneIdx;
+                        SelectedBone = iBoneIdx;
+                        cbBoneSelector.SelectedIndex = iBoneIdx;
 
-                            if (iBoneIdx > -1)
+                        if (iBoneIdx > -1)
+                        {
+                            iPolyIdx = skeleton.GetClosestBonePiece(animation.Frames[tbCurrentFrameScroll.Value],
+                                                                iBoneIdx, e.X, e.Y);
+
+                            SelectedBonePiece = iPolyIdx;
+                            if (iPolyIdx > -1)
                             {
-                                iPolyIdx = skeleton.GetClosestBonePiece(animation.Frames[tbCurrentFrameScroll.Value],
-                                                                    iBoneIdx, e.X, e.Y);
-
-                                SelectedBonePiece = iPolyIdx;
-                                if (iPolyIdx > -1)
-                                {
-                                    SetBonePieceModifiers();
-                                    if (!bWindowPEOpened) gbSelectedPieceFrame.Enabled = true;
-                                }
-                                else
-                                {
-                                    gbSelectedBoneFrame.Enabled = false;
-                                }
-
-                                SetBoneModifiers();
-                                if (!bWindowPEOpened) gbSelectedBoneFrame.Enabled = true;
+                                SetBonePieceModifiers();
+                                if (!bWindowPEOpened) gbSelectedPieceFrame.Enabled = true;
                             }
                             else
                             {
-                                SelectedBonePiece = -1;
                                 gbSelectedBoneFrame.Enabled = false;
-                                gbSelectedPieceFrame.Enabled = false;
                             }
 
-                            SetTextureEditorFields();
-                            break;*/
+                            SetBoneModifiers();
+                            if (!bWindowPEOpened) gbSelectedBoneFrame.Enabled = true;
+                        }
+                        else
+                        {
+                            SelectedBonePiece = -1;
+                            gbSelectedBoneFrame.Enabled = false;
+                            gbSelectedPieceFrame.Enabled = false;
+                        }
+
+                        SetTextureEditorFields();
+                        break;*/
 
                         case ModelType.AASkeleton:
                         case ModelType.MagicSkeleton:
@@ -1926,7 +1951,17 @@ namespace KimeraCS
 
             if (FrmFieldDB.bSelectedFileFromDB)
             {
-                LoadSkeletonFromDB();
+                LoadSkeletonFromFieldDB(FrmFieldDB.strFieldFile, FrmFieldDB.strAnimFile);
+            }
+        }
+
+        private void showWorldLgpToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            frmWorldDatabase?.ShowDialog();
+
+            if (FrmWorldDB.bSelectedFileFromDB)
+            {
+                LoadSkeletonFromFieldDB(FrmWorldDB.strWorldFile, FrmWorldDB.strAnimFile, true);
             }
         }
 
@@ -2438,7 +2473,7 @@ namespace KimeraCS
 
                             if (result != DialogResult.OK)
                                 return;
-                                
+
                             if (type != ModelType.None)
                             {
                                 modelType = type;
@@ -4823,97 +4858,97 @@ namespace KimeraCS
                     if (tex.pixelData != null)
                     {
                         int row, col, BPPStride, i;
-                    int newWidth, newHeight, originalWidth, originalHeight, newWidthMinusOne; //, newHeight, originalWidth, originalHeight;
-                    int originalWidthStride, originalHeightStride;
-                    int destinationX, destinationY, destinationPosition, sourcePosition;
-                    byte[] result;
+                        int newWidth, newHeight, originalWidth, originalHeight, newWidthMinusOne; //, newHeight, originalWidth, originalHeight;
+                        int originalWidthStride, originalHeightStride;
+                        int destinationX, destinationY, destinationPosition, sourcePosition;
+                        byte[] result;
 
-                    BPPStride = tex.bytesPerPixel;
+                        BPPStride = tex.bytesPerPixel;
 
-                    result = new byte[tex.width * tex.height * BPPStride];
+                        result = new byte[tex.width * tex.height * BPPStride];
 
-                    newWidth = tex.height;
-                    newHeight = tex.width;
+                        newWidth = tex.height;
+                        newHeight = tex.width;
 
-                    originalWidth = tex.width;
-                    originalHeight = tex.height;
-                    originalWidthStride = originalWidth * BPPStride;
-                    originalHeightStride = originalHeight * BPPStride;
+                        originalWidth = tex.width;
+                        originalHeight = tex.height;
+                        originalWidthStride = originalWidth * BPPStride;
+                        originalHeightStride = originalHeight * BPPStride;
 
-                    // We're going to use the new width and height minus one a lot so lets 
-                    // pre-calculate that once to save some more time
-                    newWidthMinusOne = newWidth - 1;
+                        // We're going to use the new width and height minus one a lot so lets 
+                        // pre-calculate that once to save some more time
+                        newWidthMinusOne = newWidth - 1;
 
-                    for (row = 0; row < originalHeightStride; row += BPPStride)
-                    {
-                        destinationX = (newWidthMinusOne * BPPStride) - row;
-
-                        for (col = 0; col < originalWidthStride; col += BPPStride)
+                        for (row = 0; row < originalHeightStride; row += BPPStride)
                         {
-                            sourcePosition = (col + row * originalWidth);
-                            destinationY = col;
-                            destinationPosition = (destinationX + destinationY * newWidth);
+                            destinationX = (newWidthMinusOne * BPPStride) - row;
 
-                            for (i = 0; i < BPPStride; i++)
+                            for (col = 0; col < originalWidthStride; col += BPPStride)
                             {
-                                result[destinationPosition + i] = tex.pixelData[sourcePosition + i];
+                                sourcePosition = (col + row * originalWidth);
+                                destinationY = col;
+                                destinationPosition = (destinationX + destinationY * newWidth);
+
+                                for (i = 0; i < BPPStride; i++)
+                                {
+                                    result[destinationPosition + i] = tex.pixelData[sourcePosition + i];
+                                }
                             }
                         }
-                    }
 
-                    tex.pixelData = result;
-                    tex.width = newWidth;
-                    tex.height = newHeight;
+                        tex.pixelData = result;
+                        tex.width = newWidth;
+                        tex.height = newHeight;
 
 
-                    //  Let's update all the textures used in other Bones
-                    UnloadTexture(ref tex);
-                    LoadTEXTexture(ref tex);
-                    LoadBitmapFromTEXTexture(ref tex);
+                        //  Let's update all the textures used in other Bones
+                        UnloadTexture(ref tex);
+                        LoadTEXTexture(ref tex);
+                        LoadBitmapFromTEXTexture(ref tex);
 
-                    switch (modelType)
-                    {
-                        case ModelType.HRCSkeleton:
-                            if (SelectedBone > -1)
-                            {
-                                int r, t;
-
-                                //for (i = 0; i < skeleton.BoneCount; i++)
-                                for (i = 0; i < skeleton.Bones.Count; i++)
+                        switch (modelType)
+                        {
+                            case ModelType.HRCSkeleton:
+                                if (SelectedBone > -1)
                                 {
-                                    for (r = 0; r < skeleton.Bones[i].Models?.Count; r++)
+                                    int r, t;
+
+                                    //for (i = 0; i < skeleton.BoneCount; i++)
+                                    for (i = 0; i < skeleton.Bones.Count; i++)
                                     {
-                                        for (t = 0; t < skeleton.Bones[i].Models[r].TextureCount; t++)
+                                        for (r = 0; r < skeleton.Bones[i].Models?.Count; r++)
                                         {
-                                            if (skeleton.Bones[i].Models[r].Textures[t].TEXfileName == tex.TEXfileName)
+                                            for (t = 0; t < skeleton.Bones[i].Models[r].TextureCount; t++)
                                             {
-                                                skeleton.Bones[i].Models[r].Textures[t] = tex;
+                                                if (skeleton.Bones[i].Models[r].Textures[t].TEXfileName == tex.TEXfileName)
+                                                {
+                                                    skeleton.Bones[i].Models[r].Textures[t] = tex;
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
-                            break;
+                                break;
 
-                        case ModelType.AASkeleton:
-                        case ModelType.MagicSkeleton:
+                            case ModelType.AASkeleton:
+                            case ModelType.MagicSkeleton:
 
-                            for (i = 0; i < skeleton.TextureCount; i++)
-                            {
-                                if (skeleton.Textures[i].TEXfileName == tex.TEXfileName)
+                                for (i = 0; i < skeleton.TextureCount; i++)
                                 {
-                                    skeleton.Textures[i] = tex;
+                                    if (skeleton.Textures[i].TEXfileName == tex.TEXfileName)
+                                    {
+                                        skeleton.Textures[i] = tex;
+                                    }
                                 }
-                            }
-                            break;
+                                break;
+                        }
+
+                        SetTextureEditorFields();
+                        cbTextureSelect.SelectedIndex = texIndex;
+
+                        PanelModel_Paint(null, null);
                     }
-
-                    SetTextureEditorFields();
-                    cbTextureSelect.SelectedIndex = texIndex;
-
-                    PanelModel_Paint(null, null);
                 }
-                    }
             }
         }
 
@@ -6723,16 +6758,16 @@ namespace KimeraCS
                 switch (modelType)
                 {
                     case ModelType.HRCSkeleton:
-                        /*FieldBone tmpfBone = skeleton.Bones[SelectedBone];
-                        FieldRSDResource tmpRSDResource = tmpfBone.Models[SelectedBonePiece];
+                    /*FieldBone tmpfBone = skeleton.Bones[SelectedBone];
+                    FieldRSDResource tmpRSDResource = tmpfBone.Models[SelectedBonePiece];
 
-                        RotatePModelModifiers(ref tmpRSDResource.Model,
-                                                        hsbRotateAlpha.Value, hsbRotateBeta.Value, hsbRotateGamma.Value);
+                    RotatePModelModifiers(ref tmpRSDResource.Model,
+                                                    hsbRotateAlpha.Value, hsbRotateBeta.Value, hsbRotateGamma.Value);
 
-                        tmpfBone.Models[SelectedBonePiece] = tmpRSDResource;
-                        skeleton.Bones[SelectedBone] = tmpfBone;
+                    tmpfBone.Models[SelectedBonePiece] = tmpRSDResource;
+                    skeleton.Bones[SelectedBone] = tmpfBone;
 
-                        break;*/
+                    break;*/
 
                     case ModelType.AASkeleton:
                     case ModelType.MagicSkeleton:
@@ -6770,7 +6805,7 @@ namespace KimeraCS
             }
         }
 
-        private void LoadSkeletonFromDB()
+        private void LoadSkeletonFromFieldDB(string modelFile, string animFile, bool isWorld = false)
         {
             Vector3 p_min = new Vector3();
             Vector3 p_max = new Vector3();
@@ -6783,9 +6818,12 @@ namespace KimeraCS
             try
             {
                 // Set Global Paths
-                strGlobalFieldSkeletonFileName = FrmFieldDB.strFieldFile;
-                strGlobalFieldSkeletonName = Path.GetFileName(FrmFieldDB.strFieldFile).ToUpper();
-                strGlobalFieldAnimationName = Path.GetFileName(FrmFieldDB.strAnimFile).ToUpper();
+                if (isWorld)
+                    strGlobalWorldSkeletonFileName = modelFile;
+                else
+                    strGlobalFieldSkeletonFileName = modelFile;
+                strGlobalFieldSkeletonName = Path.GetFileName(modelFile).ToUpper();
+                strGlobalFieldAnimationName = Path.GetFileName(animFile).ToUpper();
 
                 // Initialize OpenGL Context;
                 //InitOpenGLContext();
@@ -6797,10 +6835,10 @@ namespace KimeraCS
                 InitializeWinFormsDataControls();
 
                 // Load Field Skeleton
-                iLoadResult = UserPrompts.LoadSkeletonFromDB(FrmFieldDB.strFieldFile, FrmFieldDB.strAnimFile);
+                iLoadResult = UserPrompts.LoadSkeletonFromDB(modelFile, animFile);
 
                 // Error messages
-                ShowDBErrorMessages(iLoadResult, FrmFieldDB.strFieldFile);
+                ShowDBErrorMessages(iLoadResult, modelFile);
                 if (iLoadResult < 1) return;
 
                 if (skeleton != null && animation != null)

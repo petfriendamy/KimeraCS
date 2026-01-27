@@ -201,14 +201,14 @@ namespace KimeraCS
             // Check existance of the files.
             if (!File.Exists(strFieldFile))
             {
-                MessageBox.Show("The file selected as Field Model " + cbModel.Text + " does not exists.",
+                MessageBox.Show("The file selected as Field Model " + cbModel.Text + " does not exist.",
                                 "Error");
                 return;
             }
 
             if (!File.Exists(strAnimFile))
             {
-                MessageBox.Show("The file selected as Field Animation " + lbAnimation.SelectedItem + " does not exists.",
+                MessageBox.Show("The file selected as Field Animation " + lbAnimation.SelectedItem + " does not exist.",
                                 "Error");
                 return;
             }

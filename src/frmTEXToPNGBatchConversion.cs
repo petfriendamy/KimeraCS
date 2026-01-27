@@ -125,7 +125,7 @@ namespace KimeraCS
                     ProcessTEX2PNGBatch(txtTEX2PNGBatchPath.Text);
                 }
                 else
-                    MessageBox.Show("The selected folder does not exists.", "Warning");
+                    MessageBox.Show("The selected folder does not exist.", "Warning");
             }
             catch (Exception ex)
             {
