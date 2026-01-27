@@ -23,7 +23,7 @@ namespace KimeraCS.Core
         /// <summary>
         /// Fits a bitmap to a PictureBox, scaling with NearestNeighbor interpolation.
         /// </summary>
-        public static Bitmap FitBitmapToPictureBox(PictureBox pbIn, int iImgWidth, int iImgHeight, Bitmap srcBitmap)
+        public static Bitmap? FitBitmapToPictureBox(PictureBox pbIn, int iImgWidth, int iImgHeight, Bitmap? srcBitmap)
         {
             if (srcBitmap == null)
                 return null;

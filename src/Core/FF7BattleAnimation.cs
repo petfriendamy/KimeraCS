@@ -1,16 +1,11 @@
-﻿using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
 
 namespace KimeraCS.Core
 {
-
     using static FF7BattleSkeleton;
     using static Utils;
-
 
     public static class FF7BattleAnimation
     {
@@ -103,8 +98,8 @@ namespace KimeraCS.Core
                 blockSizeShort = 0;
                 key = 0;
 
-                framesRawData = null;
-                padding4bytes = null;
+                framesRawData = Array.Empty<byte>();
+                padding4bytes = Array.Empty<byte>();
 
                 //missingNumFramesShort = false;
                 frames = new List<BattleFrame>();
@@ -1297,10 +1292,5 @@ namespace KimeraCS.Core
 
             return bAnimationOut;
         }
-
-
-
-
-
     }
 }

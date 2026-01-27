@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-using System.Collections.Generic;
 using System.Text;
 using OpenTK.Graphics.OpenGL.Compatibility;
 
@@ -256,27 +253,5 @@ namespace KimeraCS.Core
 
             Resource.textures.Clear();
         }
-
-
-
-        //  --------------------------------------------------------------------------------------------------
-        //  ============================================= UTILS ==============================================
-        //  --------------------------------------------------------------------------------------------------
-        public static FieldRSDResource CopyRSDResource(FieldRSDResource fRSDResourceIn)
-        {
-            FieldRSDResource tmpFieldRSDResource = new FieldRSDResource()
-            {
-                ID = fRSDResourceIn.ID,
-                numTextures = fRSDResourceIn.numTextures,
-                res_file = fRSDResourceIn.res_file,
-                textures = fRSDResourceIn.textures,
-                Model = CopyPModel(fRSDResourceIn.Model),
-            };
-
-            return tmpFieldRSDResource;
-        }
-
-
-
     }
 }

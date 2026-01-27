@@ -58,7 +58,7 @@ namespace KimeraCS
                 {
                     DataGridViewRow dgvRow = dgvMagic.Rows
                                                 .Cast<DataGridViewRow>()
-                                                .Where(r => r.Cells[1].Value.ToString().Equals(strLocalMagicModelName))
+                                                .Where(r => (r.Cells[1].Value?.ToString() ?? string.Empty).Equals(strLocalMagicModelName))
                                                 .First();
 
                     dgvMagic.CurrentCell = dgvMagic.Rows[dgvRow.Index].Cells[1];
@@ -130,7 +130,7 @@ namespace KimeraCS
 
         private void BtnClose_Click(object sender, EventArgs e)
         {
-            strLocalMagicModelName = dgvMagic.Rows[dgvMagic.SelectedRows[0].Index].Cells[1].Value.ToString();
+            strLocalMagicModelName = (dgvMagic.Rows[dgvMagic.SelectedRows[0].Index].Cells[1].Value?.ToString() ?? string.Empty);
 
             if (!bSelectedMagicFileFromDB)
             {
@@ -145,7 +145,7 @@ namespace KimeraCS
 
         private void FrmMagicDB_FormClosed(object sender, FormClosedEventArgs e)
         {
-            strLocalMagicModelName = dgvMagic.Rows[dgvMagic.SelectedRows[0].Index].Cells[1].Value.ToString();
+            strLocalMagicModelName = (dgvMagic.Rows[dgvMagic.SelectedRows[0].Index].Cells[1].Value?.ToString() ?? string.Empty);
 
             if (!bSelectedMagicFileFromDB)
             {
@@ -161,7 +161,7 @@ namespace KimeraCS
 
             if (dgvMagic.SelectedRows.Count > 0)
             {
-                strModelName = dgvMagic.Rows[dgvMagic.SelectedRows[0].Index].Cells[1].Value.ToString();
+                strModelName = (dgvMagic.Rows[dgvMagic.SelectedRows[0].Index].Cells[1].Value?.ToString() ?? string.Empty);
 
                 if (strModelName != "")
                 {

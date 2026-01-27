@@ -764,7 +764,7 @@ namespace KimeraCS.Core
             {
                 TexCoords = new Vector2[TMDVertices.Length];
             }
-            else TexCoords = null;
+            else TexCoords = [];
 
 
             for (iPolyIdx = 0; iPolyIdx < TMDPrimitiveHeaders.Length; iPolyIdx++)

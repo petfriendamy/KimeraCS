@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Drawing;
 using System.Numerics;
 using KimeraCS.Rendering;
 using OpenTK.Graphics.OpenGL.Compatibility;
@@ -8,8 +5,6 @@ using OpenTK.Mathematics;
 
 namespace KimeraCS.Core
 {
-    using static FF7BattleSkeleton;
-    using static FF7FieldSkeleton;
     using static FF7PModel;
     using static FF7Skeleton;
 
@@ -47,7 +42,7 @@ namespace KimeraCS.Core
 
         //private int[] Onbits = new int[32];
 
-        public static string strGlobalExceptionMessage;
+        public static string strGlobalExceptionMessage = string.Empty;
 
         // Helper Functions
         //public static bool IsNumeric(string val) => int.TryParse(val, out int _);
@@ -405,10 +400,10 @@ namespace KimeraCS.Core
             return x * 180f / Math.PI;
         }
 
-        public static Quaterniond GetQuaternionFromEulerXYZr(double x, double y, double z)
+        /*public static Quaterniond GetQuaternionFromEulerXYZr(double x, double y, double z)
         {
             return GetQuaternionFromEulerUniversal(DegToRad(x), DegToRad(y), DegToRad(z), 2, 1, 0, 1, 0, 1);
-        }
+        }*/
 
         public static Quaterniond GetQuaternionFromEulerYXZr(double x, double y, double z)
         {
@@ -474,10 +469,10 @@ namespace KimeraCS.Core
             return up3DGetEulerFormMatrixUniversalResult;
         }
 
-        public static OpenTK.Mathematics.Vector3 GetEulerXYZrFromMatrix(double[] mat)
+        /*public static OpenTK.Mathematics.Vector3 GetEulerXYZrFromMatrix(double[] mat)
         {
             return GetEulerFormMatrixUniversal(mat, 2, 1, 0, 1, 0, 1);
-        }
+        }*/
 
         public static OpenTK.Mathematics.Vector3 GetEulerYXZrFromMatrix(double[] mat)
         {
@@ -804,24 +799,26 @@ namespace KimeraCS.Core
             {
                 switch (modelType)
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[currFrame],
-                                                ref p_min, ref p_max);
+                    case ModelType.HRCSkeleton:
+                        if (skeleton != null && animation != null)
+                            skeleton.ComputeBoundingBox(animation.Frames[currFrame],
+                                                        ref p_min, ref p_max);
                         break;
 
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
                         //if (!bSkeleton.IsBattleLocation)
                         //{
-                        ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[animIndex].frames[currFrame],
-                                                 ref p_min, ref p_max);
+                        if (skeleton != null && animationPack != null)
+                            skeleton.ComputeBoundingBox(animationPack.SkeletonAnimations[animIndex].Frames[currFrame],
+                                                        ref p_min, ref p_max);
                         //}
                         break;
 
-                    case ModelType.K_P_FIELD_MODEL:
-                    case ModelType.K_P_BATTLE_MODEL:
-                    case ModelType.K_P_MAGIC_MODEL:
-                    case ModelType.K_3DS_MODEL:
+                    case ModelType.PFieldModel:
+                    case ModelType.PBattleModel:
+                    case ModelType.PMagicModel:
+                    case ModelType.ImportedModel:
                         ComputePModelBoundingBox(fPModel, ref p_min, ref p_max);
                         break;
                 }
@@ -857,10 +854,10 @@ namespace KimeraCS.Core
             return new OpenTK.Mathematics.Vector3(v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z);
         }
 
-        public static float DotProduct3D(OpenTK.Mathematics.Vector3 v1, OpenTK.Mathematics.Vector3 v2)
+        /*public static float DotProduct3D(OpenTK.Mathematics.Vector3 v1, OpenTK.Mathematics.Vector3 v2)
         {
             return v1.X * v2.X + v1.Y * v2.Y + v1.Z * v2.Z;
-        }
+        }*/
 
         public static OpenTK.Mathematics.Vector3 CrossProduct3D(OpenTK.Mathematics.Vector3 v1,
             OpenTK.Mathematics.Vector3 v2)
@@ -876,7 +873,7 @@ namespace KimeraCS.Core
             return new OpenTK.Mathematics.Vector3(v.X / fScalar, v.Y / fScalar, v.Z / fScalar);
         }
 
-        public static float CalculateAngle2Vectors3D(OpenTK.Mathematics.Vector3 v1,
+        /*public static float CalculateAngle2Vectors3D(OpenTK.Mathematics.Vector3 v1,
             OpenTK.Mathematics.Vector3 v2)
         {
             double dAngleRadians;
@@ -902,7 +899,7 @@ namespace KimeraCS.Core
             float s = (a + b + c) / 2;
 
             return (float)Math.Sqrt(s * (s - a) * (s - b) * (s - c));
-        }
+        }*/
 
         public static OpenTK.Mathematics.Vector3 Normalize(OpenTK.Mathematics.Vector3 v)
         {
@@ -977,12 +974,6 @@ namespace KimeraCS.Core
          
         ///////////////////////////////////////////
         // Maths
-        public static bool CompareLongs(long val1, long val2)
-        {
-            if ((val1 ^ val2) < 0) return val1 < 0;
-            else return val1 > val2;
-        }
-
         public static void GetSubMatrix(double[] mat, int i, int j, ref double[] mat_out)
         {
             int i2, j2, order, pos;
@@ -1015,7 +1006,7 @@ namespace KimeraCS.Core
 
             int i, order;
             double det_aux;
-            double[] mat_aux = null;
+            double[] mat_aux = [];
 
             order = (int)Math.Sqrt(mat.Length);
 
@@ -1042,7 +1033,7 @@ namespace KimeraCS.Core
         public static void GetAtachedMatrix(double[] mat, ref double[] mat_out)
         {
             int i, j, order;
-            double[] mat_aux = null;
+            double[] mat_aux = [];
 
             order = (int)Math.Sqrt(mat.Length);
 
@@ -1079,7 +1070,7 @@ namespace KimeraCS.Core
         public static void InvertMatrix(ref double[] mat)
         {
             int i, j, order;
-            double[] mat_aux = null;
+            double[] mat_aux = [];
             double det;
 
             order = (int)Math.Sqrt(mat.Length);
@@ -1783,15 +1774,6 @@ namespace KimeraCS.Core
         }
 
         /// <summary>
-        /// Creates a view matrix looking at a target (replaces gluLookAt)
-        /// </summary>
-        public static Matrix4 CreateLookAtMatrix(OpenTK.Mathematics.Vector3 eye,
-            OpenTK.Mathematics.Vector3 target, OpenTK.Mathematics.Vector3 up)
-        {
-            return Matrix4.LookAt(eye, target, up);
-        }
-
-        /// <summary>
         /// Projects a 3D world coordinate to 2D screen coordinates (replaces gluProject)
         /// </summary>
         /// <param name="worldPos">World position to project</param>
@@ -1901,16 +1883,16 @@ namespace KimeraCS.Core
         /// <summary>
         /// Converts OpenTK Matrix4 to double[] (16 elements, column-major)
         /// </summary>
-        public static double[] FromMatrix4(Matrix4 mat)
+        /*public static double[] FromMatrix4(Matrix4 mat)
         {
-            return new double[]
-            {
+            return
+            [
                 mat.M11, mat.M12, mat.M13, mat.M14,
                 mat.M21, mat.M22, mat.M23, mat.M24,
                 mat.M31, mat.M32, mat.M33, mat.M34,
                 mat.M41, mat.M42, mat.M43, mat.M44
-            };
-        }
+            ];
+        }*/
 
         /// <summary>
         /// Converts an OpenTK Matrix4 to an Matrix4x4.

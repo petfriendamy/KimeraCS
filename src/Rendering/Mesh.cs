@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Drawing;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
@@ -136,7 +133,7 @@ namespace KimeraCS.Rendering
 
     public class PModelMesh : IDisposable
     {
-        public GroupMesh[] Groups { get; private set; }
+        public GroupMesh[]? Groups { get; private set; }
         private bool _disposed;
 
         public static PModelMesh FromPModel(PModel model, bool usePolygonColors = false)

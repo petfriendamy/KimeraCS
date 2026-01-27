@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using KimeraCS.Core;
 using OpenTK.Mathematics;
 
@@ -18,7 +16,7 @@ namespace KimeraCS.Rendering
         /// <summary>
         /// Create a LineMesh for displaying vertex or face normals.
         /// </summary>
-        public static LineMesh CreateNormalsMesh(PGroup group, PPolygon[] polys, Vector3[] verts,
+        public static LineMesh? CreateNormalsMesh(PGroup group, PPolygon[] polys, Vector3[] verts,
                                                    Vector3[] normals, int[] normalsIndex,
                                                    NormalsDisplayMode showNormals = NormalsDisplayMode.None,
                                                    float normalsScale = DEFAULT_NORMAL_SCALE,
@@ -312,7 +310,7 @@ namespace KimeraCS.Rendering
         /// <summary>
         /// Create a LineMesh for wireframe rendering of a PModel.
         /// </summary>
-        public static LineMesh CreateWireframeMesh(PModel model)
+        public static LineMesh? CreateWireframeMesh(PModel model)
         {
             var vertices = new List<LineVertex>();
             var color = new Vector4(0, 0, 0, 1);

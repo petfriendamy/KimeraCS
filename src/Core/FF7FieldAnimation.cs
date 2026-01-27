@@ -1,7 +1,4 @@
-using System;
-using System.IO;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using OpenTK.Mathematics;
@@ -9,15 +6,13 @@ using OpenTK.Mathematics;
 namespace KimeraCS.Core
 {
 
-    using static FF7Skeleton;
     using static FF7FieldSkeleton;
-
     using static Utils;
 
     public static class FF7FieldAnimation
     {
 
-        public static FrmFF7IDFJointsBonesSelection frmFF7IDFJBS;
+        public static FrmFF7IDFJointsBonesSelection? frmFF7IDFJBS;
 
         public struct FieldRotation
         {
@@ -87,9 +82,9 @@ namespace KimeraCS.Core
                 version = 0;
                 nFrames = 0;
                 nBones = 0;
-                rotationOrder = null;
+                rotationOrder = Array.Empty<byte>();
                 unused = 0;
-                runtime_data = null;
+                runtime_data = Array.Empty<int>();
                 frames = new List<FieldFrame>();
 
                 strFieldAnimationFile = "";
@@ -110,7 +105,7 @@ namespace KimeraCS.Core
                         // Case where we didn't find a compatible animation for the opened model.
                         strFieldAnimationFile = "DUMMY.A";
 
-                        CreateCompatibleFieldAnimation();
+                        CreateCompatibleFieldAnimation(fSkeleton);
                     }
                 }
                 catch (Exception ex)
@@ -192,7 +187,7 @@ namespace KimeraCS.Core
                 }
             }
 
-            public int CreateCompatibleFieldAnimation()
+            public int CreateCompatibleFieldAnimation(FieldSkeleton fSkeleton)
             {
                 int iResult = 1;
 
@@ -441,9 +436,10 @@ namespace KimeraCS.Core
 
         }
 
-        public static int LoadAnimationFromDB(string strAnimFileName)
+        public static (FieldAnimation?, int) LoadAnimationFromDB(FieldSkeleton fSkeleton, string strAnimFileName)
         {
             int iloadAnimationFromDBResult = 1;
+            FieldAnimation? fAnimation = null;
             FieldAnimation tmpfAnimation;
 
             try
@@ -479,7 +475,7 @@ namespace KimeraCS.Core
                 iloadAnimationFromDBResult = -3;
             }
 
-            return iloadAnimationFromDBResult;
+            return (fAnimation, iloadAnimationFromDBResult);
         }
 
         public static bool IsBrokenFieldRotation(ref FieldRotation fRotation)
@@ -755,23 +751,25 @@ namespace KimeraCS.Core
             fAnimation = tmpfAnimation;
         }
 
-        public static bool JointBoneStatus(int iBonePosition)
+        public static bool JointBoneStatus(FieldSkeleton fSkeleton, int iBonePosition)
         {
             int iJointPosition = 0;
             bool bFoundJoint = false;
 
-            while (iJointPosition < frmFF7IDFJBS.chklbJointsBones.Items.Count &&
-                   !bFoundJoint)
+            if (frmFF7IDFJBS != null)
             {
-                if (fSkeleton.bones[iBonePosition].joint_i ==
-                            frmFF7IDFJBS.chklbJointsBones.Items[iJointPosition].ToString().Split('-')[0] &&
-                    fSkeleton.bones[iBonePosition].joint_f ==
-                            frmFF7IDFJBS.chklbJointsBones.Items[iJointPosition].ToString().Split('-')[1] &&
-                    frmFF7IDFJBS.chklbJointsBones.GetItemChecked(iJointPosition))
+                while (iJointPosition < frmFF7IDFJBS.chklbJointsBones.Items.Count &&
+                   !bFoundJoint)
                 {
-                    bFoundJoint = true;
+                    var joint = frmFF7IDFJBS.chklbJointsBones.Items[iJointPosition].ToString();
+                    if (fSkeleton.bones[iBonePosition].joint_i == (joint ?? string.Empty).Split('-')[0] &&
+                        fSkeleton.bones[iBonePosition].joint_f == (joint ?? string.Empty).Split('-')[1] &&
+                        frmFF7IDFJBS.chklbJointsBones.GetItemChecked(iJointPosition))
+                    {
+                        bFoundJoint = true;
+                    }
+                    else iJointPosition++;
                 }
-                else iJointPosition++;
             }
 
             return bFoundJoint;
@@ -893,7 +891,7 @@ namespace KimeraCS.Core
                                         fSkeleton.bones[iBonePosition].joint_f == strSplitKeyData[1].Split('-')[1])
                                     {
                                         // Here we will check also if the joint/bones are checked in checkedlist
-                                        if (JointBoneStatus(iBonePosition)) bFoundBone = true;
+                                        if (JointBoneStatus(fSkeleton, iBonePosition)) bFoundBone = true;
                                         else iBonePosition++;
                                     }
                                     else iBonePosition++;
@@ -962,7 +960,7 @@ namespace KimeraCS.Core
 
             iFrameCounter = 0;
 
-            strOutputFrameData.AppendLine("MODEL_TYPE:" + modelType.ToString());
+            strOutputFrameData.AppendLine($"MODEL_TYPE:{(int)ModelType.HRCSkeleton}");
             strOutputFrameData.AppendLine("FILENAME:" + fAnimation.strFieldAnimationFile.ToUpper());
             strOutputFrameData.AppendLine("RUNTIME_DATA:" + fAnimation.runtime_data[0].ToString() + "_" +
                                                             fAnimation.runtime_data[1].ToString() + "_" +

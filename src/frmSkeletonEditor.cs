@@ -1,16 +1,11 @@
-﻿using OpenTK.Graphics.OpenGL.Compatibility;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.IO;
+﻿using System.Diagnostics;
 using System.Reflection;
-using System.Windows.Forms;
+using OpenTK.Graphics.OpenGL.Compatibility;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using KimeraCS.Core;
 using KimeraCS.Rendering;
-
+using KimeraCS.Core.Enums;
 
 namespace KimeraCS
 {
@@ -64,9 +59,9 @@ namespace KimeraCS
         //private static bool OpenGLValid = false;
 
         // This is for the Copy/Paste Frame feature
-        FieldFrame CopyfFieldFrame;
-        BattleFrame CopybBattleFrame;
-        BattleFrame CopybBattleWFrame;
+        UnifiedFrame? CopyFrame;
+        //BattleFrame? CopyFrame;
+        UnifiedFrame? CopyWFrame;
 
         // private vars of controls
         // Drawing
@@ -102,29 +97,29 @@ namespace KimeraCS
         int nUDTexUpDown;
 
         // Other forms instances of main frmSkeletonEditor
-        FrmFieldDB frmFieldDatabase;
-        FrmBattleDB frmBattleDatabase;
-        FrmMagicDB frmMagicDatabase;
-        FrmInterpolateAll frmInterpAll;
-        FrmTEXToPNGBatchConversion frmTEX2PNGBC;
-        FrmSkeletonJoints frmSJ;
+        FrmFieldDB? frmFieldDatabase;
+        FrmBattleDB? frmBattleDatabase;
+        FrmMagicDB? frmMagicDatabase;
+        FrmInterpolateAll? frmInterpAll;
+        FrmTEXToPNGBatchConversion? frmTEX2PNGBC;
+        FrmSkeletonJoints? frmSJ;
 
         // StopWatch
-        Stopwatch swPlayAnimation;
+        Stopwatch? swPlayAnimation;
 
         // PEditor vars
-        public FrmPEditor frmPEdit;
+        public FrmPEditor? frmPEdit;
 
         // Texture Viewer vars
-        private FrmTextureViewer frmTexViewer;
+        private FrmTextureViewer? frmTexViewer;
         public bool bPaintGreen;
         public int iTexCoordViewerScale;
 
         // Statistics vars
-        private FrmStatistics frmStats;
+        private FrmStatistics? frmStats;
 
         // TMD Object List
-        private FrmTMDObjList frmTMDOL;
+        private FrmTMDObjList? frmTMDOL;
 
         // DPI vars
         public decimal dDPIScaleFactor;
@@ -136,7 +131,7 @@ namespace KimeraCS
         private static float fNormalsScale;
 
         // SaveAs global variable
-        private static string strGlobalPathSaveAsSkeletonFolder;
+        private static string strGlobalPathSaveAsSkeletonFolder = string.Empty;
 
 
         /////////////////////////////////////////////////////////////
@@ -190,7 +185,7 @@ namespace KimeraCS
         /////////////////////////////////////////////////////////////
         // ToolTip Helpers:
         // Create the ToolTip and associate with the Form container.
-        readonly ToolTip toolTip1 = new ToolTip();
+        readonly ToolTip toolTip1 = new();
 
         private void DefineToolTips()
         {
@@ -402,9 +397,8 @@ namespace KimeraCS
             fFPS = 1000 / iFPS;
 
             // Init Copy/Paste Frames vars
-            CopyfFieldFrame = new FieldFrame();
-            CopybBattleFrame = new BattleFrame();
-            CopybBattleWFrame = new BattleFrame();
+            //CopyFrame = new UnifiedFrame();
+            //CopyWFrame = new UnifiedFrame();
 
             // Some few Hints/ToolTips
             DefineToolTips();
@@ -459,61 +453,64 @@ namespace KimeraCS
 
         private void FrmSkeletonEditor_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.ControlKey) controlPressedQ = true;
+            if (skeleton != null)
+            {
+                if (e.KeyCode == Keys.ControlKey) controlPressedQ = true;
 
-            if (e.KeyCode == Keys.Escape) selectBoneForWeaponAttachmentQ = false;
+                if (e.KeyCode == Keys.Escape) selectBoneForWeaponAttachmentQ = false;
 
-            if (e.KeyCode == Keys.D && SelectedBone > -1)
-                btnRemovePiece.PerformClick();
+                if (e.KeyCode == Keys.D && SelectedBone > -1)
+                    btnRemovePiece.PerformClick();
 
-            if (e.KeyCode == Keys.V)
-                showVertexNormalsToolStripMenuItem.PerformClick();
+                if (e.KeyCode == Keys.V)
+                    showVertexNormalsToolStripMenuItem.PerformClick();
 
-            if (e.KeyCode == Keys.F)
-                showFaceNormalsToolStripMenuItem.PerformClick();
+                if (e.KeyCode == Keys.F)
+                    showFaceNormalsToolStripMenuItem.PerformClick();
 
-            if (e.KeyCode == Keys.Space)
-                if (cbBoneSelector.SelectedIndex >= 0)
-                {
-                    switch (modelType)
+                if (e.KeyCode == Keys.Space)
+                    if (cbBoneSelector.SelectedIndex >= 0)
                     {
-                        case ModelType.K_HRC_SKELETON:
-                            if (fSkeleton.bones[SelectedBone].nResources > 0)
-                                SelectedBonePiece = 0;
-                            break;
-
-                        case ModelType.K_AA_SKELETON:
-                        case ModelType.K_MAGIC_SKELETON:
-                            if (bSkeleton.nBones == SelectedBone)
-                            {
-                                if (bSkeleton.nWeapons > 0 && cbWeapon.SelectedIndex > -1)
-                                {
-                                    SelectedBonePiece = cbWeapon.SelectedIndex;
-                                }
-                            }
-                            else
-                            {
-                                if (bSkeleton.bones[SelectedBone].hasModel == 1)
+                        switch (modelType)
+                        {
+                            case ModelType.HRCSkeleton:
+                                if (skeleton.Bones[SelectedBone].HasModel)
                                     SelectedBonePiece = 0;
-                            }
+                                break;
 
-                            break;
+                            case ModelType.AASkeleton:
+                            case ModelType.MagicSkeleton:
+                                if (skeleton.BoneCount == SelectedBone)
+                                {
+                                    if (skeleton.WeaponCount > 0 && cbWeapon.SelectedIndex > -1)
+                                    {
+                                        SelectedBonePiece = cbWeapon.SelectedIndex;
+                                    }
+                                }
+                                else
+                                {
+                                    if (skeleton.Bones[SelectedBone].HasModel)
+                                        SelectedBonePiece = 0;
+                                }
+
+                                break;
+                        }
+
+                        PanelModel_DoubleClick(sender, e);
                     }
 
-                    PanelModel_DoubleClick(sender, e);
-                }
+                if (e.KeyCode == Keys.F2)
+                    if (IsTMDModel) frmTMDOL?.Show();
 
-            if (e.KeyCode == Keys.F2)
-                if (IsTMDModel) frmTMDOL.Show();
+                if (controlPressedQ && e.KeyCode == Keys.Up) alpha++;
+                if (controlPressedQ && e.KeyCode == Keys.Down) alpha--;
+                if (controlPressedQ && e.KeyCode == Keys.Left) beta--;
+                if (controlPressedQ && e.KeyCode == Keys.Right) beta++;
 
-            if (controlPressedQ && e.KeyCode == Keys.Up) alpha++;
-            if (controlPressedQ && e.KeyCode == Keys.Down) alpha--;
-            if (controlPressedQ && e.KeyCode == Keys.Left) beta--;
-            if (controlPressedQ && e.KeyCode == Keys.Right) beta++;
-
-            panelModel.Update();
-            PanelModel_Paint(null, null);
-            TextureViewer_Paint(null, null);
+                panelModel.Update();
+                PanelModel_Paint(null, null);
+                TextureViewer_Paint(null, null);
+            }
         }
 
         private void FrmSkeletonEditor_KeyUp(object sender, KeyEventArgs e)
@@ -530,10 +527,10 @@ namespace KimeraCS
             // Check first if minimized.
             if (Application.OpenForms.Count > 0)
             {
-                if (Application.OpenForms[0].WindowState == FormWindowState.Minimized) return;
+                if (Application.OpenForms[0]?.WindowState == FormWindowState.Minimized) return;
 
                 // Reposition TMD Object Window List if it is opened
-                if (IsTMDModel) frmTMDOL.RepositionTMD();
+                if (IsTMDModel) frmTMDOL?.RepositionTMD();
 
                 // We can redraw the model in panel
                 panelModel.Update();
@@ -675,7 +672,7 @@ namespace KimeraCS
             IsRSDResource = false;
 
             // Model intrinsic vars
-            bSkeleton.IsBattleLocation = false;
+            //skeleton.IsBattleLocation = false;
 
             //SetOGLContext(panelModelDC, OGLContext);
             //SetOGLSettings();
@@ -688,10 +685,10 @@ namespace KimeraCS
             // Visual controls
             switch (modelType)
             {
-                case ModelType.K_P_FIELD_MODEL:
-                case ModelType.K_P_BATTLE_MODEL:
-                case ModelType.K_P_MAGIC_MODEL:
-                case ModelType.K_3DS_MODEL:
+                case ModelType.PFieldModel:
+                case ModelType.PBattleModel:
+                case ModelType.PMagicModel:
+                case ModelType.ImportedModel:
                     gbSelectedPieceFrame.Enabled = true;
 
                     // Menu Strip
@@ -701,87 +698,184 @@ namespace KimeraCS
                     oneftoolStripMenuItem.PerformClick();
                     break;
 
-                case ModelType.K_HRC_SKELETON:
-                    lblBoneSelector.Visible = true;
-                    cbBoneSelector.Visible = true;
+                case ModelType.HRCSkeleton:
+                    if (animation != null)
+                    {
+                        lblBoneSelector.Visible = true;
+                        cbBoneSelector.Visible = true;
 
-                    gbSelectedBoneFrame.Visible = true;
+                        gbSelectedBoneFrame.Visible = true;
 
-                    gbTexturesFrame.Visible = true;
-                    gbTexturesFrame.Enabled = false;
-                    gbTexturesFrame.Text = "Textures (Part)";
+                        gbTexturesFrame.Visible = true;
+                        gbTexturesFrame.Enabled = false;
+                        gbTexturesFrame.Text = "Textures (Part)";
 
-                    tbCurrentFrameScroll.Value = 0;
-                    tbCurrentFrameScroll.Minimum = 0;
+                        tbCurrentFrameScroll.Value = 0;
+                        tbCurrentFrameScroll.Minimum = 0;
 
-                    tbCurrentFrameScroll.Maximum = fAnimation.nFrames - 1;
+                        tbCurrentFrameScroll.Maximum = animation.FrameCount - 1;
 
-                    tbCurrentFrameScroll.Enabled = true;
-                    txtAnimationFrame.Text = tbCurrentFrameScroll.Value.ToString();
-                    lblAnimationFrame.Visible = true;
-                    txtAnimationFrame.Visible = true;
-                    tbCurrentFrameScroll.Visible = true;
+                        tbCurrentFrameScroll.Enabled = true;
+                        txtAnimationFrame.Text = tbCurrentFrameScroll.Value.ToString();
+                        lblAnimationFrame.Visible = true;
+                        txtAnimationFrame.Visible = true;
+                        tbCurrentFrameScroll.Visible = true;
 
-                    btnPlayStopAnim.Visible = true;
-                    btnFrameBegin.Visible = true;
-                    btnFrameEnd.Visible = true;
-                    btnFrameNext.Visible = true;
-                    btnFramePrev.Visible = true;
+                        btnPlayStopAnim.Visible = true;
+                        btnFrameBegin.Visible = true;
+                        btnFrameEnd.Visible = true;
+                        btnFrameNext.Visible = true;
+                        btnFramePrev.Visible = true;
 
-                    btnCopyFrame.Visible = true;
-                    btnPasteFrame.Visible = true;
-                    txtCopyPasteFrame.Visible = true;
-                    chkShowBones.Enabled = true;
-                    chkShowBones.Visible = true;
-                    btnInterpolateAnimation.Visible = true;
+                        btnCopyFrame.Visible = true;
+                        btnPasteFrame.Visible = true;
+                        txtCopyPasteFrame.Visible = true;
+                        chkShowBones.Enabled = true;
+                        chkShowBones.Visible = true;
+                        btnInterpolateAnimation.Visible = true;
 
-                    gbAnimationOptionsFrame.Visible = true;
+                        gbAnimationOptionsFrame.Visible = true;
 
-                    btnComputeGroundHeight.Visible = true;
+                        btnComputeGroundHeight.Visible = true;
 
-                    // Menu Strip
-                    addJointToolStripMenuItem.Enabled = true;
-                    loadFieldAnimationToolStripMenuItem.Enabled = true;
-                    statisticsToolStripMenuItem.Enabled = true;
+                        // Menu Strip
+                        addJointToolStripMenuItem.Enabled = true;
+                        loadFieldAnimationToolStripMenuItem.Enabled = true;
+                        statisticsToolStripMenuItem.Enabled = true;
 
-                    saveAnimationToolStripMenuItem.Enabled = true;
-                    saveAnimationAsToolStripMenuItem.Enabled = true;
-                    outputFramesDataTXTToolStripMenuItem.Enabled = true;
-                    inputFramesDataTXTToolStripMenuItem.Enabled = true;
-                    inputFramesDataTXTToolSelectiveStripMenuItem.Enabled = true;
-                    mergeFramesDataTXTToolStripMenuItem.Enabled = true;
+                        saveAnimationToolStripMenuItem.Enabled = true;
+                        saveAnimationAsToolStripMenuItem.Enabled = true;
+                        outputFramesDataTXTToolStripMenuItem.Enabled = true;
+                        inputFramesDataTXTToolStripMenuItem.Enabled = true;
+                        inputFramesDataTXTToolSelectiveStripMenuItem.Enabled = true;
+                        mergeFramesDataTXTToolStripMenuItem.Enabled = true;
 
-                    saveSkeletonToolStripMenuItem.Enabled = true;
-                    saveSkeletonAsToolStripMenuItem.Enabled = true;
+                        saveSkeletonToolStripMenuItem.Enabled = true;
+                        saveSkeletonAsToolStripMenuItem.Enabled = true;
 
-                    // Show Normals vars
-                    oneftoolStripMenuItem.PerformClick();
+                        // Show Normals vars
+                        oneftoolStripMenuItem.PerformClick();
+                    }
                     break;
 
-                case ModelType.K_AA_SKELETON:
-                    lblBoneSelector.Visible = true;
-                    cbBoneSelector.Visible = true;
-
-                    gbSelectedBoneFrame.Visible = true;
-
-                    gbTexturesFrame.Visible = true;
-                    gbTexturesFrame.Enabled = true;
-                    gbTexturesFrame.Text = "Textures (Model)";
-
-                    // Battle Weapons
-                    for (iWeaponIdx = 0; iWeaponIdx < bSkeleton.nWeapons; iWeaponIdx++)
+                case ModelType.AASkeleton:
+                    if (skeleton != null && animationPack != null)
                     {
-                        if (bSkeleton.wpModels[iWeaponIdx].Polys != null)
-                            cbWeapon.Items.Add(iWeaponIdx.ToString());
+                        lblBoneSelector.Visible = true;
+                        cbBoneSelector.Visible = true;
+
+                        gbSelectedBoneFrame.Visible = true;
+
+                        gbTexturesFrame.Visible = true;
+                        gbTexturesFrame.Enabled = true;
+                        gbTexturesFrame.Text = "Textures (Model)";
+
+                        // Battle Weapons
+                        for (iWeaponIdx = 0; iWeaponIdx < skeleton.WeaponCount; iWeaponIdx++)
+                        {
+                            if (skeleton.Weapons[iWeaponIdx].Polys != null)
+                                cbWeapon.Items.Add(iWeaponIdx.ToString());
+                            else
+                                cbWeapon.Items.Add("EMPTY");
+                        }
+
+                        if (!skeleton.IsBattleLocation)
+                        {
+                            cbBattleAnimation.Visible = true;
+                            lblBattleAnimation.Visible = true;
+                            lblBattleAnimation.Text = "Battle Animation";
+
+                            btnPlayStopAnim.Visible = true;
+                            btnFrameBegin.Visible = true;
+                            btnFrameEnd.Visible = true;
+                            btnFrameNext.Visible = true;
+                            btnFramePrev.Visible = true;
+
+                            btnCopyFrame.Visible = true;
+                            btnPasteFrame.Visible = true;
+                            txtCopyPasteFrame.Visible = true;
+                            chkShowBones.Enabled = true;
+                            chkShowBones.Visible = true;
+
+                            // Battle Animations
+                            for (iAnimIdx = 0; iAnimIdx < animationPack.SkeletonAnimationCount; iAnimIdx++)
+                            {
+                                if (animationPack.SkeletonAnimations[iAnimIdx].FrameCount > 0)
+                                {
+                                    cbBattleAnimation.Items.Add(iAnimIdx.ToString());
+                                }
+                            }
+
+                            cbBattleAnimation.SelectedIndex = 0;
+                            ianimIndex = 0;
+
+                            iCurrentFrameScroll = 0;
+                            tbCurrentFrameScroll.Value = 0;
+                            tbCurrentFrameScroll.Minimum = 0;
+                            tbCurrentFrameScroll.Maximum = animationPack.SkeletonAnimations[0].FrameCount - 1;
+                            tbCurrentFrameScroll.Enabled = true;
+                            txtAnimationFrame.Text = tbCurrentFrameScroll.Value.ToString();
+                            lblAnimationFrame.Visible = true;
+                            txtAnimationFrame.Visible = true;
+                            tbCurrentFrameScroll.Visible = true;
+
+                            btnInterpolateAnimation.Visible = true;
+
+                            gbAnimationOptionsFrame.Visible = true;
+
+                            btnComputeGroundHeight.Visible = true;
+
+                            // Menu Strip
+                            loadBattleMagicLimitsAnimationStripMenuItem.Enabled = true;
+
+                            saveAnimationToolStripMenuItem.Enabled = true;
+                            saveAnimationAsToolStripMenuItem.Enabled = true;
+
+                            // Show Normals vars
+                            thirtyftoolStripMenuItem.PerformClick();
+                        }
                         else
-                            cbWeapon.Items.Add("EMPTY");
-                    }
+                        {
+                            // Disable Bone Length Numeric Up/Down
+                            nUDBoneOptionsLength.Maximum = 999999999;
+                            nUDBoneOptionsLength.Minimum = -999999999;
+                            nUDBoneOptionsLength.Enabled = false;
 
-                    if (!bSkeleton.IsBattleLocation)
+                            // Show Normals vars
+                            thousandftoolStripMenuItem.PerformClick();
+                        }
+
+                        if (skeleton.WeaponCount > 0)
+                        {
+                            cbWeapon.Visible = true;
+                            lblWeapon.Visible = true;
+                            btnComputeWeaponPosition.Visible = skeleton.WeaponCount > 0;
+                            cbWeapon.SelectedIndex = 0;
+                            ianimWeaponIndex = 0;
+                        }
+
+                        // Menu Strip
+                        saveSkeletonToolStripMenuItem.Enabled = true;
+                        saveSkeletonAsToolStripMenuItem.Enabled = true;
+                        statisticsToolStripMenuItem.Enabled = true;
+                    }
+                    break;
+
+                case ModelType.MagicSkeleton:
+                    if (animationPack != null)
                     {
+                        lblBoneSelector.Visible = true;
+                        cbBoneSelector.Visible = true;
+
+                        gbSelectedBoneFrame.Visible = true;
+
+                        gbTexturesFrame.Visible = true;
+                        gbTexturesFrame.Enabled = true;
+                        gbTexturesFrame.Text = "Textures (Model)";
+
                         cbBattleAnimation.Visible = true;
                         lblBattleAnimation.Visible = true;
-                        lblBattleAnimation.Text = "Battle Animation";
+                        lblBattleAnimation.Text = "Magic Animation";
 
                         btnPlayStopAnim.Visible = true;
                         btnFrameBegin.Visible = true;
@@ -796,9 +890,9 @@ namespace KimeraCS
                         chkShowBones.Visible = true;
 
                         // Battle Animations
-                        for (iAnimIdx = 0; iAnimIdx < bAnimationsPack.nbSkeletonAnims; iAnimIdx++)
+                        for (iAnimIdx = 0; iAnimIdx < animationPack.SkeletonAnimationCount; iAnimIdx++)
                         {
-                            if (bAnimationsPack.SkeletonAnimations[iAnimIdx].numFramesShort > 0)
+                            if (animationPack.SkeletonAnimations[iAnimIdx].FrameCount > 0)
                             {
                                 cbBattleAnimation.Items.Add(iAnimIdx.ToString());
                             }
@@ -809,8 +903,7 @@ namespace KimeraCS
 
                         iCurrentFrameScroll = 0;
                         tbCurrentFrameScroll.Value = 0;
-                        tbCurrentFrameScroll.Minimum = 0;
-                        tbCurrentFrameScroll.Maximum = bAnimationsPack.SkeletonAnimations[0].numFramesShort - 1;
+                        tbCurrentFrameScroll.Maximum = animationPack.SkeletonAnimations[0].FrameCount - 1;
                         tbCurrentFrameScroll.Enabled = true;
                         txtAnimationFrame.Text = tbCurrentFrameScroll.Value.ToString();
                         lblAnimationFrame.Visible = true;
@@ -825,104 +918,17 @@ namespace KimeraCS
 
                         // Menu Strip
                         loadBattleMagicLimitsAnimationStripMenuItem.Enabled = true;
+                        statisticsToolStripMenuItem.Enabled = true;
 
                         saveAnimationToolStripMenuItem.Enabled = true;
                         saveAnimationAsToolStripMenuItem.Enabled = true;
 
+                        saveSkeletonToolStripMenuItem.Enabled = true;
+                        saveSkeletonAsToolStripMenuItem.Enabled = true;
+
                         // Show Normals vars
                         thirtyftoolStripMenuItem.PerformClick();
                     }
-                    else
-                    {
-                        // Disable Bone Length Numeric Up/Down
-                        nUDBoneOptionsLength.Maximum = 999999999;
-                        nUDBoneOptionsLength.Minimum = -999999999;
-                        nUDBoneOptionsLength.Enabled = false;
-
-                        // Show Normals vars
-                        thousandftoolStripMenuItem.PerformClick();
-                    }
-
-                    if (bSkeleton.wpModels.Count > 0)
-                    {
-                        cbWeapon.Visible = true;
-                        lblWeapon.Visible = true;
-                        btnComputeWeaponPosition.Visible = bSkeleton.wpModels.Count > 0;
-                        cbWeapon.SelectedIndex = 0;
-                        ianimWeaponIndex = 0;
-                    }
-
-                    // Menu Strip
-                    saveSkeletonToolStripMenuItem.Enabled = true;
-                    saveSkeletonAsToolStripMenuItem.Enabled = true;
-                    statisticsToolStripMenuItem.Enabled = true;
-                    break;
-
-                case ModelType.K_MAGIC_SKELETON:
-                    lblBoneSelector.Visible = true;
-                    cbBoneSelector.Visible = true;
-
-                    gbSelectedBoneFrame.Visible = true;
-
-                    gbTexturesFrame.Visible = true;
-                    gbTexturesFrame.Enabled = true;
-                    gbTexturesFrame.Text = "Textures (Model)";
-
-                    cbBattleAnimation.Visible = true;
-                    lblBattleAnimation.Visible = true;
-                    lblBattleAnimation.Text = "Magic Animation";
-
-                    btnPlayStopAnim.Visible = true;
-                    btnFrameBegin.Visible = true;
-                    btnFrameEnd.Visible = true;
-                    btnFrameNext.Visible = true;
-                    btnFramePrev.Visible = true;
-
-                    btnCopyFrame.Visible = true;
-                    btnPasteFrame.Visible = true;
-                    txtCopyPasteFrame.Visible = true;
-                    chkShowBones.Enabled = true;
-                    chkShowBones.Visible = true;
-
-                    // Battle Animations
-                    for (iAnimIdx = 0; iAnimIdx < bAnimationsPack.nbSkeletonAnims; iAnimIdx++)
-                    {
-                        if (bAnimationsPack.SkeletonAnimations[iAnimIdx].numFramesShort > 0)
-                        {
-                            cbBattleAnimation.Items.Add(iAnimIdx.ToString());
-                        }
-                    }
-
-                    cbBattleAnimation.SelectedIndex = 0;
-                    ianimIndex = 0;
-
-                    iCurrentFrameScroll = 0;
-                    tbCurrentFrameScroll.Value = 0;
-                    tbCurrentFrameScroll.Maximum = bAnimationsPack.SkeletonAnimations[0].numFramesShort - 1;
-                    tbCurrentFrameScroll.Enabled = true;
-                    txtAnimationFrame.Text = tbCurrentFrameScroll.Value.ToString();
-                    lblAnimationFrame.Visible = true;
-                    txtAnimationFrame.Visible = true;
-                    tbCurrentFrameScroll.Visible = true;
-
-                    btnInterpolateAnimation.Visible = true;
-
-                    gbAnimationOptionsFrame.Visible = true;
-
-                    btnComputeGroundHeight.Visible = true;
-
-                    // Menu Strip
-                    loadBattleMagicLimitsAnimationStripMenuItem.Enabled = true;
-                    statisticsToolStripMenuItem.Enabled = true;
-
-                    saveAnimationToolStripMenuItem.Enabled = true;
-                    saveAnimationAsToolStripMenuItem.Enabled = true;
-
-                    saveSkeletonToolStripMenuItem.Enabled = true;
-                    saveSkeletonAsToolStripMenuItem.Enabled = true;
-
-                    // Show Normals vars
-                    thirtyftoolStripMenuItem.PerformClick();
                     break;
 
                 default:
@@ -948,63 +954,68 @@ namespace KimeraCS
             UpdateMainSkeletonWindowTitle();
 
             // Close previous P Editor if any.
-            if (FindWindowOpened("FrmPEditor")) frmPEdit.Close();
+            if (FindWindowOpened("FrmPEditor")) frmPEdit?.Close();
 
             WriteCFGFile();
         }
 
-        private void TextureViewer_Paint(object sender, PaintEventArgs e)
+        private void TextureViewer_Paint(object? sender, PaintEventArgs? e)
         {
             if (cbTextureSelect.SelectedIndex > -1)
             {
 
                 switch (modelType)
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].width == 0 ||
-                            fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].height == 0)
-                            return;
-
-                        if (SelectedBone > -1 && SelectedBonePiece > -1)
+                    case ModelType.HRCSkeleton:
+                        if (skeleton != null)
                         {
-                            if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].texID != 0xFFFFFFFF)
+                            if (skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[cbTextureSelect.SelectedIndex].width == 0 ||
+                            skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[cbTextureSelect.SelectedIndex].height == 0)
+                                return;
+
+                            if (SelectedBone > -1 && SelectedBonePiece > -1)
                             {
-                                //chkColorKeyFlag.Enabled = true;
+                                if (skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[cbTextureSelect.SelectedIndex].texID != 0xFFFFFFFF)
+                                {
+                                    //chkColorKeyFlag.Enabled = true;
 
-                                if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].ColorKeyFlag == 1)
-                                    chkColorKeyFlag.Checked = true;
-                                else
-                                    chkColorKeyFlag.Checked = false;
+                                    if (skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[cbTextureSelect.SelectedIndex].ColorKeyFlag == 1)
+                                        chkColorKeyFlag.Checked = true;
+                                    else
+                                        chkColorKeyFlag.Checked = false;
 
-                                // Let's get maximum size for texture (I do this for simplify the printing)
-                                // Some textures can have different width/height sizes.                                
-                                pbTextureViewer.Image =
-                                    FitBitmapToPictureBox(pbTextureViewer,
-                                         fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].width,
-                                         fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].height,
-                                         fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].bitmap);
+                                    // Let's get maximum size for texture (I do this for simplify the printing)
+                                    // Some textures can have different width/height sizes.
+                                    pbTextureViewer.Image =
+                                        FitBitmapToPictureBox(pbTextureViewer,
+                                                skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[cbTextureSelect.SelectedIndex].width,
+                                                skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[cbTextureSelect.SelectedIndex].height,
+                                                skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[cbTextureSelect.SelectedIndex].bitmap);
 
+                                }
                             }
                         }
                         break;
 
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-                        if (bSkeleton.textures[cbTextureSelect.SelectedIndex].texID != 0xFFFFFFFF)
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        if (skeleton != null)
                         {
-                            //chkColorKeyFlag.Enabled = true;
-                            if (bSkeleton.textures[cbTextureSelect.SelectedIndex].ColorKeyFlag == 1) chkColorKeyFlag.Checked = true;
-                            else chkColorKeyFlag.Checked = false;
+                            if (skeleton.Textures[cbTextureSelect.SelectedIndex].texID != 0xFFFFFFFF)
+                            {
+                                //chkColorKeyFlag.Enabled = true;
+                                if (skeleton.Textures[cbTextureSelect.SelectedIndex].ColorKeyFlag == 1) chkColorKeyFlag.Checked = true;
+                                else chkColorKeyFlag.Checked = false;
 
-                            // Let's get maximum size for texture (I do this for simplify the printing)
-                            // Some textures can have different width/height sizes.
-                            pbTextureViewer.Image =
-                                FitBitmapToPictureBox(pbTextureViewer,
-                                                      bSkeleton.textures[cbTextureSelect.SelectedIndex].width,
-                                                      bSkeleton.textures[cbTextureSelect.SelectedIndex].height,
-                                                      bSkeleton.textures[cbTextureSelect.SelectedIndex].bitmap);
+                                // Let's get maximum size for texture (I do this for simplify the printing)
+                                // Some textures can have different width/height sizes.
+                                pbTextureViewer.Image =
+                                    FitBitmapToPictureBox(pbTextureViewer,
+                                                          skeleton.Textures[cbTextureSelect.SelectedIndex].width,
+                                                          skeleton.Textures[cbTextureSelect.SelectedIndex].height,
+                                                          skeleton.Textures[cbTextureSelect.SelectedIndex].bitmap);
+                            }
                         }
-
                         break;
 
                     default:
@@ -1021,7 +1032,7 @@ namespace KimeraCS
             }
         }
 
-        public void PanelModel_Paint(object sender, PaintEventArgs e)
+        public void PanelModel_Paint(object? sender, PaintEventArgs? e)
         {
             if (bLoaded)
             {
@@ -1123,7 +1134,7 @@ namespace KimeraCS
                     {
                         gbSelectedBoneFrame.Enabled = true;
 
-                        if (modelType == ModelType.K_HRC_SKELETON)
+                        if (modelType == ModelType.HRCSkeleton)
                             editJointToolStripMenuItem.Enabled = true;
                     }
                 }
@@ -1143,306 +1154,331 @@ namespace KimeraCS
 
         private static void FillBoneSelector(ComboBox cbIn)
         {
-            int iBoneIdx;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    for (iBoneIdx = 0; iBoneIdx < fSkeleton.bones.Count; iBoneIdx++)
-                    {
-                        cbIn.Items.Add(fSkeleton.bones[iBoneIdx].joint_i + "-" + fSkeleton.bones[iBoneIdx].joint_f);
-                    }
+                int iBoneIdx;
 
-                    cbIn.Enabled = true;
-                    break;
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        for (iBoneIdx = 0; iBoneIdx < skeleton.Bones.Count; iBoneIdx++)
+                        {
+                            cbIn.Items.Add(skeleton.Bones[iBoneIdx].Name + "-" + skeleton.Bones[iBoneIdx].ParentName);
+                        }
 
-                case ModelType.K_AA_SKELETON:
-                    for (iBoneIdx = 0; iBoneIdx < bSkeleton.nBones; iBoneIdx++)
-                    {
-                        if (bSkeleton.bones[iBoneIdx].hasModel == 1)
-                            cbIn.Items.Add(bSkeleton.bones[iBoneIdx].Models[0].fileName);
-                        else
-                            cbIn.Items.Add("----");
-                    }
+                        cbIn.Enabled = true;
+                        break;
 
-                    if (bSkeleton.wpModels.Count > 0 && bAnimationsPack.WeaponAnimations.Count > 0) cbIn.Items.Add("WEAPON");
+                    case ModelType.AASkeleton:
+                        for (iBoneIdx = 0; iBoneIdx < skeleton.BoneCount; iBoneIdx++)
+                        {
+                            if (skeleton.Bones[iBoneIdx].HasModel)
+                                cbIn.Items.Add(skeleton.Bones[iBoneIdx].Models[0].ResourceFile);
+                            else
+                                cbIn.Items.Add("----");
+                        }
 
-                    cbIn.Enabled = true;
-                    break;
+                        if (animationPack != null && skeleton.WeaponCount > 0 && animationPack.WeaponAnimations.Count > 0)
+                            cbIn.Items.Add("WEAPON");
 
-                case ModelType.K_MAGIC_SKELETON:
-                    for (iBoneIdx = 0; iBoneIdx < bSkeleton.nBones; iBoneIdx++)
-                    {
-                        cbIn.Items.Add("Joint" + bSkeleton.bones[iBoneIdx].parentBone.ToString() + "- Joint" + iBoneIdx.ToString());
-                    }
+                        cbIn.Enabled = true;
+                        break;
 
-                    if (bSkeleton.wpModels.Count > 0 && bAnimationsPack.WeaponAnimations.Count > 0) cbIn.Items.Add("Weapon");
+                    case ModelType.MagicSkeleton:
+                        for (iBoneIdx = 0; iBoneIdx < skeleton.BoneCount; iBoneIdx++)
+                        {
+                            cbIn.Items.Add("Joint" + skeleton.Bones[iBoneIdx].ParentIndex.ToString() + "- Joint" + iBoneIdx.ToString());
+                        }
 
-                    cbIn.Enabled = true;
-                    break;
+                        //if (skeleton.WeaponCount > 0 && animationPack.WeaponAnimations.Count > 0) cbIn.Items.Add("Weapon");
 
-                default:
-                    cbIn.Enabled = false;
-                    break;
+                        cbIn.Enabled = true;
+                        break;
+
+                    default:
+                        cbIn.Enabled = false;
+                        break;
+                }
             }
         }
 
         public void SetBoneModifiers()
         {
-            loadingBoneModifiersQ = true;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    nUDResizeBoneX.Value = (decimal)fSkeleton.bones[SelectedBone].resizeX * 100;
-                    nUDResizeBoneY.Value = (decimal)fSkeleton.bones[SelectedBone].resizeY * 100;
-                    nUDResizeBoneZ.Value = (decimal)fSkeleton.bones[SelectedBone].resizeZ * 100;
+                loadingBoneModifiersQ = true;
 
-                    nUDBoneOptionsLength.Value = (decimal)fSkeleton.bones[SelectedBone].len;
-                    nUDBoneOptionsLength.Increment = 0.05m;
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        nUDResizeBoneX.Value = (decimal)skeleton.Bones[SelectedBone].Scale.X * 100;
+                        nUDResizeBoneY.Value = (decimal)skeleton.Bones[SelectedBone].Scale.Y * 100;
+                        nUDResizeBoneZ.Value = (decimal)skeleton.Bones[SelectedBone].Scale.Z * 100;
 
-                    SetFrameEditorFields();
-                    break;
+                        nUDBoneOptionsLength.Value = (decimal)skeleton.Bones[SelectedBone].Length;
+                        nUDBoneOptionsLength.Increment = 0.05m;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    if (bSkeleton.IsBattleLocation)
-                    {
-                        nUDResizeBoneX.Value = (decimal)bSkeleton.bones[SelectedBone].resizeX * 100;
-                        nUDResizeBoneY.Value = (decimal)bSkeleton.bones[SelectedBone].resizeY * 100;
-                        nUDResizeBoneZ.Value = (decimal)bSkeleton.bones[SelectedBone].resizeZ * 100;
+                        SetFrameEditorFields();
+                        break;
 
-                        nUDBoneOptionsLength.Value = (decimal)bSkeleton.bones[SelectedBone].len;
-                        nUDBoneOptionsLength.Increment = 100.0m;
-
-                        lblBoneOptionsLength.Visible = true;
-                        nUDBoneOptionsLength.Visible = true;
-                        btnAddPiece.Visible = true;
-                        btnRemovePiece.Visible = true;
-                    }
-                    else
-                    {
-                        if (SelectedBone == bSkeleton.nBones)
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        if (skeleton.IsBattleLocation)
                         {
-                            nUDResizeBoneX.Value = (decimal)bSkeleton.wpModels[cbWeapon.SelectedIndex].resizeX * 100;
-                            nUDResizeBoneY.Value = (decimal)bSkeleton.wpModels[cbWeapon.SelectedIndex].resizeY * 100;
-                            nUDResizeBoneZ.Value = (decimal)bSkeleton.wpModels[cbWeapon.SelectedIndex].resizeZ * 100;
+                            nUDResizeBoneX.Value = (decimal)skeleton.Bones[SelectedBone].Scale.X * 100;
+                            nUDResizeBoneY.Value = (decimal)skeleton.Bones[SelectedBone].Scale.Y * 100;
+                            nUDResizeBoneZ.Value = (decimal)skeleton.Bones[SelectedBone].Scale.Z * 100;
 
-                            lblBoneOptionsLength.Visible = false;
-                            nUDBoneOptionsLength.Visible = false;
-                            btnAddPiece.Visible = false;
-                            btnRemovePiece.Visible = false;
-                        }
-                        else
-                        {
-                            nUDResizeBoneX.Value = (decimal)bSkeleton.bones[SelectedBone].resizeX * 100;
-                            nUDResizeBoneY.Value = (decimal)bSkeleton.bones[SelectedBone].resizeY * 100;
-                            nUDResizeBoneZ.Value = (decimal)bSkeleton.bones[SelectedBone].resizeZ * 100;
-
-                            nUDBoneOptionsLength.Value = (decimal)bSkeleton.bones[SelectedBone].len;
-                            nUDBoneOptionsLength.Increment = 1.0m;
+                            nUDBoneOptionsLength.Value = (decimal)skeleton.Bones[SelectedBone].Length;
+                            nUDBoneOptionsLength.Increment = 100.0m;
 
                             lblBoneOptionsLength.Visible = true;
                             nUDBoneOptionsLength.Visible = true;
                             btnAddPiece.Visible = true;
                             btnRemovePiece.Visible = true;
                         }
-                    }
+                        else
+                        {
+                            if (SelectedBone == skeleton.BoneCount)
+                            {
+                                nUDResizeBoneX.Value = (decimal)skeleton.Weapons[cbWeapon.SelectedIndex].resizeX * 100;
+                                nUDResizeBoneY.Value = (decimal)skeleton.Weapons[cbWeapon.SelectedIndex].resizeY * 100;
+                                nUDResizeBoneZ.Value = (decimal)skeleton.Weapons[cbWeapon.SelectedIndex].resizeZ * 100;
 
-                    SetFrameEditorFields();
-                    break;
+                                lblBoneOptionsLength.Visible = false;
+                                nUDBoneOptionsLength.Visible = false;
+                                btnAddPiece.Visible = false;
+                                btnRemovePiece.Visible = false;
+                            }
+                            else
+                            {
+                                nUDResizeBoneX.Value = (decimal)skeleton.Bones[SelectedBone].Scale.X * 100;
+                                nUDResizeBoneY.Value = (decimal)skeleton.Bones[SelectedBone].Scale.Y * 100;
+                                nUDResizeBoneZ.Value = (decimal)skeleton.Bones[SelectedBone].Scale.Z * 100;
 
+                                nUDBoneOptionsLength.Value = (decimal)skeleton.Bones[SelectedBone].Length;
+                                nUDBoneOptionsLength.Increment = 1.0m;
+
+                                lblBoneOptionsLength.Visible = true;
+                                nUDBoneOptionsLength.Visible = true;
+                                btnAddPiece.Visible = true;
+                                btnRemovePiece.Visible = true;
+                            }
+                        }
+
+                        SetFrameEditorFields();
+                        break;
+
+                }
+
+                loadingBoneModifiersQ = false;
             }
-
-            loadingBoneModifiersQ = false;
         }
 
         public void SetFrameEditorFields()
         {
             if ((int)modelType < 3 || (int)modelType > 5) return;
 
-            if (btnPlayStopAnim.Checked)
+            if (skeleton != null)
             {
-                gbFrameDataPartOptions.Enabled = false;
-            }
-            else
-                if (Math.Abs(nUDFrameDataPart.Value % 3) != K_FRAME_BONE_ROTATION) gbFrameDataPartOptions.Enabled = true;
-            else if (SelectedBone <= -1) gbFrameDataPartOptions.Enabled = false;
-            else gbFrameDataPartOptions.Enabled = true;
+                if (btnPlayStopAnim.Checked)
+                {
+                    gbFrameDataPartOptions.Enabled = false;
+                }
+                else
+                if (Math.Abs(nUDFrameDataPart.Value % 3) != (int)AnimationChange.BoneRotation)
+                    gbFrameDataPartOptions.Enabled = true;
+                else if (SelectedBone <= -1) gbFrameDataPartOptions.Enabled = false;
+                else gbFrameDataPartOptions.Enabled = true;
 
-            loadingAnimationQ = true;
+                loadingAnimationQ = true;
 
-            switch (Math.Abs(nUDFrameDataPart.Value % 3))
-            {
-                case K_FRAME_BONE_ROTATION:
-                    if (SelectedBone > -1)
-                    {
+                switch ((AnimationChange)Math.Abs(nUDFrameDataPart.Value % 3))
+                {
+                    case AnimationChange.BoneRotation:
+                        if (SelectedBone > -1)
+                        {
+                            switch (modelType)
+                            {
+                                case ModelType.HRCSkeleton:
+                                    if (animation != null)
+                                    {
+                                        nUDXAnimationFramePart.Value = (decimal)animation.Frames[tbCurrentFrameScroll.Value].BoneRotations[SelectedBone].Alpha;
+                                        nUDYAnimationFramePart.Value = (decimal)animation.Frames[tbCurrentFrameScroll.Value].BoneRotations[SelectedBone].Beta;
+                                        nUDZAnimationFramePart.Value = (decimal)animation.Frames[tbCurrentFrameScroll.Value].BoneRotations[SelectedBone].Gamma;
+
+                                        //With AAnim.Frames(CurrentFrameScroll.value).Rotations(SelectedBone)
+                                        //    XAnimationFramePartText.Text = .Alpha
+                                        //    YAnimationFramePartText.Text = .Beta
+                                        //    ZAnimationFramePartText.Text = .Gamma
+                                        //    XAnimationFramePartUpDown.value = .Alpha * 10000
+                                        //    YAnimationFramePartUpDown.value = .Beta * 10000
+                                        //    ZAnimationFramePartUpDown.value = .Gamma * 10000
+                                        //End With
+                                    }
+                                    break;
+
+                                case ModelType.AASkeleton:
+                                case ModelType.MagicSkeleton:
+                                    if (animationPack != null)
+                                    {
+                                        if (SelectedBone == skeleton.BoneCount)
+                                        {
+                                            nUDXAnimationFramePart.Value = (decimal)animationPack.WeaponAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].BoneRotations[0].Alpha;
+                                            nUDYAnimationFramePart.Value = (decimal)animationPack.WeaponAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].BoneRotations[0].Beta;
+                                            nUDZAnimationFramePart.Value = (decimal)animationPack.WeaponAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].BoneRotations[0].Gamma;
+
+                                            //                       With DAAnims.WeaponAnimations(anim_index).Frames(CurrentFrameScroll.value).Bones(0)
+                                            //                            XAnimationFramePartText.Text = .Alpha
+                                            //                            YAnimationFramePartText.Text = .Beta
+                                            //                            ZAnimationFramePartText.Text = .Gamma
+                                            //                            XAnimationFramePartUpDown.value = .Alpha * 10000
+                                            //                            YAnimationFramePartUpDown.value = .Beta * 10000
+                                            //                            ZAnimationFramePartUpDown.value = .Gamma * 10000
+                                            //                        End With
+                                        }
+                                        else
+                                        {
+                                            nUDXAnimationFramePart.Value = (decimal)animationPack.SkeletonAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].BoneRotations[SelectedBone].Alpha;
+                                            nUDYAnimationFramePart.Value = (decimal)animationPack.SkeletonAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].BoneRotations[SelectedBone].Beta;
+                                            nUDZAnimationFramePart.Value = (decimal)animationPack.SkeletonAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].BoneRotations[SelectedBone].Gamma;
+
+                                            //                        With DAAnims.BodyAnimations(anim_index).Frames(CurrentFrameScroll.value).Bones(SelectedBone + IIf(aa_sk.NumBones > 1, 1, 0))
+                                            //                            XAnimationFramePartText.Text = .Alpha
+                                            //                            YAnimationFramePartText.Text = .Beta
+                                            //                            ZAnimationFramePartText.Text = .Gamma
+                                            //                            XAnimationFramePartUpDown.value = .Alpha * 10000
+                                            //                            YAnimationFramePartUpDown.value = .Beta * 10000
+                                            //                            ZAnimationFramePartUpDown.value = .Gamma * 10000
+                                            //                        End With
+                                        }
+                                    }
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            nUDXAnimationFramePart.Value = 0;
+                            nUDYAnimationFramePart.Value = 0;
+                            nUDZAnimationFramePart.Value = 0;
+
+                            gbFrameDataPartOptions.Enabled = false;
+
+                            //  XAnimationFramePartText.Text = " "
+                            //  YAnimationFramePartText.Text = " "
+                            //  ZAnimationFramePartText.Text = " "
+                            //  FrameDataPartOptions.Enabled = False
+                        }
+
+                        break;
+
+                    case AnimationChange.RootRotation:
                         switch (modelType)
                         {
-                            case ModelType.K_HRC_SKELETON:
-                                nUDXAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rotations[SelectedBone].alpha;
-                                nUDYAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rotations[SelectedBone].beta;
-                                nUDZAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rotations[SelectedBone].gamma;
+                            case ModelType.HRCSkeleton:
+                                if (animation != null)
+                                {
+                                    nUDXAnimationFramePart.Value = (decimal)animation.Frames[tbCurrentFrameScroll.Value].RootRotation.Alpha;
+                                    nUDYAnimationFramePart.Value = (decimal)animation.Frames[tbCurrentFrameScroll.Value].RootRotation.Beta;
+                                    nUDZAnimationFramePart.Value = (decimal)animation.Frames[tbCurrentFrameScroll.Value].RootRotation.Gamma;
 
-                                //With AAnim.Frames(CurrentFrameScroll.value).Rotations(SelectedBone)
-                                //    XAnimationFramePartText.Text = .alpha
-                                //    YAnimationFramePartText.Text = .Beta
-                                //    ZAnimationFramePartText.Text = .Gamma
-                                //    XAnimationFramePartUpDown.value = .alpha * 10000
-                                //    YAnimationFramePartUpDown.value = .Beta * 10000
-                                //    ZAnimationFramePartUpDown.value = .Gamma * 10000
-                                //End With
+                                    //With AAnim.Frames(CurrentFrameScroll.value)
+                                    //    XAnimationFramePartText.Text = .RootRotationAlpha
+                                    //    YAnimationFramePartText.Text = .RootRotationBeta
+                                    //    ZAnimationFramePartText.Text = .RootRotationGamma
+                                    //    XAnimationFramePartUpDown.value = .RootRotationAlpha * 10000
+                                    //    YAnimationFramePartUpDown.value = .RootRotationBeta * 10000
+                                    //    ZAnimationFramePartUpDown.value = .RootRotationGamma * 10000
+                                    //End With
+                                }
                                 break;
 
-                            case ModelType.K_AA_SKELETON:
-                            case ModelType.K_MAGIC_SKELETON:
-                                if (SelectedBone == bSkeleton.nBones)
+                            case ModelType.AASkeleton:
+                            case ModelType.MagicSkeleton:
+                                if (animationPack != null)
                                 {
-                                    nUDXAnimationFramePart.Value = (decimal)bAnimationsPack.WeaponAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].bones[0].alpha;
-                                    nUDYAnimationFramePart.Value = (decimal)bAnimationsPack.WeaponAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].bones[0].beta;
-                                    nUDZAnimationFramePart.Value = (decimal)bAnimationsPack.WeaponAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].bones[0].gamma;
+                                    nUDXAnimationFramePart.Value = (decimal)animationPack.SkeletonAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].BoneRotations[0].Alpha;
+                                    nUDYAnimationFramePart.Value = (decimal)animationPack.SkeletonAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].BoneRotations[0].Beta;
+                                    nUDZAnimationFramePart.Value = (decimal)animationPack.SkeletonAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].BoneRotations[0].Gamma;
 
-                                    //                       With DAAnims.WeaponAnimations(anim_index).Frames(CurrentFrameScroll.value).Bones(0)
-                                    //                            XAnimationFramePartText.Text = .alpha
-                                    //                            YAnimationFramePartText.Text = .Beta
-                                    //                            ZAnimationFramePartText.Text = .Gamma
-                                    //                            XAnimationFramePartUpDown.value = .alpha * 10000
-                                    //                            YAnimationFramePartUpDown.value = .Beta * 10000
-                                    //                            ZAnimationFramePartUpDown.value = .Gamma * 10000
-                                    //                        End With
+                                    //With DAAnims.BodyAnimations(anim_index).Frames(CurrentFrameScroll.value).Bones(0)
+                                    //    XAnimationFramePartText.Text = .Alpha
+                                    //    YAnimationFramePartText.Text = .Beta
+                                    //    ZAnimationFramePartText.Text = .Gamma
+                                    //    XAnimationFramePartUpDown.value = .Alpha * 10000
+                                    //    YAnimationFramePartUpDown.value = .Beta * 10000
+                                    //    ZAnimationFramePartUpDown.value = .Gamma * 10000
+                                    //End With
                                 }
-                                else
-                                {
-                                    int nbone;
-                                    if (bSkeleton.nBones > 1) nbone = SelectedBone + 1;
-                                    else nbone = SelectedBone + 0;
-                                    nUDXAnimationFramePart.Value = (decimal)bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].bones[nbone].alpha;
-                                    nUDYAnimationFramePart.Value = (decimal)bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].bones[nbone].beta;
-                                    nUDZAnimationFramePart.Value = (decimal)bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].bones[nbone].gamma;
-
-                                    //                        With DAAnims.BodyAnimations(anim_index).Frames(CurrentFrameScroll.value).Bones(SelectedBone + IIf(aa_sk.NumBones > 1, 1, 0))
-                                    //                            XAnimationFramePartText.Text = .alpha
-                                    //                            YAnimationFramePartText.Text = .Beta
-                                    //                            ZAnimationFramePartText.Text = .Gamma
-                                    //                            XAnimationFramePartUpDown.value = .alpha * 10000
-                                    //                            YAnimationFramePartUpDown.value = .Beta * 10000
-                                    //                            ZAnimationFramePartUpDown.value = .Gamma * 10000
-                                    //                        End With
-                                }
-
                                 break;
                         }
-                    }
-                    else
-                    {
-                        nUDXAnimationFramePart.Value = 0;
-                        nUDYAnimationFramePart.Value = 0;
-                        nUDZAnimationFramePart.Value = 0;
 
-                        gbFrameDataPartOptions.Enabled = false;
+                        break;
 
-                        //  XAnimationFramePartText.Text = " "
-                        //  YAnimationFramePartText.Text = " "
-                        //  ZAnimationFramePartText.Text = " "
-                        //  FrameDataPartOptions.Enabled = False
-                    }
+                    case AnimationChange.RootTranslation:
+                        switch (modelType)
+                        {
+                            case ModelType.HRCSkeleton:
+                                if (animation != null)
+                                {
+                                    nUDXAnimationFramePart.Value = (decimal)animation.Frames[tbCurrentFrameScroll.Value].RootTranslation.X;
+                                    nUDYAnimationFramePart.Value = (decimal)animation.Frames[tbCurrentFrameScroll.Value].RootTranslation.Y;
+                                    nUDZAnimationFramePart.Value = (decimal)animation.Frames[tbCurrentFrameScroll.Value].RootTranslation.Z;
 
-                    break;
+                                    //With AAnim.Frames(CurrentFrameScroll.value)
+                                    //    XAnimationFramePartText.Text = .RootTranslationX
+                                    //    YAnimationFramePartText.Text = .RootTranslationY
+                                    //    ZAnimationFramePartText.Text = .RootTranslationZ
+                                    //    XAnimationFramePartUpDown.value = .RootTranslationX * 10000
+                                    //    YAnimationFramePartUpDown.value = .RootTranslationX * 10000
+                                    //    ZAnimationFramePartUpDown.value = .RootTranslationX * 10000
+                                    //End With
+                                }
+                                break;
 
-                case K_FRAME_ROOT_ROTATION:
-                    switch (modelType)
-                    {
-                        case ModelType.K_HRC_SKELETON:
-                            nUDXAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rootRotationAlpha;
-                            nUDYAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rootRotationBeta;
-                            nUDZAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rootRotationGamma;
+                            case ModelType.AASkeleton:
+                            case ModelType.MagicSkeleton:
+                                if (animationPack != null)
+                                {
+                                    if (SelectedBone == skeleton.BoneCount)
+                                    {
+                                        nUDXAnimationFramePart.Value = (decimal)animationPack.WeaponAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].RootTranslation.X;
+                                        nUDYAnimationFramePart.Value = (decimal)animationPack.WeaponAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].RootTranslation.Y;
+                                        nUDZAnimationFramePart.Value = (decimal)animationPack.WeaponAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].RootTranslation.Z;
 
-                            //With AAnim.Frames(CurrentFrameScroll.value)
-                            //    XAnimationFramePartText.Text = .RootRotationAlpha
-                            //    YAnimationFramePartText.Text = .RootRotationBeta
-                            //    ZAnimationFramePartText.Text = .RootRotationGamma
-                            //    XAnimationFramePartUpDown.value = .RootRotationAlpha * 10000
-                            //    YAnimationFramePartUpDown.value = .RootRotationBeta * 10000
-                            //    ZAnimationFramePartUpDown.value = .RootRotationGamma * 10000
-                            //End With
-                            break;
+                                        //   With DAAnims.WeaponAnimations(anim_index).Frames(CurrentFrameScroll.value)
+                                        //        XAnimationFramePartText.Text = .X_start
+                                        //        YAnimationFramePartText.Text = .Y_start
+                                        //        ZAnimationFramePartText.Text = .Z_start
+                                        //        XAnimationFramePartUpDown.value = .X_start * 10000
+                                        //        YAnimationFramePartUpDown.value = .Y_start * 10000
+                                        //        ZAnimationFramePartUpDown.value = .Z_start * 10000
+                                        //    End With
+                                    }
+                                    else
+                                    {
+                                        nUDXAnimationFramePart.Value = (decimal)animationPack.SkeletonAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].RootTranslation.X;
+                                        nUDYAnimationFramePart.Value = (decimal)animationPack.SkeletonAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].RootTranslation.Y;
+                                        nUDZAnimationFramePart.Value = (decimal)animationPack.SkeletonAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value].RootTranslation.Z;
 
-                        case ModelType.K_AA_SKELETON:
-                        case ModelType.K_MAGIC_SKELETON:
-                            nUDXAnimationFramePart.Value = (decimal)bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].bones[0].alpha;
-                            nUDYAnimationFramePart.Value = (decimal)bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].bones[0].beta;
-                            nUDZAnimationFramePart.Value = (decimal)bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].bones[0].gamma;
+                                        //    With DAAnims.BodyAnimations(anim_index).Frames(CurrentFrameScroll.value)
+                                        //        XAnimationFramePartText.Text = .X_start
+                                        //        YAnimationFramePartText.Text = .Y_start
+                                        //        ZAnimationFramePartText.Text = .Z_start
+                                        //        XAnimationFramePartUpDown.value = .X_start * 10000
+                                        //        YAnimationFramePartUpDown.value = .Y_start * 10000
+                                        //        ZAnimationFramePartUpDown.value = .Z_start * 10000
+                                        //    End With
+                                    }
+                                }
+                                break;
+                        }
 
-                            //With DAAnims.BodyAnimations(anim_index).Frames(CurrentFrameScroll.value).Bones(0)
-                            //    XAnimationFramePartText.Text = .alpha
-                            //    YAnimationFramePartText.Text = .Beta
-                            //    ZAnimationFramePartText.Text = .Gamma
-                            //    XAnimationFramePartUpDown.value = .alpha * 10000
-                            //    YAnimationFramePartUpDown.value = .Beta * 10000
-                            //    ZAnimationFramePartUpDown.value = .Gamma * 10000
-                            //End With
-                            break;
-                    }
+                        break;
+                }
 
-                    break;
-
-                case K_FRAME_ROOT_TRANSLATION:
-                    switch (modelType)
-                    {
-                        case ModelType.K_HRC_SKELETON:
-                            nUDXAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rootTranslationX;
-                            nUDYAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rootTranslationY;
-                            nUDZAnimationFramePart.Value = (decimal)fAnimation.frames[tbCurrentFrameScroll.Value].rootTranslationZ;
-
-                            //With AAnim.Frames(CurrentFrameScroll.value)
-                            //    XAnimationFramePartText.Text = .RootTranslationX
-                            //    YAnimationFramePartText.Text = .RootTranslationY
-                            //    ZAnimationFramePartText.Text = .RootTranslationZ
-                            //    XAnimationFramePartUpDown.value = .RootTranslationX * 10000
-                            //    YAnimationFramePartUpDown.value = .RootTranslationX * 10000
-                            //    ZAnimationFramePartUpDown.value = .RootTranslationX * 10000
-                            //End With
-                            break;
-
-                        case ModelType.K_AA_SKELETON:
-                        case ModelType.K_MAGIC_SKELETON:
-                            if (SelectedBone == bSkeleton.nBones)
-                            {
-                                nUDXAnimationFramePart.Value = bAnimationsPack.WeaponAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].startX;
-                                nUDYAnimationFramePart.Value = bAnimationsPack.WeaponAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].startY;
-                                nUDZAnimationFramePart.Value = bAnimationsPack.WeaponAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].startZ;
-
-                                //   With DAAnims.WeaponAnimations(anim_index).Frames(CurrentFrameScroll.value)
-                                //        XAnimationFramePartText.Text = .X_start
-                                //        YAnimationFramePartText.Text = .Y_start
-                                //        ZAnimationFramePartText.Text = .Z_start
-                                //        XAnimationFramePartUpDown.value = .X_start * 10000
-                                //        YAnimationFramePartUpDown.value = .Y_start * 10000
-                                //        ZAnimationFramePartUpDown.value = .Z_start * 10000
-                                //    End With
-                            }
-                            else
-                            {
-                                nUDXAnimationFramePart.Value = bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].startX;
-                                nUDYAnimationFramePart.Value = bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].startY;
-                                nUDZAnimationFramePart.Value = bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value].startZ;
-
-                                //    With DAAnims.BodyAnimations(anim_index).Frames(CurrentFrameScroll.value)
-                                //        XAnimationFramePartText.Text = .X_start
-                                //        YAnimationFramePartText.Text = .Y_start
-                                //        ZAnimationFramePartText.Text = .Z_start
-                                //        XAnimationFramePartUpDown.value = .X_start * 10000
-                                //        YAnimationFramePartUpDown.value = .Y_start * 10000
-                                //        ZAnimationFramePartUpDown.value = .Z_start * 10000
-                                //    End With
-                            }
-                            break;
-                    }
-
-                    break;
+                loadingAnimationQ = false;
             }
-
-            loadingAnimationQ = false;
         }
 
         private void PanelModel_MouseUp(object sender, MouseEventArgs e)
@@ -1452,128 +1488,63 @@ namespace KimeraCS
 
         private void PanelModel_MouseDown(object sender, MouseEventArgs e)
         {
-            int iBoneIdx, iPolyIdx;
-            bool bWindowPEOpened;
-
-            Vector3 p_min = new Vector3();
-            Vector3 p_max = new Vector3();
-
-            BattleFrame wpFrame;
-
-            pbMouseIsDown = true;
-
-            if (bLoaded)
+            if (skeleton != null)
             {
-                // Ensure GL context is current and viewport is set for picking
-                panelModel.MakeCurrent();
-                GLRenderer.SetCurrentContext("SkeletonEditor");
-                GL.Viewport(0, 0, panelModel.ClientRectangle.Width, panelModel.ClientRectangle.Height);
+                int iBoneIdx, iPolyIdx;
+                bool bWindowPEOpened;
 
-                // We will block the MouseDown if FrmPEditor is enabled and
-                // the user clicked in "empty" place
-                if (FindWindowOpened("FrmPEditor")) bWindowPEOpened = true;
-                else bWindowPEOpened = false;
+                Vector3 p_min = new Vector3();
+                Vector3 p_max = new Vector3();
 
-                switch (modelType)
+                UnifiedFrame? wpFrame = null;
+
+                pbMouseIsDown = true;
+
+                if (bLoaded)
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[tbCurrentFrameScroll.Value],
-                                                ref p_min, ref p_max);
+                    // Ensure GL context is current and viewport is set for picking
+                    panelModel.MakeCurrent();
+                    GLRenderer.SetCurrentContext("SkeletonEditor");
+                    GL.Viewport(0, 0, panelModel.ClientRectangle.Width, panelModel.ClientRectangle.Height);
 
-                        SetCameraAroundModel(ref p_min, ref p_max, panX, panY, (float)(panZ + DIST),
-                                             (float)alpha, (float)beta, (float)gamma, 1, 1, 1);
+                    // We will block the MouseDown if FrmPEditor is enabled and
+                    // the user clicked in "empty" place
+                    if (FindWindowOpened("FrmPEditor")) bWindowPEOpened = true;
+                    else bWindowPEOpened = false;
 
-                        iBoneIdx = GetClosestFieldBone(fSkeleton, fAnimation.frames[tbCurrentFrameScroll.Value],
-                                                       e.X, e.Y);
+                    switch (modelType)
+                    {
+                        case ModelType.HRCSkeleton:
+                            /*skeleton.ComputeBoundingBox(animation.Frames[tbCurrentFrameScroll.Value],
+                                                    ref p_min, ref p_max);
 
-                        SelectedBone = iBoneIdx;
-                        cbBoneSelector.SelectedIndex = iBoneIdx;
+                            SetCameraAroundModel(ref p_min, ref p_max, panX, panY, (float)(panZ + DIST),
+                                                 (float)alpha, (float)beta, (float)gamma, 1, 1, 1);
 
-                        if (iBoneIdx > -1)
-                        {
-                            iPolyIdx = GetClosestFieldBonePiece(fSkeleton, fAnimation.frames[tbCurrentFrameScroll.Value],
-                                                                iBoneIdx, e.X, e.Y);
+                            iBoneIdx = skeleton.GetClosestBone(animation.Frames[tbCurrentFrameScroll.Value],
+                                                           e.X, e.Y);
 
-                            SelectedBonePiece = iPolyIdx;
-                            if (iPolyIdx > -1)
+                            SelectedBone = iBoneIdx;
+                            cbBoneSelector.SelectedIndex = iBoneIdx;
+
+                            if (iBoneIdx > -1)
                             {
-                                SetBonePieceModifiers();
-                                if (!bWindowPEOpened) gbSelectedPieceFrame.Enabled = true;
-                            }
-                            else
-                            {
-                                gbSelectedBoneFrame.Enabled = false;
-                            }
+                                iPolyIdx = skeleton.GetClosestBonePiece(animation.Frames[tbCurrentFrameScroll.Value],
+                                                                    iBoneIdx, e.X, e.Y);
 
-                            SetBoneModifiers();
-                            if (!bWindowPEOpened) gbSelectedBoneFrame.Enabled = true;
-                        }
-                        else
-                        {
-                            SelectedBonePiece = -1;
-                            gbSelectedBoneFrame.Enabled = false;
-                            gbSelectedPieceFrame.Enabled = false;
-                        }
+                                SelectedBonePiece = iPolyIdx;
+                                if (iPolyIdx > -1)
+                                {
+                                    SetBonePieceModifiers();
+                                    if (!bWindowPEOpened) gbSelectedPieceFrame.Enabled = true;
+                                }
+                                else
+                                {
+                                    gbSelectedBoneFrame.Enabled = false;
+                                }
 
-                        SetTextureEditorFields();
-                        break;
-
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-                        wpFrame = new BattleFrame();
-
-                        ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value],
-                                                 ref p_min, ref p_max);
-                        SetCameraAroundModel(ref p_min, ref p_max, panX, panY, (float)(panZ + DIST), (float)alpha, (float)beta, (float)gamma, 1, 1, 1);
-
-                        if (ianimIndex < bAnimationsPack.nbWeaponAnims && bSkeleton.wpModels.Count > 0)
-                            wpFrame = bAnimationsPack.WeaponAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value];
-
-                        iBoneIdx = GetClosestBattleBone(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value],
-                                                  wpFrame, ianimWeaponIndex, e.X, e.Y);
-
-                        SelectedBone = iBoneIdx;
-
-                        if (iBoneIdx <= bSkeleton.nBones) cbBoneSelector.SelectedIndex = iBoneIdx;
-
-                        if (iBoneIdx > -1 && iBoneIdx < bSkeleton.nBones)
-                        {
-                            if (selectBoneForWeaponAttachmentQ)
-                                SetWeaponAnimationAttachedToBone(e.Button == MouseButtons.Right, this);
-
-                            if (bSkeleton.IsBattleLocation)
-                            {
-                                iPolyIdx = 0;
-                            }
-                            else
-                            {
-                                iPolyIdx = GetClosestBattleBoneModel(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value],
-                                                               iBoneIdx, e.X, e.Y);
-                            }
-
-                            SelectedBonePiece = iPolyIdx;
-                            SetBoneModifiers();
-
-                            if (iPolyIdx > -1)
-                            {
-                                SetBonePieceModifiers();
-                                if (!bWindowPEOpened) gbSelectedPieceFrame.Enabled = true;
-                            }
-                            else gbSelectedPieceFrame.Enabled = false;
-                            if (!bWindowPEOpened) gbSelectedBoneFrame.Enabled = true;
-                        }
-                        else
-                        {
-                            if (iBoneIdx == bSkeleton.nBones)
-                            {
                                 SetBoneModifiers();
-                                SelectedBonePiece = cbWeapon.SelectedIndex;
-
                                 if (!bWindowPEOpened) gbSelectedBoneFrame.Enabled = true;
-                                SetBonePieceModifiers();
-
-                                if (!bWindowPEOpened) gbSelectedPieceFrame.Enabled = true;
-
                             }
                             else
                             {
@@ -1581,32 +1552,99 @@ namespace KimeraCS
                                 gbSelectedBoneFrame.Enabled = false;
                                 gbSelectedPieceFrame.Enabled = false;
                             }
-                        }
 
-                        SetTextureEditorFields();
-                        break;
+                            SetTextureEditorFields();
+                            break;*/
 
-                    default:
-                        SelectedBone = -1;
-                        SelectedBonePiece = -1;
+                        case ModelType.AASkeleton:
+                        case ModelType.MagicSkeleton:
+                            var frame = GetCurrentFrame(ianimIndex, tbCurrentFrameScroll.Value);
+                            if (frame != null)
+                            {
+                                skeleton.ComputeBoundingBox(frame, ref p_min, ref p_max);
+                                SetCameraAroundModel(ref p_min, ref p_max, panX, panY, (float)(panZ + DIST), (float)alpha, (float)beta, (float)gamma, 1, 1, 1);
 
-                        gbSelectedBoneFrame.Enabled = false;
-                        gbSelectedPieceFrame.Enabled = false;
+                                if (animationPack != null && ianimIndex < animationPack.WeaponAnimationCount && skeleton.WeaponCount > 0)
+                                    wpFrame = GetCurrentWeaponFrame(ianimIndex, tbCurrentFrameScroll.Value);
 
-                        break;
+                                iBoneIdx = skeleton.GetClosestBone(frame, e.X, e.Y, wpFrame, ianimWeaponIndex);
+
+                                SelectedBone = iBoneIdx;
+
+                                if (iBoneIdx <= skeleton.BoneCount) cbBoneSelector.SelectedIndex = iBoneIdx;
+
+                                if (iBoneIdx > -1 && iBoneIdx < skeleton.BoneCount)
+                                {
+                                    if (selectBoneForWeaponAttachmentQ)
+                                        SetWeaponAnimationAttachedToBone(e.Button == MouseButtons.Right, this);
+
+                                    if (skeleton.IsBattleLocation)
+                                    {
+                                        iPolyIdx = 0;
+                                    }
+                                    else
+                                    {
+                                        iPolyIdx = skeleton.GetClosestBonePiece(frame, iBoneIdx, e.X, e.Y);
+                                    }
+
+                                    SelectedBonePiece = iPolyIdx;
+                                    SetBoneModifiers();
+
+                                    if (iPolyIdx > -1)
+                                    {
+                                        SetBonePieceModifiers();
+                                        if (!bWindowPEOpened) gbSelectedPieceFrame.Enabled = true;
+                                    }
+                                    else gbSelectedPieceFrame.Enabled = false;
+                                    if (!bWindowPEOpened) gbSelectedBoneFrame.Enabled = true;
+                                }
+                                else
+                                {
+                                    if (iBoneIdx == skeleton.BoneCount)
+                                    {
+                                        SetBoneModifiers();
+                                        SelectedBonePiece = cbWeapon.SelectedIndex;
+
+                                        if (!bWindowPEOpened) gbSelectedBoneFrame.Enabled = true;
+                                        SetBonePieceModifiers();
+
+                                        if (!bWindowPEOpened) gbSelectedPieceFrame.Enabled = true;
+
+                                    }
+                                    else
+                                    {
+                                        SelectedBonePiece = -1;
+                                        gbSelectedBoneFrame.Enabled = false;
+                                        gbSelectedPieceFrame.Enabled = false;
+                                    }
+                                }
+
+                                SetTextureEditorFields();
+                            }
+                            break;
+
+                        default:
+                            SelectedBone = -1;
+                            SelectedBonePiece = -1;
+
+                            gbSelectedBoneFrame.Enabled = false;
+                            gbSelectedPieceFrame.Enabled = false;
+
+                            break;
+                    }
+
+                    SetFrameEditorFields();
+                    PanelModel_Paint(null, null);
+
+                    x_last = e.X;
+                    y_last = e.Y;
                 }
-
-                SetFrameEditorFields();
-                PanelModel_Paint(null, null);
-
-                x_last = e.X;
-                y_last = e.Y;
             }
         }
 
         private void PanelModel_MouseMove(object sender, MouseEventArgs e)
         {
-            if (pbMouseIsDown)
+            if (skeleton != null && pbMouseIsDown)
             {
                 Vector3 p_min = new Vector3();
                 Vector3 p_max = new Vector3();
@@ -1657,27 +1695,22 @@ namespace KimeraCS
 
                             switch (modelType)
                             {
-                                case ModelType.K_P_FIELD_MODEL:
-                                case ModelType.K_P_BATTLE_MODEL:
-                                case ModelType.K_P_MAGIC_MODEL:
-                                case ModelType.K_3DS_MODEL:
+                                case ModelType.PFieldModel:
+                                case ModelType.PBattleModel:
+                                case ModelType.PMagicModel:
+                                case ModelType.ImportedModel:
                                     SetCameraPModel(fPModel, 0, 0, (float)DIST, 0, 0, 0, 1, 1, 1);
                                     break;
 
-                                case ModelType.K_HRC_SKELETON:
-                                    ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[tbCurrentFrameScroll.Value],
-                                                            ref p_min, ref p_max);
-
-                                    SetCameraAroundModel(ref p_min, ref p_max, 0, 0, (float)DIST, 0, 0, 0, 1, 1, 1);
-                                    break;
-
-                                case ModelType.K_AA_SKELETON:
-                                case ModelType.K_MAGIC_SKELETON:
-                                    ComputeBattleBoundingBox(bSkeleton,
-                                                             bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value],
-                                                             ref p_min, ref p_max);
-
-                                    SetCameraAroundModel(ref p_min, ref p_max, 0, 0, (float)DIST, 0, 0, 0, 1, 1, 1);
+                                case ModelType.HRCSkeleton:
+                                case ModelType.AASkeleton:
+                                case ModelType.MagicSkeleton:
+                                    var frame = GetCurrentFrame(ianimIndex, tbCurrentFrameScroll.Value);
+                                    if (frame != null)
+                                    {
+                                        skeleton.ComputeBoundingBox(frame, ref p_min, ref p_max);
+                                        SetCameraAroundModel(ref p_min, ref p_max, 0, 0, (float)DIST, 0, 0, 0, 1, 1, 1);
+                                    }
                                     break;
                             }
 
@@ -1717,7 +1750,7 @@ namespace KimeraCS
             }
         }
 
-        private void PanelModel_MouseWheel(object sender, MouseEventArgs e)
+        private void PanelModel_MouseWheel(object? sender, MouseEventArgs e)
         {
             Vector3 p_temp;
             Vector3 p_temp2;
@@ -1780,14 +1813,14 @@ namespace KimeraCS
         {
             PModel tmpPModel = new PModel();
 
-            if (bLoaded)
+            if (skeleton != null && bLoaded)
             {
 
                 // This checks avoids a crash when we "unselect" or "click in
                 // any place outside the model" in skeleton main window.
                 // So, we restore to SelectedBone and SelectedBonePiece its values.
-                if (modelType == ModelType.K_HRC_SKELETON || modelType == ModelType.K_AA_SKELETON ||
-                    modelType == ModelType.K_MAGIC_SKELETON)
+                if (modelType == ModelType.HRCSkeleton || modelType == ModelType.AASkeleton ||
+                    modelType == ModelType.MagicSkeleton)
                 {
                     if (SelectedBone == -1 || SelectedBonePiece == -1)
                     {
@@ -1810,27 +1843,23 @@ namespace KimeraCS
 
                 switch (modelType)
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        if (SelectedBone > -1 && SelectedBonePiece > -1)
-                            tmpPModel = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].Model;
-                        break;
-
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
+                    case ModelType.HRCSkeleton:
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
                         if (SelectedBone > -1 && SelectedBonePiece > -1)
                         {
-                            if (SelectedBone == bSkeleton.nBones)
-                                tmpPModel = bSkeleton.wpModels[SelectedBonePiece];
+                            if (SelectedBone == skeleton.BoneCount)
+                                tmpPModel = skeleton.Weapons[SelectedBonePiece];
                             else
-                                tmpPModel = bSkeleton.bones[SelectedBone].Models[SelectedBonePiece];
+                                tmpPModel = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model;
                         }
 
                         break;
 
-                    case ModelType.K_P_BATTLE_MODEL:
-                    case ModelType.K_P_FIELD_MODEL:
-                    case ModelType.K_P_MAGIC_MODEL:
-                    case ModelType.K_3DS_MODEL:
+                    case ModelType.PBattleModel:
+                    case ModelType.PFieldModel:
+                    case ModelType.PMagicModel:
+                    case ModelType.ImportedModel:
                         tmpPModel = fPModel;
                         break;
                 }
@@ -1838,7 +1867,7 @@ namespace KimeraCS
                 if (tmpPModel.Verts != null && tmpPModel.Verts.Length > 0)
                 {
                     // Close previous P Editor if any.
-                    if (FindWindowOpened("FrmPEditor")) frmPEdit.Close();
+                    if (FindWindowOpened("FrmPEditor")) frmPEdit?.Close();
 
                     // We will stop Play Animation if it is running
                     if (btnPlayStopAnim.Checked) btnPlayStopAnim.Checked = false;
@@ -1862,18 +1891,24 @@ namespace KimeraCS
 
         private void UndoToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Undo(frmPEdit, this);
+            if (frmPEdit != null)
+            {
+                Undo(frmPEdit, this);
 
-            PanelModel_Paint(null, null);
-            TextureViewer_Paint(null, null);
+                PanelModel_Paint(null, null);
+                TextureViewer_Paint(null, null);
+            }
         }
 
         private void RedoToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Redo(frmPEdit, this);
+            if (frmPEdit != null)
+            {
+                Redo(frmPEdit, this);
 
-            PanelModel_Paint(null, null);
-            TextureViewer_Paint(null, null);
+                PanelModel_Paint(null, null);
+                TextureViewer_Paint(null, null);
+            }
         }
 
         private void ResetCameraToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1887,7 +1922,7 @@ namespace KimeraCS
 
         private void ShowCharlgpToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            frmFieldDatabase.ShowDialog();
+            frmFieldDatabase?.ShowDialog();
 
             if (FrmFieldDB.bSelectedFileFromDB)
             {
@@ -1897,7 +1932,7 @@ namespace KimeraCS
 
         private void ShowBattlelgpToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            frmBattleDatabase.ShowDialog();
+            frmBattleDatabase?.ShowDialog();
 
             if (FrmBattleDB.bSelectedBattleFileFromDB)
             {
@@ -1907,7 +1942,7 @@ namespace KimeraCS
 
         private void ShowMagiclgpToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            frmMagicDatabase.ShowDialog();
+            frmMagicDatabase?.ShowDialog();
 
             if (FrmMagicDB.bSelectedMagicFileFromDB)
             {
@@ -1948,7 +1983,7 @@ namespace KimeraCS
                     if (File.Exists(openFile.FileName))
                     {
                         // Close FrmPEditor if opened
-                        if (FindWindowOpened("FrmPEditor")) frmPEdit.Close();
+                        if (FindWindowOpened("FrmPEditor")) frmPEdit?.Close();
 
                         // Disable/Make Invisible in Forms Data controls
                         InitializeWinFormsDataControls();
@@ -1977,30 +2012,33 @@ namespace KimeraCS
                             return;
                         }
 
-                        // Set Global Paths
-                        strGlobalFieldSkeletonFileName = openFile.FileName;
-                        strGlobalFieldSkeletonName = Path.GetFileName(openFile.FileName).ToUpper();
-                        strGlobalPathFieldSkeletonFolder = Path.GetDirectoryName(openFile.FileName);
-                        strGlobalPathFieldAnimationFolder = Path.GetDirectoryName(openFile.FileName);
+                        if (skeleton != null && animation != null)
+                        {
+                            // Set Global Paths
+                            strGlobalFieldSkeletonFileName = openFile.FileName;
+                            strGlobalFieldSkeletonName = Path.GetFileName(openFile.FileName).ToUpper();
+                            strGlobalPathFieldSkeletonFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
+                            strGlobalPathFieldAnimationFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
 
-                        // Enable/Make Visible Win Forms Data controls
-                        EnableWinFormsDataControls();
+                            // Enable/Make Visible Win Forms Data controls
+                            EnableWinFormsDataControls();
 
-                        // ComputeBoundingBoxes
-                        ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[0], ref p_min, ref p_max);
-                        diameter = ComputeFieldDiameter(fSkeleton);
+                            // ComputeBoundingBoxes
+                            skeleton.ComputeBoundingBox(animation.Frames[0], ref p_min, ref p_max);
+                            diameter = skeleton.ComputeDiameter();
 
-                        // Set frame values in frame editor groupbox...
-                        SetFrameEditorFields();
+                            // Set frame values in frame editor groupbox...
+                            SetFrameEditorFields();
 
-                        // Set texture values in texture editor groupbox...
-                        SetTextureEditorFields();
+                            // Set texture values in texture editor groupbox...
+                            SetTextureEditorFields();
 
-                        // PostLoadModelPreparations
-                        PostLoadModelPreparations(ref p_min, ref p_max);
+                            // PostLoadModelPreparations
+                            PostLoadModelPreparations(ref p_min, ref p_max);
 
-                        // We can draw the model in panel
-                        PanelModel_Paint(null, null);
+                            // We can draw the model in panel
+                            PanelModel_Paint(null, null);
+                        }
                     }
                 }
             }
@@ -2034,7 +2072,7 @@ namespace KimeraCS
             if (strGlobalPathBattleSkeletonFolder != "")
                 openFile.InitialDirectory = strGlobalPathBattleSkeletonFolder;
 
-            if (modelType == ModelType.K_MAGIC_SKELETON)
+            if (modelType == ModelType.MagicSkeleton)
                 if (strGlobalPathMagicSkeletonFolder != "")
                     openFile.InitialDirectory = strGlobalPathMagicSkeletonFolder;
 
@@ -2046,7 +2084,7 @@ namespace KimeraCS
                     if (File.Exists(openFile.FileName))
                     {
                         // Close FrmPEditor if opened
-                        if (FindWindowOpened("FrmPEditor")) frmPEdit.Close();
+                        if (FindWindowOpened("FrmPEditor")) frmPEdit?.Close();
 
                         // Disable/Make Invisible in Forms Data controls
                         InitializeWinFormsDataControls();
@@ -2076,46 +2114,48 @@ namespace KimeraCS
                             return;
                         }
 
-                        // Set Global Paths
-                        if (modelType == ModelType.K_AA_SKELETON)
+                        if (skeleton != null && animationPack != null)
                         {
-                            strGlobalPathBattleSkeletonFolder = Path.GetDirectoryName(openFile.FileName);
-                            strGlobalPathBattleAnimationFolder = strGlobalPathBattleSkeletonFolder;
+                            // Set Global Paths
+                            if (modelType == ModelType.AASkeleton)
+                            {
+                                strGlobalPathBattleSkeletonFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
+                                strGlobalPathBattleAnimationFolder = strGlobalPathBattleSkeletonFolder;
 
-                            strGlobalBattleSkeletonFileName = openFile.FileName;
-                            strGlobalBattleSkeletonName = Path.GetFileName(openFile.FileName).ToUpper();
+                                strGlobalBattleSkeletonFileName = openFile.FileName;
+                                strGlobalBattleSkeletonName = Path.GetFileName(openFile.FileName).ToUpper();
+                            }
+                            else
+                            {
+                                strGlobalPathMagicSkeletonFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
+                                strGlobalPathMagicAnimationFolder = strGlobalPathMagicSkeletonFolder;
+
+                                strGlobalMagicSkeletonFileName = openFile.FileName;
+                                strGlobalMagicSkeletonName = Path.GetFileName(openFile.FileName).ToUpper();
+                            }
+
+                            // Update Paths
+                            WriteCFGFile();
+
+                            // Enable/Make Visible Win Forms Data controls
+                            EnableWinFormsDataControls();
+
+                            // ComputeBoundingBoxes
+                            skeleton.ComputeBoundingBox(animationPack.SkeletonAnimations[ianimIndex].Frames[0], ref p_min, ref p_max);
+                            diameter = skeleton.ComputeDiameter();
+
+                            // Set frame values in frame editor groupbox...
+                            SetFrameEditorFields();
+
+                            // Set texture values in texture editor groupbox...
+                            SetTextureEditorFields();
+
+                            // PostLoadModelPreparations
+                            PostLoadModelPreparations(ref p_min, ref p_max);
+
+                            // We can draw the model in panel
+                            PanelModel_Paint(null, null);
                         }
-                        else
-                        {
-                            strGlobalPathMagicSkeletonFolder = Path.GetDirectoryName(openFile.FileName);
-                            strGlobalPathMagicAnimationFolder = strGlobalPathMagicSkeletonFolder;
-
-                            strGlobalMagicSkeletonFileName = openFile.FileName;
-                            strGlobalMagicSkeletonName = Path.GetFileName(openFile.FileName).ToUpper();
-                        }
-
-                        // Update Paths
-                        WriteCFGFile();
-
-                        // Enable/Make Visible Win Forms Data controls
-                        EnableWinFormsDataControls();
-
-                        // ComputeBoundingBoxes
-                        ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[0], ref p_min, ref p_max);
-
-                        diameter = ComputeBattleDiameter(bSkeleton);
-
-                        // Set frame values in frame editor groupbox...
-                        SetFrameEditorFields();
-
-                        // Set texture values in texture editor groupbox...
-                        SetTextureEditorFields();
-
-                        // PostLoadModelPreparations
-                        PostLoadModelPreparations(ref p_min, ref p_max);
-
-                        // We can draw the model in panel
-                        PanelModel_Paint(null, null);
                     }
                 }
             }
@@ -2175,39 +2215,42 @@ namespace KimeraCS
                             }
                         }
 
-                        // Close FrmPEditor if opened
-                        if (FindWindowOpened("FrmPEditor")) frmPEdit.Close();
+                        if (skeleton != null && animation != null)
+                        {
+                            // Close FrmPEditor if opened
+                            if (FindWindowOpened("FrmPEditor")) frmPEdit?.Close();
 
-                        // Disable/Make Invisible in Forms Data controls
-                        InitializeWinFormsDataControls();
+                            // Disable/Make Invisible in Forms Data controls
+                            InitializeWinFormsDataControls();
 
-                        // Set Global Paths
-                        strGlobalPathRSDResourceFolder = Path.GetDirectoryName(openFile.FileName);
-                        strGlobalRSDResourceName = Path.GetFileName(openFile.FileName).ToUpper();
+                            // Set Global Paths
+                            strGlobalPathRSDResourceFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
+                            strGlobalRSDResourceName = Path.GetFileName(openFile.FileName).ToUpper();
 
-                        // Load the RSD Resource
-                        // We need to prepare some type of "FAKE" or RSD only fSkeleton
-                        UserPrompts.FieldRSDLoader(strGlobalPathRSDResourceFolder,
-                                                    Path.GetFileNameWithoutExtension(strGlobalRSDResourceName));
+                            // Load the RSD Resource
+                            // We need to prepare some type of "FAKE" or RSD only skeleton
+                            UserPrompts.FieldRSDLoader(strGlobalPathRSDResourceFolder,
+                                                        Path.GetFileNameWithoutExtension(strGlobalRSDResourceName));
 
-                        // Enable/Make Visible Win Forms Data controls
-                        EnableWinFormsDataControls();
+                            // Enable/Make Visible Win Forms Data controls
+                            EnableWinFormsDataControls();
 
-                        // ComputeBoundingBoxes
-                        ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[0], ref p_min, ref p_max);
-                        diameter = ComputeFieldDiameter(fSkeleton);
+                            // ComputeBoundingBoxes
+                            skeleton.ComputeBoundingBox(animation.Frames[0], ref p_min, ref p_max);
+                            diameter = skeleton.ComputeDiameter();
 
-                        // Set frame values in frame editor groupbox...
-                        SetFrameEditorFields();
+                            // Set frame values in frame editor groupbox...
+                            SetFrameEditorFields();
 
-                        // Set texture values in texture editor groupbox...
-                        SetTextureEditorFields();
+                            // Set texture values in texture editor groupbox...
+                            SetTextureEditorFields();
 
-                        // PostLoadModelPreparations
-                        PostLoadModelPreparations(ref p_min, ref p_max);
+                            // PostLoadModelPreparations
+                            PostLoadModelPreparations(ref p_min, ref p_max);
 
-                        // We can draw the model in panel
-                        PanelModel_Paint(null, null);
+                            // We can draw the model in panel
+                            PanelModel_Paint(null, null);
+                        }
                     }
                 }
             }
@@ -2253,7 +2296,7 @@ namespace KimeraCS
                     if (File.Exists(openFile.FileName))
                     {
                         // Close FrmPEditor if opened
-                        if (FindWindowOpened("FrmPEditor")) frmPEdit.Close();
+                        if (FindWindowOpened("FrmPEditor")) frmPEdit?.Close();
 
                         // Disable/Make Invisible in Forms Data controls
                         InitializeWinFormsDataControls();
@@ -2278,7 +2321,7 @@ namespace KimeraCS
                         if (Path.GetExtension(openFile.FileName).ToUpper() != ".TMD")
                         {
                             // Set Global Paths
-                            strGlobalPathPModelFolder = Path.GetDirectoryName(openFile.FileName);
+                            strGlobalPathPModelFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
                             strGlobalPModelName = Path.GetFileName(openFile.FileName).ToUpper();
 
                             fPModel = new PModel();
@@ -2355,7 +2398,7 @@ namespace KimeraCS
                     if (File.Exists(openFile.FileName))
                     {
                         // Close FrmPEditor if opened
-                        if (FindWindowOpened("FrmPEditor")) frmPEdit.Close();
+                        if (FindWindowOpened("FrmPEditor")) frmPEdit?.Close();
 
                         // Disable/Make Invisible in Forms Data controls
                         InitializeWinFormsDataControls();
@@ -2376,7 +2419,7 @@ namespace KimeraCS
                             }
                         }
                         // Set Global Paths
-                        strGlobalPath3DSModelFolder = Path.GetDirectoryName(openFile.FileName);
+                        strGlobalPath3DSModelFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
                         strGlobal3DSModelName = Path.GetFileName(openFile.FileName).ToUpper();
 
                         // We load the 3D model into memory using Assimp.
@@ -2384,7 +2427,7 @@ namespace KimeraCS
                         if (scene != null && scene.HasMeshes)
                         {
                             bool modelLoaded = false;
-                            var type = ModelType.K_3DS_MODEL;
+                            var type = ModelType.ImportedModel;
 
                             DialogResult result;
                             using (var chooser = new frmChooseModelType())
@@ -2396,24 +2439,25 @@ namespace KimeraCS
                             if (result != DialogResult.OK)
                                 return;
                                 
-                            if (type != ModelType.K_NONE)
+                            if (type != ModelType.None)
                             {
                                 modelType = type;
 
                                 //field skeleton
-                                if (type == ModelType.K_HRC_SKELETON)
+                                if (type == ModelType.HRCSkeleton)
                                 {
-                                    fSkeleton = ConvertSceneToFieldSkeleton(scene, openFile.FileName, bAdjust3DSImport);
-                                    fAnimation = ExtractFieldAnimationFromScene(scene, fSkeleton, openFile.FileName, bAdjust3DSImport);
+                                    var fs = ConvertSceneToFieldSkeleton(scene, openFile.FileName, bAdjust3DSImport);
+                                    skeleton = new UnifiedSkeleton(fs);
+                                    animation = new UnifiedAnimation(ExtractFieldAnimationFromScene(scene, fs, openFile.FileName, bAdjust3DSImport));
 
-                                    strGlobalFieldSkeletonName = fSkeleton.name;
-                                    strGlobalFieldAnimationName = fAnimation.strFieldAnimationFile;
+                                    strGlobalFieldSkeletonName = skeleton.FileName;
+                                    strGlobalFieldAnimationName = animation.FileName;
 
-                                    ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[0], ref p_min, ref p_max);
-                                    diameter = ComputeFieldDiameter(fSkeleton);
+                                    skeleton.ComputeBoundingBox(animation.Frames[0], ref p_min, ref p_max);
+                                    diameter = skeleton.ComputeDiameter();
                                 }
                                 //P model (3DS)
-                                else if (type == ModelType.K_3DS_MODEL)
+                                else if (type == ModelType.ImportedModel)
                                 {
                                     fPModel = new PModel();
                                     ConvertSceneToPModel(scene, ref fPModel, bAdjust3DSImport);
@@ -2437,6 +2481,7 @@ namespace KimeraCS
                                     int animIndex = 0;
 
                                     var tmpSkeleton = ConvertSceneToBattleSkeleton(scene, openFile.FileName, bAdjust3DSImport);
+                                    var tmpAnims = new BattleAnimationsPack();
 
                                     if (!tmpSkeleton.IsBattleLocation)
                                     {
@@ -2446,9 +2491,9 @@ namespace KimeraCS
                                             bool loaded = false, valid = false;
                                             while (!valid)
                                             {
-                                                if (type == ModelType.K_AA_SKELETON)
+                                                if (type == ModelType.AASkeleton)
                                                 {
-                                                    frmBattleDatabase.ShowDialog();
+                                                    frmBattleDatabase?.ShowDialog();
                                                     loaded = FrmBattleDB.bSelectedBattleFileFromDB;
                                                     if (loaded)
                                                     {
@@ -2457,7 +2502,7 @@ namespace KimeraCS
                                                 }
                                                 else
                                                 {
-                                                    frmMagicDatabase.ShowDialog();
+                                                    frmMagicDatabase?.ShowDialog();
                                                     loaded = FrmMagicDB.bSelectedMagicFileFromDB;
                                                     if (loaded)
                                                     {
@@ -2465,7 +2510,7 @@ namespace KimeraCS
                                                     }
                                                 }
 
-                                                if (loaded && bSkeleton.nBones != tmpSkeleton.nBones)
+                                                if (loaded && skeleton != null && skeleton.BoneCount != tmpSkeleton.nBones)
                                                 {
                                                     MessageBox.Show("The selected skeleton has an incorrect number of bones.", "Error");
                                                 }
@@ -2473,9 +2518,9 @@ namespace KimeraCS
                                                     valid = true;
                                             }
 
-                                            if (loaded && scene.HasAnimations)
+                                            if (loaded && scene.HasAnimations && animationPack != null)
                                             {
-                                                using (var insert = new frmBattleAnimationImport(bSkeleton.nsSkeletonAnims))
+                                                using (var insert = new frmBattleAnimationImport(animationPack.SkeletonAnimationCount))
                                                 {
                                                     if (insert.ShowDialog() == DialogResult.OK)
                                                     {
@@ -2487,37 +2532,44 @@ namespace KimeraCS
                                             }
                                         }
                                     }
-                                    bSkeleton = tmpSkeleton;
+                                    skeleton = new UnifiedSkeleton(tmpSkeleton);
 
                                     if (scene.HasAnimations)
                                     {
                                         //if no animation was loaded, create an empty battle animations pack
                                         if (!animLoaded)
-                                        {
-                                            bAnimationsPack = new BattleAnimationsPack(bSkeleton, string.Empty);
-                                            bAnimationsPack.strAnimsPackFullFileName = openFile.FileName;
-                                            bAnimationsPack.strBattleAnimPackFileName = Path.GetFileName(openFile.FileName);
-                                        }
+                                            tmpAnims = new BattleAnimationsPack(tmpSkeleton, type, string.Empty);
 
                                         //load the animation from the scene
                                         if (scene.HasAnimations)
-                                            ExtractBattleAnimationsFromScene(scene, ref bSkeleton, ref bAnimationsPack,
+                                        {
+                                            ExtractBattleAnimationsFromScene(scene, ref tmpSkeleton, ref tmpAnims,
                                                 animIndex, insertNew, bAdjust3DSImport);
+                                        }
+
+                                        //load the animations pack for rendering
+                                        animationPack = new UnifiedAnimationPack(tmpAnims, skeleton.BoneCount);
+                                        animationPack.FilePath = openFile.FileName;
+                                        animationPack.FileName = Path.GetFileName(openFile.FileName);
                                     }
 
-                                    if (type == ModelType.K_AA_SKELETON)
+                                    if (type == ModelType.AASkeleton)
                                     {
-                                        strGlobalBattleSkeletonName = bSkeleton.fileName;
-                                        strGlobalBattleAnimationName = bAnimationsPack.strBattleAnimPackFileName;
+                                        strGlobalBattleSkeletonName = skeleton.FileName;
+                                        strGlobalBattleAnimationName = (animationPack?.FileName ?? string.Empty);
                                     }
                                     else
                                     {
-                                        strGlobalMagicSkeletonName = bSkeleton.fileName;
-                                        strGlobalMagicAnimationName = bAnimationsPack.strBattleAnimPackFileName;
+                                        strGlobalMagicSkeletonName = skeleton.FileName;
+                                        strGlobalMagicAnimationName = (animationPack?.FileName ?? string.Empty);
                                     }
 
-                                    ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[0].frames[0], ref p_min, ref p_max);
-                                    diameter = ComputeBattleDiameter(bSkeleton);
+                                    var frame = GetCurrentFrame(0, 0);
+                                    if (frame != null)
+                                    {
+                                        skeleton.ComputeBoundingBox(frame, ref p_min, ref p_max);
+                                        diameter = skeleton.ComputeDiameter();
+                                    }
                                 }
                                 modelLoaded = true;
                             }
@@ -2587,7 +2639,7 @@ namespace KimeraCS
                     if (File.Exists(openFile.FileName))
                     {
                         // Close FrmPEditor if opened
-                        if (FindWindowOpened("FrmPEditor")) frmPEdit.Close();
+                        if (FindWindowOpened("FrmPEditor")) frmPEdit?.Close();
 
                         // Disable/Make Invisible in Forms Data controls
                         InitializeWinFormsDataControls();
@@ -2612,7 +2664,7 @@ namespace KimeraCS
                         if (Path.GetExtension(openFile.FileName).ToUpper() == ".TMD")
                         {
                             // Set Global Paths
-                            strGlobalPathTMDModelFolder = Path.GetDirectoryName(openFile.FileName);
+                            strGlobalPathTMDModelFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
                             strGlobalTMDModelName = Path.GetFileName(openFile.FileName).ToUpper();
 
                             mTMDModel = new TMDModel();
@@ -2692,13 +2744,13 @@ namespace KimeraCS
 
             try
             {
-                if (bLoaded)
+                if (bLoaded && skeleton != null)
                 {
                     // If we have not selected any folder for saving, let's assing the load folder
                     // for any case
                     switch (modelType)
                     {
-                        case ModelType.K_HRC_SKELETON:
+                        case ModelType.HRCSkeleton:
                             if (IsRSDResource)
                             {
                                 modelTypeStr = "RSD Resource";
@@ -2720,7 +2772,7 @@ namespace KimeraCS
 
                             break;
 
-                        case ModelType.K_AA_SKELETON:
+                        case ModelType.AASkeleton:
                             modelTypeStr = "Battle Skeleton";
 
                             if (strGlobalPathSaveAsSkeletonFolder == "")
@@ -2730,7 +2782,7 @@ namespace KimeraCS
 
                             break;
 
-                        case ModelType.K_MAGIC_SKELETON:
+                        case ModelType.MagicSkeleton:
                             modelTypeStr = "Magic Skeleton";
 
                             if (strGlobalPathSaveAsSkeletonFolder == "")
@@ -2746,13 +2798,14 @@ namespace KimeraCS
                     if (IsRSDResource)
                     {
                         // We save the RSD Resource.
-                        iSaveResult = WriteFullRSDResource(fSkeleton.bones[0], saveFileName, strGlobalPathSaveSkeletonFolder);
+                        var bone = skeleton.Bones[0].ToFieldBone();
+                        iSaveResult = WriteFullRSDResource(bone, saveFileName, strGlobalPathSaveSkeletonFolder);
                     }
                     else
                     {
                         // We save the Skeleton.
                         bool mergeBones = false;
-                        if (modelType == ModelType.K_HRC_SKELETON)
+                        if (modelType == ModelType.HRCSkeleton)
                         {
                             mergeBones = (MessageBox.Show("Merge multi PModels bones in a single file?", "Confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes);
                         }
@@ -2800,7 +2853,7 @@ namespace KimeraCS
             // Check Initial Directory
             switch (modelType)
             {
-                case ModelType.K_HRC_SKELETON:
+                case ModelType.HRCSkeleton:
                     if (IsRSDResource)
                     {
                         saveFile.Title = "Save RSD Resource As...";
@@ -2826,7 +2879,7 @@ namespace KimeraCS
 
                     break;
 
-                case ModelType.K_AA_SKELETON:
+                case ModelType.AASkeleton:
                     saveFile.Title = "Save Battle Skeleton As...";
                     saveFile.Filter = $"Battle Skeleton|*AA|{GetSkeletonExportFileFilter()}";
 
@@ -2838,7 +2891,7 @@ namespace KimeraCS
 
                     break;
 
-                case ModelType.K_MAGIC_SKELETON:
+                case ModelType.MagicSkeleton:
                     saveFile.Title = "Save Magic Skeleton As...";
                     saveFile.Filter = $"Magic Skeleton|*.D|{GetSkeletonExportFileFilter()}";
 
@@ -2850,10 +2903,10 @@ namespace KimeraCS
 
                     break;
 
-                case ModelType.K_P_FIELD_MODEL:
-                case ModelType.K_P_BATTLE_MODEL:
-                case ModelType.K_P_MAGIC_MODEL:
-                case ModelType.K_3DS_MODEL:
+                case ModelType.PFieldModel:
+                case ModelType.PBattleModel:
+                case ModelType.PMagicModel:
+                case ModelType.ImportedModel:
                     saveFile.Title = "Save Model As...";
                     //P model exports don't work well, so I'm disabling it for now
                     saveFile.Filter = $"Field Model|*.P|Battle Model|*.*|Magic Model|*.P??"; //|{GetExportFileFilter()}";
@@ -2861,7 +2914,7 @@ namespace KimeraCS
                     if (strGlobalPathSaveModelFolder == "")
                         strGlobalPathSaveModelFolder = strGlobalPathPModelFolder;
 
-                    if (modelType == ModelType.K_3DS_MODEL) saveFile.FileName =
+                    if (modelType == ModelType.ImportedModel) saveFile.FileName =
                                 Path.GetFileNameWithoutExtension(strGlobal3DSModelName).ToUpper();
                     else saveFile.FileName = strGlobalPModelName.ToUpper();
 
@@ -2881,7 +2934,7 @@ namespace KimeraCS
                 // Process input if the user clicked OK.
                 if (saveFile.ShowDialog() == DialogResult.OK)
                 {
-                    if (bLoaded)
+                    if (bLoaded && skeleton != null)
                     {
                         isExport = IsValidExport(saveFile.FileName);
 
@@ -2890,12 +2943,12 @@ namespace KimeraCS
 
                         switch (modelType)
                         {
-                            case ModelType.K_HRC_SKELETON:
-                            case ModelType.K_AA_SKELETON:
-                            case ModelType.K_MAGIC_SKELETON:
+                            case ModelType.HRCSkeleton:
+                            case ModelType.AASkeleton:
+                            case ModelType.MagicSkeleton:
                                 if (isExport)
                                 {
-                                    if (!(modelType == ModelType.K_AA_SKELETON && bSkeleton.IsBattleLocation))
+                                    if (!(modelType == ModelType.AASkeleton && skeleton.IsBattleLocation))
                                     {
                                         if (MessageBox.Show("The skeleton will be exported with the currently selected animation.",
                                         "Information", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
@@ -2903,7 +2956,7 @@ namespace KimeraCS
                                     }
                                 }
                                 // Prepare Path
-                                strGlobalPathSaveSkeletonFolder = Path.GetDirectoryName(saveFile.FileName);
+                                strGlobalPathSaveSkeletonFolder = (Path.GetDirectoryName(saveFile.FileName) ?? string.Empty);
                                 saveFile.FileName = strGlobalPathSaveSkeletonFolder + "\\" + Path.GetFileName(saveFile.FileName).ToUpper();
                                 strGlobalPathSaveAsSkeletonFolder = strGlobalPathSaveSkeletonFolder;
 
@@ -2911,13 +2964,14 @@ namespace KimeraCS
                                 if (IsRSDResource)
                                 {
                                     // We save the RSD Resource.
-                                    iSaveResult = WriteFullRSDResource(fSkeleton.bones[0], saveFile.FileName, strGlobalPathSaveSkeletonFolder);
+                                    var bone = skeleton.Bones[0].ToFieldBone();
+                                    iSaveResult = WriteFullRSDResource(bone, saveFile.FileName, strGlobalPathSaveSkeletonFolder);
                                 }
                                 else
                                 {
                                     // We save the Skeleton.
                                     bool mergeBones = false;
-                                    if (modelType == ModelType.K_HRC_SKELETON)
+                                    if (modelType == ModelType.HRCSkeleton)
                                     {
                                         mergeBones = (MessageBox.Show("Merge multi PModels bones in a single file?", "Confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes);
                                     }
@@ -2936,12 +2990,12 @@ namespace KimeraCS
                                 }
                                 break;
 
-                            case ModelType.K_P_FIELD_MODEL:
-                            case ModelType.K_P_BATTLE_MODEL:
-                            case ModelType.K_P_MAGIC_MODEL:
-                            case ModelType.K_3DS_MODEL:
+                            case ModelType.PFieldModel:
+                            case ModelType.PBattleModel:
+                            case ModelType.PMagicModel:
+                            case ModelType.ImportedModel:
                                 // Prepare Path
-                                strGlobalPathSaveModelFolder = Path.GetDirectoryName(saveFile.FileName);
+                                strGlobalPathSaveModelFolder = (Path.GetDirectoryName(saveFile.FileName) ?? string.Empty);
                                 saveFile.FileName = strGlobalPathSaveModelFolder + "\\" + Path.GetFileName(saveFile.FileName).ToUpper();
 
                                 // We save the Model.
@@ -2983,207 +3037,218 @@ namespace KimeraCS
 
         private void LoadFieldAnimationToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            FieldAnimation tmpfAnimation = new FieldAnimation();
-
-            // Set filter options and filter index.
-            openFile.Title = "Open Field Animation";
-            openFile.Filter = "Field Animation|*.A|All files|*.*";
-            openFile.FilterIndex = 1;
-            openFile.FileName = null;
-
-            // Check Initial Directory
-            if (strGlobalPathFieldAnimationFolder != null)
+            if (skeleton != null && animation != null)
             {
-                openFile.InitialDirectory = strGlobalPathFieldAnimationFolder;
-            }
-            else
-            {
-                openFile.InitialDirectory = strGlobalPath;
-            }
+                UnifiedAnimation tmpanimation = new();
 
-            try
-            {
-                // Process input if the user clicked OK.
-                if (openFile.ShowDialog() == DialogResult.OK)
+                // Set filter options and filter index.
+                openFile.Title = "Open Field Animation";
+                openFile.Filter = "Field Animation|*.A|All files|*.*";
+                openFile.FilterIndex = 1;
+                openFile.FileName = null;
+
+                // Check Initial Directory
+                if (strGlobalPathFieldAnimationFolder != null)
                 {
-                    if (File.Exists(openFile.FileName))
+                    openFile.InitialDirectory = strGlobalPathFieldAnimationFolder;
+                }
+                else
+                {
+                    openFile.InitialDirectory = strGlobalPath;
+                }
+
+                try
+                {
+                    // Process input if the user clicked OK.
+                    if (openFile.ShowDialog() == DialogResult.OK)
                     {
-                        // Set Global Paths
-                        strGlobalFieldAnimationName = Path.GetFileName(openFile.FileName).ToUpper();
-                        strGlobalPathFieldAnimationFolder = Path.GetDirectoryName(openFile.FileName);
-
-                        if (!SameFieldAnimNumBones(openFile.FileName, fSkeleton) &&
-                            strGlobalFieldAnimationName != "BZBC.A")
+                        if (File.Exists(openFile.FileName))
                         {
-                            MessageBox.Show("The Animation file " + Path.GetFileName(openFile.FileName).ToUpper() +
-                                            " and the loaded skeleton have different number of bones. Animation not loaded.",
-                                            "Error");
+                            // Set Global Paths
+                            strGlobalFieldAnimationName = Path.GetFileName(openFile.FileName).ToUpper();
+                            strGlobalPathFieldAnimationFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
 
-                            return;
+                            if (!skeleton.AnimFileHasSameBoneCount(openFile.FileName) &&
+                                strGlobalFieldAnimationName != "BZBC.A")
+                            {
+                                MessageBox.Show("The Animation file " + Path.GetFileName(openFile.FileName).ToUpper() +
+                                                " and the loaded skeleton have different number of bones. Animation not loaded.",
+                                                "Error");
+
+                                return;
+                            }
+
+                            // Load the Field Animation
+                            tmpanimation = animation;
+                            var fSkeleton = skeleton.ToFieldSkeleton();
+                            animation = new UnifiedAnimation(
+                                new FieldAnimation(fSkeleton, openFile.FileName.ToUpper(), true));
+                            strGlobalFieldAnimationName = animation.FileName;
+
+                            // Let's stop the Animation
+                            btnPlayStopAnim.Checked = false;
+
+                            iCurrentFrameScroll = 0;
+                            tbCurrentFrameScroll.Value = 0;
+                            txtAnimationFrame.Text = iCurrentFrameScroll.ToString();
+
+                            tbCurrentFrameScroll.Maximum = animation.FrameCount - 1;
+
+                            SetFrameEditorFields();
+
+                            UpdateMainSkeletonWindowTitle();
+
+                            WriteCFGFile();
                         }
 
-                        // Load the Field Animation
-                        tmpfAnimation = fAnimation;
-                        fAnimation = new FieldAnimation(fSkeleton, openFile.FileName.ToUpper(), true);
-                        strGlobalFieldAnimationName = fAnimation.strFieldAnimationFile;
-
-                        // Let's stop the Animation
-                        btnPlayStopAnim.Checked = false;
-
-                        iCurrentFrameScroll = 0;
-                        tbCurrentFrameScroll.Value = 0;
-                        txtAnimationFrame.Text = iCurrentFrameScroll.ToString();
-
-                        tbCurrentFrameScroll.Maximum = fAnimation.nFrames - 1;
-
-                        SetFrameEditorFields();
-
-                        UpdateMainSkeletonWindowTitle();
-
-                        WriteCFGFile();
+                        PanelModel_Paint(null, null);
                     }
-
-                    PanelModel_Paint(null, null);
                 }
-            }
-            catch (Exception ex)
-            {
-                strGlobalExceptionMessage = ex.Message;
+                catch (Exception ex)
+                {
+                    strGlobalExceptionMessage = ex.Message;
 
-                MessageBox.Show("Error opening Field Animation file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
-                                "Error");
+                    MessageBox.Show("Error opening Field Animation file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
+                                    "Error");
 
-                if (tmpfAnimation.nBones > 0) fAnimation = tmpfAnimation;
-                return;
+                    if (tmpanimation.BoneCount > 0) animation = tmpanimation;
+                    return;
+                }
             }
         }
 
         private void LoadBattleMagicLimitAnimationsStripMenuItem_Click(object sender, EventArgs e)
         {
-            int bi;
-            BattleAnimationsPack tmpbAnimationsPack = new BattleAnimationsPack();
-
-            // Set filter options and filter index.
-            openFile.Title = "Open Battle/Magic/Limit Animation";
-
-            switch (modelType)
+            if (skeleton != null && animationPack != null)
             {
-                case ModelType.K_AA_SKELETON:
-                    // We will check if the model loaded can have Limit Breaks.
-                    openFile.Filter = "Battle/Limit Animation|*DA;";
+                int bi;
+                UnifiedAnimationPack tmpanimationPack = new();
 
-                    if (bSkeleton.CanHaveLimitBreak)
-                    {
-                        //openFile.Filter = openFile.Filter + "|Limit Animation|";
+                // Set filter options and filter index.
+                openFile.Title = "Open Battle/Magic/Limit Animation";
 
-                        STLimitsRegister lstLimits = lstBattleLimitsAnimations.Find(x => x.lstModelNames.Contains(strGlobalBattleSkeletonName));
-
-                        foreach (string itmLimitBrk in lstLimits.lstLimitsAnimations)
-                            openFile.Filter = openFile.Filter + itmLimitBrk.ToString() + ";";
-                    }
-
-                    openFile.Filter += "|All files|*.*";
-                    break;
-
-                case ModelType.K_MAGIC_SKELETON:
-                    openFile.Filter = "Magic Animation|*.A00|All files|*.*";
-                    break;
-            }
-
-            openFile.FilterIndex = 1;
-
-            // Check Initial Directory
-            if (strGlobalPathBattleAnimationFolder != null)
-            {
-                if (modelType == ModelType.K_AA_SKELETON)
+                switch (modelType)
                 {
-                    openFile.InitialDirectory = strGlobalPathBattleAnimationFolder;
-                    openFile.FileName = strGlobalBattleAnimationName;
+                    case ModelType.AASkeleton:
+                        // We will check if the model loaded can have Limit Breaks.
+                        openFile.Filter = "Battle/Limit Animation|*DA;";
+
+                        if (skeleton.CanHaveLimitBreak)
+                        {
+                            //openFile.Filter = openFile.Filter + "|Limit Animation|";
+
+                            STLimitsRegister lstLimits = lstBattleLimitsAnimations.Find(x => x.lstModelNames.Contains(strGlobalBattleSkeletonName));
+
+                            foreach (string itmLimitBrk in lstLimits.lstLimitsAnimations)
+                                openFile.Filter = openFile.Filter + itmLimitBrk.ToString() + ";";
+                        }
+
+                        openFile.Filter += "|All files|*.*";
+                        break;
+
+                    case ModelType.MagicSkeleton:
+                        openFile.Filter = "Magic Animation|*.A00|All files|*.*";
+                        break;
+                }
+
+                openFile.FilterIndex = 1;
+
+                // Check Initial Directory
+                if (strGlobalPathBattleAnimationFolder != null)
+                {
+                    if (modelType == ModelType.AASkeleton)
+                    {
+                        openFile.InitialDirectory = strGlobalPathBattleAnimationFolder;
+                        openFile.FileName = strGlobalBattleAnimationName;
+                    }
+                    else
+                    {
+                        openFile.InitialDirectory = strGlobalPathMagicAnimationFolder;
+                        openFile.FileName = strGlobalMagicAnimationName;
+                    }
                 }
                 else
                 {
-                    openFile.InitialDirectory = strGlobalPathMagicAnimationFolder;
-                    openFile.FileName = strGlobalMagicAnimationName;
+                    openFile.InitialDirectory = strGlobalPath;
                 }
-            }
-            else
-            {
-                openFile.InitialDirectory = strGlobalPath;
-            }
 
-            try
-            {
-                // Process input if the user clicked OK.
-                if (openFile.ShowDialog() == DialogResult.OK)
+                try
                 {
-                    if (File.Exists(openFile.FileName))
+                    // Process input if the user clicked OK.
+                    if (openFile.ShowDialog() == DialogResult.OK)
                     {
-                        if (!SameBattleAnimNumBones(openFile.FileName, bSkeleton))
+                        if (File.Exists(openFile.FileName))
                         {
-                            MessageBox.Show("The Animations Pack file " + Path.GetFileName(openFile.FileName).ToUpper() +
-                                            " and the loaded skeleton have different number of bones. Animation not loaded.",
-                                            "Error");
-                            return;
-                        }
-
-                        // Load the Battle Animations Pack
-                        tmpbAnimationsPack = bAnimationsPack;  // let's save the anim temporary
-                        bAnimationsPack = new BattleAnimationsPack(bSkeleton, openFile.FileName.ToUpper());
-
-                        // Set Global Paths
-                        if (modelType == ModelType.K_AA_SKELETON)
-                        {
-                            strGlobalBattleAnimationName = Path.GetFileName(openFile.FileName).ToUpper();
-                            strGlobalPathBattleAnimationFolder = Path.GetDirectoryName(openFile.FileName);
-                        }
-                        else
-                        {
-                            strGlobalMagicAnimationName = Path.GetFileName(openFile.FileName).ToUpper();
-                            strGlobalPathMagicAnimationFolder = Path.GetDirectoryName(openFile.FileName);
-                        }
-
-                        UpdateMainSkeletonWindowTitle();
-
-                        // Let's stop the Animation
-                        btnPlayStopAnim.Checked = false;
-
-                        // Let's initialize some things like Battle Animations ComboBox
-                        if (modelType == ModelType.K_MAGIC_SKELETON) lblBattleAnimation.Text = "Magic Animation:";
-                        else if (bAnimationsPack.IsLimit) lblBattleAnimation.Text = "Limit Animation:";
-                        else lblBattleAnimation.Text = "Battle Animation:";
-
-                        cbBattleAnimation.Items.Clear();
-                        for (bi = 0; bi < bAnimationsPack.nbSkeletonAnims; bi++)
-                        {
-                            if (bAnimationsPack.SkeletonAnimations[bi].numFramesShort > 0)
+                            if (!skeleton.AnimFileHasSameBoneCount(openFile.FileName))
                             {
-                                cbBattleAnimation.Items.Add(bi.ToString());
+                                MessageBox.Show("The Animations Pack file " + Path.GetFileName(openFile.FileName).ToUpper() +
+                                                " and the loaded skeleton have different number of bones. Animation not loaded.",
+                                                "Error");
+                                return;
                             }
+
+                            // Load the Battle Animations Pack
+                            tmpanimationPack = animationPack;  // let's save the anim temporary
+                            var bSkeleton = skeleton.ToBattleSkeleton();
+                            animationPack = new UnifiedAnimationPack(
+                                new BattleAnimationsPack(bSkeleton, modelType, openFile.FileName.ToUpper()),
+                                skeleton.BoneCount);
+
+                            // Set Global Paths
+                            if (modelType == ModelType.AASkeleton)
+                            {
+                                strGlobalBattleAnimationName = Path.GetFileName(openFile.FileName).ToUpper();
+                                strGlobalPathBattleAnimationFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
+                            }
+                            else
+                            {
+                                strGlobalMagicAnimationName = Path.GetFileName(openFile.FileName).ToUpper();
+                                strGlobalPathMagicAnimationFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
+                            }
+
+                            UpdateMainSkeletonWindowTitle();
+
+                            // Let's stop the Animation
+                            btnPlayStopAnim.Checked = false;
+
+                            // Let's initialize some things like Battle Animations ComboBox
+                            if (modelType == ModelType.MagicSkeleton) lblBattleAnimation.Text = "Magic Animation:";
+                            else if (animationPack.IsLimitBreak) lblBattleAnimation.Text = "Limit Animation:";
+                            else lblBattleAnimation.Text = "Battle Animation:";
+
+                            cbBattleAnimation.Items.Clear();
+                            for (bi = 0; bi < animationPack.SkeletonAnimationCount; bi++)
+                            {
+                                if (animationPack.SkeletonAnimations[bi].FrameCount > 0)
+                                {
+                                    cbBattleAnimation.Items.Add(bi.ToString());
+                                }
+                            }
+
+                            cbBattleAnimation.SelectedIndex = 0;
+                            ianimIndex = 0;
+
+                            iCurrentFrameScroll = 0;
+                            tbCurrentFrameScroll.Value = 0;
+                            txtAnimationFrame.Text = iCurrentFrameScroll.ToString();
+                            tbCurrentFrameScroll.Maximum = animationPack.SkeletonAnimations[0].FrameCount - 1;
+
+                            SetFrameEditorFields();
+
+                            WriteCFGFile();
                         }
 
-                        cbBattleAnimation.SelectedIndex = 0;
-                        ianimIndex = 0;
-
-                        iCurrentFrameScroll = 0;
-                        tbCurrentFrameScroll.Value = 0;
-                        txtAnimationFrame.Text = iCurrentFrameScroll.ToString();
-                        tbCurrentFrameScroll.Maximum = bAnimationsPack.SkeletonAnimations[0].numFramesShort - 1;
-
-                        SetFrameEditorFields();
-
-                        WriteCFGFile();
+                        PanelModel_Paint(null, null);
                     }
-
-                    PanelModel_Paint(null, null);
                 }
-            }
-            catch
-            {
-                MessageBox.Show("Error opening Animation file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
-                                "Error");
+                catch
+                {
+                    MessageBox.Show("Error opening Animation file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
+                                    "Error");
 
-                if (tmpbAnimationsPack.nAnimations > 0) bAnimationsPack = tmpbAnimationsPack;
-                return;
+                    if (tmpanimationPack.SkeletonAnimationCount > 0) animationPack = tmpanimationPack;
+                    return;
+                }
             }
         }
 
@@ -3200,20 +3265,20 @@ namespace KimeraCS
                     // Prepare direct filename Folder+Name
                     switch (modelType)
                     {
-                        case ModelType.K_HRC_SKELETON:
+                        case ModelType.HRCSkeleton:
                             modelTypeStr = "Field Animation";
                             if (strGlobalFieldAnimationName == "") strGlobalFieldAnimationName = "DUMMY.A";
 
                             saveFileName = strGlobalPathFieldAnimationFolder + "\\" + strGlobalFieldAnimationName.ToUpper();
                             break;
 
-                        case ModelType.K_AA_SKELETON:
+                        case ModelType.AASkeleton:
                             modelTypeStr = "Battle Animation";
 
                             saveFileName = strGlobalPathBattleAnimationFolder + "\\" + strGlobalBattleAnimationName.ToUpper();
                             break;
 
-                        case ModelType.K_MAGIC_SKELETON:
+                        case ModelType.MagicSkeleton:
                             modelTypeStr = "Magic Animation";
 
                             saveFileName = strGlobalPathMagicAnimationFolder + "\\" + strGlobalMagicAnimationName.ToUpper();
@@ -3249,7 +3314,7 @@ namespace KimeraCS
             // Check Initial Directory
             switch (modelType)
             {
-                case ModelType.K_HRC_SKELETON:
+                case ModelType.HRCSkeleton:
                     modelTypeStr = "Field Animation";
                     saveFile.Title = "Save Field Animation As...";
                     saveFile.Filter = "Field Animation|*.A|All files|*.*";
@@ -3258,25 +3323,28 @@ namespace KimeraCS
                     saveFile.FileName = strGlobalFieldAnimationName.ToUpper();
                     break;
 
-                case ModelType.K_AA_SKELETON:
-                    modelTypeStr = "Battle Animation";
-
-                    if (bAnimationsPack.IsLimit)
+                case ModelType.AASkeleton:
+                    if (animationPack != null)
                     {
-                        saveFile.Title = "Save Limit Pack Animation As...";
-                        saveFile.Filter = "Limit Pack Animation|*.A00|All files|*.*";
-                    }
-                    else
-                    {
-                        saveFile.Title = "Save Battle Pack Animation As...";
-                        saveFile.Filter = "Battle Pack Animation|*DA|All files|*.*";
-                    }
+                        modelTypeStr = "Battle Animation";
 
-                    if (strGlobalPathSaveAnimationFolder == "") strGlobalPathSaveAnimationFolder = strGlobalPathBattleAnimationFolder;
-                    saveFile.FileName = strGlobalBattleAnimationName.ToUpper();
+                        if (animationPack.IsLimitBreak)
+                        {
+                            saveFile.Title = "Save Limit Pack Animation As...";
+                            saveFile.Filter = "Limit Pack Animation|*.A00|All files|*.*";
+                        }
+                        else
+                        {
+                            saveFile.Title = "Save Battle Pack Animation As...";
+                            saveFile.Filter = "Battle Pack Animation|*DA|All files|*.*";
+                        }
+
+                        if (strGlobalPathSaveAnimationFolder == "") strGlobalPathSaveAnimationFolder = strGlobalPathBattleAnimationFolder;
+                        saveFile.FileName = strGlobalBattleAnimationName.ToUpper();
+                    }
                     break;
 
-                case ModelType.K_MAGIC_SKELETON:
+                case ModelType.MagicSkeleton:
                     modelTypeStr = "Magic Animation";
                     saveFile.Title = "Save Magic Animation As...";
                     saveFile.Filter = "Magic Pack Animation|*.A00|All files|*.*";
@@ -3302,7 +3370,7 @@ namespace KimeraCS
                         MessageBox.Show(modelTypeStr + " " + Path.GetFileName(saveFile.FileName).ToUpper() + " saved.",
                                         "Information");
 
-                        strGlobalPathSaveAnimationFolder = Path.GetDirectoryName(saveFile.FileName);
+                        strGlobalPathSaveAnimationFolder = (Path.GetDirectoryName(saveFile.FileName) ?? string.Empty);
 
                         WriteCFGFile();
                     }
@@ -3368,84 +3436,87 @@ namespace KimeraCS
 
         public void SetTextureEditorFields()
         {
-            int ti;
-
-            cbTextureSelect.Items.Clear();
-            cbTextureSelect.Text = string.Empty;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    if (SelectedBone > -1 && SelectedBonePiece > -1)
-                    {
-                        gbTexturesFrame.Enabled = true;
+                int ti;
 
-                        for (ti = 0; ti < fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].numTextures; ti++)
+                cbTextureSelect.Items.Clear();
+                cbTextureSelect.Text = string.Empty;
+
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        if (SelectedBone > -1 && SelectedBonePiece > -1)
                         {
-                            cbTextureSelect.Items.Add(fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[ti].TEXfileName);
-                        }
+                            gbTexturesFrame.Enabled = true;
 
-                        if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].numTextures > 0)
-                            cbTextureSelect.SelectedIndex = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].Model.Groups[0].texID;
-                        else cbTextureSelect.SelectedIndex = -1;
-                    }
-                    else gbTexturesFrame.Enabled = false;
-
-                    TextureViewer_Paint(null, null);
-                    break;
-
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    if (SelectedBone > -1 && SelectedBonePiece > -1)
-                    {
-                        gbTexturesFrame.Enabled = true;
-
-                        for (ti = 0; ti < bSkeleton.nTextures; ti++)
-                        {
-                            cbTextureSelect.Items.Add(ti);
-                        }
-
-                        if (bSkeleton.nTextures > 0)
-                        {
-                            // Let's check if we have weapon or model part
-                            if (bSkeleton.nBones == SelectedBone)
+                            for (ti = 0; ti < skeleton.Bones[SelectedBone].Models[SelectedBonePiece].TextureCount; ti++)
                             {
-                                if (bSkeleton.wpModels[SelectedBonePiece].Groups[0].texFlag == 1)
-                                    cbTextureSelect.SelectedIndex = bSkeleton.wpModels[SelectedBonePiece].Groups[0].texID;
-                                else
-                                    cbTextureSelect.SelectedIndex = -1;
+                                cbTextureSelect.Items.Add(skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[ti].TEXfileName);
                             }
-                            else
+
+                            if (skeleton.Bones[SelectedBone].Models[SelectedBonePiece].TextureCount > 0)
+                                cbTextureSelect.SelectedIndex = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model.Groups[0].texID;
+                            else cbTextureSelect.SelectedIndex = -1;
+                        }
+                        else gbTexturesFrame.Enabled = false;
+
+                        TextureViewer_Paint(null, null);
+                        break;
+
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        if (SelectedBone > -1 && SelectedBonePiece > -1)
+                        {
+                            gbTexturesFrame.Enabled = true;
+
+                            for (ti = 0; ti < skeleton.TextureCount; ti++)
                             {
-                                // Find the first group with texture flag enabled.
-                                int iGroupIdx = 0;
-                                bool bFound = false;
+                                cbTextureSelect.Items.Add(ti);
+                            }
 
-                                while (iGroupIdx < bSkeleton.bones[SelectedBone].Models[SelectedBonePiece].Groups.Length &&
-                                       !bFound)
+                            if (skeleton.TextureCount > 0)
+                            {
+                                // Let's check if we have weapon or model part
+                                if (skeleton.BoneCount == SelectedBone)
                                 {
-                                    if (bSkeleton.bones[SelectedBone].Models[SelectedBonePiece].Groups[iGroupIdx].texFlag == 0)
-                                        iGroupIdx++;
-                                    else bFound = true;
-                                }
-
-                                if (bSkeleton.bones[SelectedBone].Models[SelectedBonePiece].Groups.Length == iGroupIdx)
-                                {
-                                    cbTextureSelect.SelectedIndex = -1;
+                                    if (skeleton.Weapons[SelectedBonePiece].Groups[0].texFlag == 1)
+                                        cbTextureSelect.SelectedIndex = skeleton.Weapons[SelectedBonePiece].Groups[0].texID;
+                                    else
+                                        cbTextureSelect.SelectedIndex = -1;
                                 }
                                 else
                                 {
-                                    cbTextureSelect.SelectedIndex =
-                                        bSkeleton.bones[SelectedBone].Models[SelectedBonePiece].Groups[iGroupIdx].texID;
+                                    // Find the first group with texture flag enabled.
+                                    int iGroupIdx = 0;
+                                    bool bFound = false;
+
+                                    while (iGroupIdx < skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model.Groups.Length &&
+                                           !bFound)
+                                    {
+                                        if (skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model.Groups[iGroupIdx].texFlag == 0)
+                                            iGroupIdx++;
+                                        else bFound = true;
+                                    }
+
+                                    if (skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model.Groups.Length == iGroupIdx)
+                                    {
+                                        cbTextureSelect.SelectedIndex = -1;
+                                    }
+                                    else
+                                    {
+                                        cbTextureSelect.SelectedIndex =
+                                            skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model.Groups[iGroupIdx].texID;
+                                    }
                                 }
                             }
                         }
-                    }
-                    else gbTexturesFrame.Enabled = false;
+                        else gbTexturesFrame.Enabled = false;
 
-                    TextureViewer_Paint(null, null);
+                        TextureViewer_Paint(null, null);
 
-                    break;
+                        break;
+                }
             }
         }
 
@@ -3470,263 +3541,271 @@ namespace KimeraCS
 
         private void BtnAddTexture_Click(object sender, EventArgs e)
         {
-            FieldBone tmpfBone;
-            FieldRSDResource tmpfResource;
-
-            TEX tex = new TEX();
-
-            try
+            if (skeleton != null)
             {
-                // Set filter options and filter index.
-                openFile.Title = "Add Texture";
+                UnifiedBone tmpBone;
+                UnifiedBoneModel tmpModel;
 
-                openFile.Filter = "Any Image file|*.bmp;*.jpg;*.gif;*.png;*.ico;*.rle;*.Wmf;*.emf|TEX texture|*.TEX;*AC;*AD;*AE;*AF;*AG;*AH;*AI;*AJ;AK*;AL*;*.T??|All files|*.*";
+                TEX tex = new();
 
-                openFile.FilterIndex = 1;
-                openFile.FileName = null;
-
-                // Check Initial Directory
-                if (strGlobalPathTextureFolder != null)
+                try
                 {
-                    openFile.InitialDirectory = strGlobalPathTextureFolder;
-                }
-                else
-                {
-                    openFile.InitialDirectory = strGlobalPath;
-                }
+                    // Set filter options and filter index.
+                    openFile.Title = "Add Texture";
 
-                // Process input if the user clicked OK.
-                if (openFile.ShowDialog() == DialogResult.OK)
-                {
-                    if (File.Exists(openFile.FileName))
+                    openFile.Filter = "Any Image file|*.bmp;*.jpg;*.gif;*.png;*.ico;*.rle;*.Wmf;*.emf|TEX texture|*.TEX;*AC;*AD;*AE;*AF;*AG;*AH;*AI;*AJ;AK*;AL*;*.T??|All files|*.*";
+
+                    openFile.FilterIndex = 1;
+                    openFile.FileName = null;
+
+                    // Check Initial Directory
+                    if (strGlobalPathTextureFolder != null)
                     {
-                        // Set Global Paths
-                        strGlobalTextureName = Path.GetFileName(openFile.FileName).ToUpper();
-                        strGlobalPathTextureFolder = Path.GetDirectoryName(openFile.FileName);
-
-                        LoadImageAsTEXTexture(openFile.FileName, ref tex);
-
-                        switch (modelType)
-                        {
-                            case ModelType.K_HRC_SKELETON:
-                                if (SelectedBone > -1 && SelectedBonePiece > -1)
-                                {
-                                    AddStateToBuffer(this);
-
-                                    tmpfBone = fSkeleton.bones[SelectedBone];
-                                    tmpfResource = tmpfBone.fRSDResources[SelectedBonePiece];
-
-                                    if (tmpfResource.numTextures == 0) tmpfResource.textures = new List<TEX>();
-
-                                    tmpfResource.textures.Add(tex);
-                                    tmpfResource.numTextures++;
-
-                                    tmpfBone.fRSDResources[SelectedBonePiece] = tmpfResource;
-                                    fSkeleton.bones[SelectedBone] = tmpfBone;
-
-                                    SetTextureEditorFields();
-                                    cbTextureSelect.SelectedIndex = tmpfResource.numTextures - 1;
-                                }
-                                break;
-
-                            case ModelType.K_AA_SKELETON:
-                            case ModelType.K_MAGIC_SKELETON:
-                                if (bSkeleton.nTextures <= 10)
-                                {
-                                    AddStateToBuffer(this);
-
-                                    bSkeleton.nTextures++;
-
-                                    tex.TEXfileName = GetBattleModelTextureFilename(bSkeleton, bSkeleton.nTextures - 1);
-
-                                    bSkeleton.textures.Add(tex);
-                                    Array.Resize(ref bSkeleton.TexIDS, bSkeleton.nTextures);
-                                    bSkeleton.TexIDS[bSkeleton.nTextures - 1] = tex.texID;
-                                    SetTextureEditorFields();
-                                    cbTextureSelect.SelectedIndex = bSkeleton.nTextures - 1;
-                                }
-                                else
-                                {
-                                    MessageBox.Show("The maximum number of textures for battle models is 10.", "Error", MessageBoxButtons.OK);
-                                }
-                                break;
-                        }
-
-                        // Update main title window
-                        bChangesDone = true;
-                        UpdateMainSkeletonWindowTitle();
+                        openFile.InitialDirectory = strGlobalPathTextureFolder;
+                    }
+                    else
+                    {
+                        openFile.InitialDirectory = strGlobalPath;
                     }
 
-                    PanelModel_Paint(null, null);
-                }
-            }
-            catch (Exception ex)
-            {
-                strGlobalExceptionMessage = ex.Message;
+                    // Process input if the user clicked OK.
+                    if (openFile.ShowDialog() == DialogResult.OK)
+                    {
+                        if (File.Exists(openFile.FileName))
+                        {
+                            // Set Global Paths
+                            strGlobalTextureName = Path.GetFileName(openFile.FileName).ToUpper();
+                            strGlobalPathTextureFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
 
-                MessageBox.Show("Error adding texture file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
-                                "Error");
-                return;
+                            LoadImageAsTEXTexture(openFile.FileName, ref tex);
+
+                            switch (modelType)
+                            {
+                                case ModelType.HRCSkeleton:
+                                    if (SelectedBone > -1 && SelectedBonePiece > -1)
+                                    {
+                                        AddStateToBuffer(this);
+
+                                        tmpBone = skeleton.Bones[SelectedBone];
+                                        tmpModel = tmpBone.Models[SelectedBonePiece];
+
+                                        if (tmpModel.TextureCount == 0) tmpModel.Textures = new List<TEX>();
+
+                                        tmpModel.Textures.Add(tex);
+                                        //tmpModel.TextureCount++;
+
+                                        tmpBone.Models[SelectedBonePiece] = tmpModel;
+                                        skeleton.Bones[SelectedBone] = tmpBone;
+
+                                        SetTextureEditorFields();
+                                        cbTextureSelect.SelectedIndex = tmpModel.TextureCount - 1;
+                                    }
+                                    break;
+
+                                case ModelType.AASkeleton:
+                                case ModelType.MagicSkeleton:
+                                    if (skeleton.TextureCount <= 10)
+                                    {
+                                        AddStateToBuffer(this);
+                                        //skeleton.TextureCount++;
+
+                                        tex.TEXfileName = skeleton.GetTextureFileName(skeleton.TextureCount - 1);
+
+                                        skeleton.Textures.Add(tex);
+                                        //Array.Resize(ref skeleton.TextureIDs, skeleton.TextureCount);
+                                        skeleton.TextureIDs[skeleton.TextureCount - 1] = tex.texID;
+                                        SetTextureEditorFields();
+                                        cbTextureSelect.SelectedIndex = skeleton.TextureCount - 1;
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show("The maximum number of textures for battle models is 10.", "Error", MessageBoxButtons.OK);
+                                    }
+                                    break;
+                            }
+
+                            // Update main title window
+                            bChangesDone = true;
+                            UpdateMainSkeletonWindowTitle();
+                        }
+
+                        PanelModel_Paint(null, null);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    strGlobalExceptionMessage = ex.Message;
+
+                    MessageBox.Show("Error adding texture file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
+                                    "Error");
+                    return;
+                }
             }
         }
 
         private void BtnRemoveTexture_Click(object sender, EventArgs e)
         {
-            int ti, texIndex;
-            FieldRSDResource tmpfResource;
-
-            if ((texIndex = cbTextureSelect.SelectedIndex) == -1)
+            if (skeleton != null)
             {
-                MessageBox.Show("There are no textures to remove.", "Information");
-                return;
-            }
+                int ti, texIndex;
+                UnifiedBoneModel tmpModel;
 
-            try
-            {
-                switch (modelType)
+                if ((texIndex = cbTextureSelect.SelectedIndex) == -1)
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        if (SelectedBone > -1)
-                        {
-                            AddStateToBuffer(this);
-
-                            tmpfResource = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece];
-                            tmpfResource.numTextures--;
-                            fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece] = tmpfResource;
-
-                            fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures.RemoveAt(texIndex);
-
-                            SetTextureEditorFields();
-                        }
-
-                        break;
-
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-                        AddStateToBuffer(this);
-
-                        bSkeleton.textures.RemoveAt(texIndex);
-
-                        //  This is dirty, but will prevent problems with the undo/redo
-                        //  UnloadTexture .textures(tex_index)
-                        for (ti = texIndex; ti < bSkeleton.nTextures - 2; ti++)
-                        {
-                            bSkeleton.TexIDS[ti] = bSkeleton.TexIDS[ti + 1];
-                        }
-
-                        bSkeleton.nTextures--;
-
-                        if (bSkeleton.nTextures == 0) bSkeleton.TexIDS[0] = 0;
-                        SetTextureEditorFields();
-
-                        break;
+                    MessageBox.Show("There are no textures to remove.", "Information");
+                    return;
                 }
 
-                // Update main title window
-                bChangesDone = true;
-                UpdateMainSkeletonWindowTitle();
+                try
+                {
+                    switch (modelType)
+                    {
+                        case ModelType.HRCSkeleton:
+                            if (SelectedBone > -1)
+                            {
+                                AddStateToBuffer(this);
 
-                PanelModel_Paint(null, null);
-            }
-            catch
-            {
-                MessageBox.Show("Error removing texture file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
-                                "Error");
-                return;
+                                tmpModel = skeleton.Bones[SelectedBone].Models[SelectedBonePiece];
+                                //tmpModel.TextureCount--;
+                                skeleton.Bones[SelectedBone].Models[SelectedBonePiece] = tmpModel;
+
+                                skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures.RemoveAt(texIndex);
+
+                                SetTextureEditorFields();
+                            }
+
+                            break;
+
+                        case ModelType.AASkeleton:
+                        case ModelType.MagicSkeleton:
+                            AddStateToBuffer(this);
+
+                            skeleton.Textures.RemoveAt(texIndex);
+
+                            //  This is dirty, but will prevent problems with the undo/redo
+                            //  UnloadTexture .Textures(tex_index)
+                            for (ti = texIndex; ti < skeleton.TextureCount - 2; ti++)
+                            {
+                                skeleton.TextureIDs[ti] = skeleton.TextureIDs[ti + 1];
+                            }
+
+                            //skeleton.TextureCount--;
+
+                            if (skeleton.TextureCount == 0) skeleton.TextureIDs[0] = 0;
+                            SetTextureEditorFields();
+
+                            break;
+                    }
+
+                    // Update main title window
+                    bChangesDone = true;
+                    UpdateMainSkeletonWindowTitle();
+
+                    PanelModel_Paint(null, null);
+                }
+                catch
+                {
+                    MessageBox.Show("Error removing texture file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
+                                    "Error");
+                    return;
+                }
             }
         }
 
         private void BtnChangeTexture_Click(object sender, EventArgs e)
         {
-            FieldBone tmpfBone;
-            FieldRSDResource tmpfRSDResource;
-
-            TEX tex = new TEX();
-            int texIndex;
-
-            if ((texIndex = cbTextureSelect.SelectedIndex) == -1)
+            if (skeleton != null)
             {
-                MessageBox.Show("There are no textures to change.", "Information");
-                return;
-            }
+                UnifiedBone tmpBone;
+                UnifiedBoneModel tmpModel;
 
-            try
-            {
-                // Set filter options and filter index.
-                openFile.Title = "Change Texture";
+                TEX tex = new TEX();
+                int texIndex;
 
-                openFile.Filter = "Any Image file|*.bmp;*.jpg;*.gif;*.png;*.ico;*.rle;*.Wmf;*.emf|TEX texture|*.TEX;*AC;*AD;*AE;*AF;*AG;*AH;*AI;*AJ;AK*;AL*;*.T??|All files|*.*";
-
-                openFile.FilterIndex = 1;
-                openFile.FileName = null;
-
-                // Check Initial Directory
-                if (strGlobalPathTextureFolder != null)
+                if ((texIndex = cbTextureSelect.SelectedIndex) == -1)
                 {
-                    openFile.InitialDirectory = strGlobalPathTextureFolder;
-                }
-                else
-                {
-                    openFile.InitialDirectory = strGlobalPath;
+                    MessageBox.Show("There are no textures to change.", "Information");
+                    return;
                 }
 
-                // Process input if the user clicked OK.
-                if (openFile.ShowDialog() == DialogResult.OK)
+                try
                 {
-                    if (File.Exists(openFile.FileName))
+                    // Set filter options and filter index.
+                    openFile.Title = "Change Texture";
+
+                    openFile.Filter = "Any Image file|*.bmp;*.jpg;*.gif;*.png;*.ico;*.rle;*.Wmf;*.emf|TEX texture|*.TEX;*AC;*AD;*AE;*AF;*AG;*AH;*AI;*AJ;AK*;AL*;*.T??|All files|*.*";
+
+                    openFile.FilterIndex = 1;
+                    openFile.FileName = null;
+
+                    // Check Initial Directory
+                    if (strGlobalPathTextureFolder != null)
                     {
-                        // Set Global Paths
-                        strGlobalTextureName = Path.GetFileName(openFile.FileName).ToUpper();
-                        strGlobalPathTextureFolder = Path.GetDirectoryName(openFile.FileName);
-
-                        LoadImageAsTEXTexture(openFile.FileName, ref tex);
-
-                        switch (modelType)
-                        {
-                            case ModelType.K_HRC_SKELETON:
-                                AddStateToBuffer(this);
-
-                                tmpfBone = fSkeleton.bones[SelectedBone];
-                                tmpfRSDResource = tmpfBone.fRSDResources[SelectedBonePiece];
-
-                                tmpfRSDResource.textures[texIndex] = tex;
-
-                                tmpfBone.fRSDResources[SelectedBonePiece] = tmpfRSDResource;
-                                fSkeleton.bones[SelectedBone] = tmpfBone;
-
-                                SetTextureEditorFields();
-                                cbTextureSelect.SelectedIndex = texIndex;
-                                break;
-
-                            case ModelType.K_AA_SKELETON:
-                            case ModelType.K_MAGIC_SKELETON:
-                                AddStateToBuffer(this);
-
-                                tex.TEXfileName = GetBattleModelTextureFilename(bSkeleton, texIndex);
-
-                                bSkeleton.textures[texIndex] = tex;
-                                bSkeleton.TexIDS[texIndex] = tex.texID;
-
-                                SetTextureEditorFields();
-                                cbTextureSelect.SelectedIndex = texIndex;
-                                break;
-                        }
-
-                        WriteCFGFile();
-
-                        // Update main title window
-                        bChangesDone = true;
-                        UpdateMainSkeletonWindowTitle();
+                        openFile.InitialDirectory = strGlobalPathTextureFolder;
                     }
-                }
+                    else
+                    {
+                        openFile.InitialDirectory = strGlobalPath;
+                    }
 
-                PanelModel_Paint(null, null);
-            }
-            catch
-            {
-                MessageBox.Show("Error changing texture file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
-                                "Error");
-                return;
+                    // Process input if the user clicked OK.
+                    if (openFile.ShowDialog() == DialogResult.OK)
+                    {
+                        if (File.Exists(openFile.FileName))
+                        {
+                            // Set Global Paths
+                            strGlobalTextureName = Path.GetFileName(openFile.FileName).ToUpper();
+                            strGlobalPathTextureFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
+
+                            LoadImageAsTEXTexture(openFile.FileName, ref tex);
+
+                            switch (modelType)
+                            {
+                                case ModelType.HRCSkeleton:
+                                    AddStateToBuffer(this);
+
+                                    tmpBone = skeleton.Bones[SelectedBone];
+                                    tmpModel = tmpBone.Models[SelectedBonePiece];
+
+                                    tmpModel.Textures[texIndex] = tex;
+
+                                    tmpBone.Models[SelectedBonePiece] = tmpModel;
+                                    skeleton.Bones[SelectedBone] = tmpBone;
+
+                                    SetTextureEditorFields();
+                                    cbTextureSelect.SelectedIndex = texIndex;
+                                    break;
+
+                                case ModelType.AASkeleton:
+                                case ModelType.MagicSkeleton:
+                                    AddStateToBuffer(this);
+
+                                    tex.TEXfileName = skeleton.GetTextureFileName(texIndex);
+
+                                    skeleton.Textures[texIndex] = tex;
+                                    skeleton.TextureIDs[texIndex] = tex.texID;
+
+                                    SetTextureEditorFields();
+                                    cbTextureSelect.SelectedIndex = texIndex;
+                                    break;
+                            }
+
+                            WriteCFGFile();
+
+                            // Update main title window
+                            bChangesDone = true;
+                            UpdateMainSkeletonWindowTitle();
+                        }
+                    }
+
+                    PanelModel_Paint(null, null);
+                }
+                catch
+                {
+                    MessageBox.Show("Error changing texture file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
+                                    "Error");
+                    return;
+                }
             }
         }
 
@@ -3774,384 +3853,410 @@ namespace KimeraCS
 
         private void BtnComputeGroundHeight_Click(object sender, EventArgs e)
         {
-            Vector3 p_min = new Vector3();
-            Vector3 p_max = new Vector3();
-
-            FieldFrame tmpfFrame;
-            BattleFrame tmpbFrame;
-
-            //int animIndex, fi;
-            int fi;
-            float maxDiff;
-
-            AddStateToBuffer(this);
-
-            maxDiff = float.PositiveInfinity;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
+                Vector3 p_min = new Vector3();
+                Vector3 p_max = new Vector3();
 
-                    for (fi = 0; fi < fAnimation.nFrames; fi++)
-                    {
-                        tmpfFrame = fAnimation.frames[fi];
-                        ComputeFieldBoundingBox(fSkeleton, tmpfFrame, ref p_min, ref p_max);
-                        fAnimation.frames[fi] = tmpfFrame;
+                UnifiedFrame tmpFrame;
 
-                        if (maxDiff > p_max.Y) maxDiff = p_max.Y;
-                    }
+                //int animIndex, fi;
+                int fi;
+                float maxDiff;
 
-                    for (fi = 0; fi < fAnimation.nFrames; fi++)
-                    {
-                        tmpfFrame = fAnimation.frames[fi];
-                        tmpfFrame.rootTranslationY += maxDiff;
-                        fAnimation.frames[fi] = tmpfFrame;
-                    }
-                    break;
+                AddStateToBuffer(this);
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
+                maxDiff = float.PositiveInfinity;
 
-                    for (fi = 0; fi < bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort; fi++)
-                    {
-                        ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi], ref p_min, ref p_max);
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
 
-                        if (maxDiff > p_max.Y) maxDiff = p_max.Y;
-                    }
-
-                    if (maxDiff != 0)
-                    {
-                        for (fi = 0; fi < bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort; fi++)
+                        if (animation != null)
                         {
-                            tmpbFrame = bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi];
-                            tmpbFrame.startY -= (int)maxDiff;
-                            bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi] = tmpbFrame;
-                        }
-
-                        //  Also don't forget the weapon frames if available
-                        if (ianimIndex < bAnimationsPack.nbWeaponAnims && bSkeleton.wpModels.Count > 0)
-                        {
-                            for (fi = 0; fi < bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort; fi++)
+                            for (fi = 0; fi < animation.FrameCount; fi++)
                             {
-                                tmpbFrame = bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi];
-                                tmpbFrame.startY -= (int)maxDiff;
-                                bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi] = tmpbFrame;
+                                tmpFrame = animation.Frames[fi];
+                                skeleton.ComputeBoundingBox(tmpFrame, ref p_min, ref p_max);
+                                animation.Frames[fi] = tmpFrame;
+
+                                if (maxDiff > p_max.Y) maxDiff = p_max.Y;
+                            }
+
+                            for (fi = 0; fi < animation.FrameCount; fi++)
+                            {
+                                tmpFrame = animation.Frames[fi];
+                                tmpFrame.RootTranslation.Y += maxDiff;
+                                animation.Frames[fi] = tmpFrame;
                             }
                         }
-                    }
-                    break;
-            }
+                        break;
 
-            PanelModel_Paint(null, null);
-            SetFrameEditorFields();
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+
+                        if (animationPack != null)
+                        {
+                            for (fi = 0; fi < animationPack.SkeletonAnimations[ianimIndex].FrameCount; fi++)
+                            {
+                                skeleton.ComputeBoundingBox(animationPack.SkeletonAnimations[ianimIndex].Frames[fi], ref p_min, ref p_max);
+
+                                if (maxDiff > p_max.Y) maxDiff = p_max.Y;
+                            }
+
+                            if (maxDiff != 0)
+                            {
+                                for (fi = 0; fi < animationPack.SkeletonAnimations[ianimIndex].FrameCount; fi++)
+                                {
+                                    tmpFrame = animationPack.SkeletonAnimations[ianimIndex].Frames[fi];
+                                    tmpFrame.RootTranslation.Y -= (int)maxDiff;
+                                    animationPack.SkeletonAnimations[ianimIndex].Frames[fi] = tmpFrame;
+                                }
+
+                                //  Also don't forget the weapon frames if available
+                                if (ianimIndex < animationPack.WeaponAnimationCount && skeleton.WeaponCount > 0)
+                                {
+                                    for (fi = 0; fi < animationPack.SkeletonAnimations[ianimIndex].FrameCount; fi++)
+                                    {
+                                        tmpFrame = animationPack.WeaponAnimations[ianimIndex].Frames[fi];
+                                        tmpFrame.RootTranslation.Y -= (int)maxDiff;
+                                        animationPack.WeaponAnimations[ianimIndex].Frames[fi] = tmpFrame;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                }
+
+                PanelModel_Paint(null, null);
+                SetFrameEditorFields();
+            }
         }
 
         private void HsbResizePieceX_ValueChanged(object sender, EventArgs e)
         {
-            if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
-
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    FieldBone tmpfBone;
-                    FieldRSDResource tmpRSDResource;
+                if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
 
-                    tmpfBone = fSkeleton.bones[SelectedBone];
-                    tmpRSDResource = tmpfBone.fRSDResources[SelectedBonePiece];
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
 
-                    tmpRSDResource.Model.resizeX = hsbResizePieceX.Value / 100f;
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        UnifiedBone tmpBone;
+                        UnifiedBoneModel tmpModel;
 
-                    tmpfBone.fRSDResources[SelectedBonePiece] = tmpRSDResource;
-                    fSkeleton.bones[SelectedBone] = tmpfBone;
+                        tmpBone = skeleton.Bones[SelectedBone];
+                        tmpModel = tmpBone.Models[SelectedBonePiece];
 
-                    break;
+                        tmpModel.Model.resizeX = hsbResizePieceX.Value / 100f;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    PModel wpModel;
-                    //int wpIndex;
+                        tmpBone.Models[SelectedBonePiece] = tmpModel;
+                        skeleton.Bones[SelectedBone] = tmpBone;
 
-                    if (SelectedBone == bSkeleton.nBones)
-                    {
-                        //wpIndex = getBattleWeaponIndex();
-                        wpModel = bSkeleton.wpModels[ianimWeaponIndex];
-                        wpModel.resizeX = hsbResizePieceX.Value / 100f;
-                        bSkeleton.wpModels[ianimWeaponIndex] = wpModel;
-                    }
-                    else
-                    {
-                        wpModel = bSkeleton.bones[SelectedBone].Models[SelectedBonePiece];
-                        wpModel.resizeX = hsbResizePieceX.Value / 100f;
-                        bSkeleton.bones[SelectedBone].Models[SelectedBonePiece] = wpModel;
-                    }
-                    break;
+                        break;
 
-                default:
-                    fPModel.resizeX = hsbResizePieceX.Value / 100f;
-                    break;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        PModel wpModel;
+                        //int wpIndex;
+
+                        if (SelectedBone == skeleton.BoneCount)
+                        {
+                            //wpIndex = getBattleWeaponIndex();
+                            wpModel = skeleton.Weapons[ianimWeaponIndex];
+                            wpModel.resizeX = hsbResizePieceX.Value / 100f;
+                            skeleton.Weapons[ianimWeaponIndex] = wpModel;
+                        }
+                        else
+                        {
+                            wpModel = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model;
+                            wpModel.resizeX = hsbResizePieceX.Value / 100f;
+                            skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model = wpModel;
+                        }
+                        break;
+
+                    default:
+                        fPModel.resizeX = hsbResizePieceX.Value / 100f;
+                        break;
+                }
+
+                txtResizePieceX.Text = hsbResizePieceX.Value.ToString();
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            txtResizePieceX.Text = hsbResizePieceX.Value.ToString();
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void HsbResizePieceY_ValueChanged(object sender, EventArgs e)
         {
-            if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
-
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    FieldBone tmpfBone;
-                    FieldRSDResource tmpRSDResource;
+                if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
 
-                    tmpfBone = fSkeleton.bones[SelectedBone];
-                    tmpRSDResource = tmpfBone.fRSDResources[SelectedBonePiece];
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
 
-                    tmpRSDResource.Model.resizeY = hsbResizePieceY.Value / 100f;
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        UnifiedBone tmpBone;
+                        UnifiedBoneModel tmpModel;
 
-                    tmpfBone.fRSDResources[SelectedBonePiece] = tmpRSDResource;
-                    fSkeleton.bones[SelectedBone] = tmpfBone;
+                        tmpBone = skeleton.Bones[SelectedBone];
+                        tmpModel = tmpBone.Models[SelectedBonePiece];
 
-                    break;
+                        tmpModel.Model.resizeY = hsbResizePieceY.Value / 100f;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    PModel wpModel;
+                        tmpBone.Models[SelectedBonePiece] = tmpModel;
+                        skeleton.Bones[SelectedBone] = tmpBone;
 
-                    if (SelectedBone == bSkeleton.nBones)
-                    {
-                        wpModel = bSkeleton.wpModels[ianimWeaponIndex];
-                        wpModel.resizeY = hsbResizePieceY.Value / 100f;
-                        bSkeleton.wpModels[ianimWeaponIndex] = wpModel;
-                    }
-                    else
-                    {
-                        wpModel = bSkeleton.bones[SelectedBone].Models[SelectedBonePiece];
-                        wpModel.resizeY = hsbResizePieceY.Value / 100f;
-                        bSkeleton.bones[SelectedBone].Models[SelectedBonePiece] = wpModel;
-                    }
-                    break;
+                        break;
 
-                default:
-                    fPModel.resizeY = hsbResizePieceY.Value / 100f;
-                    break;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        PModel wpModel;
+
+                        if (SelectedBone == skeleton.BoneCount)
+                        {
+                            wpModel = skeleton.Weapons[ianimWeaponIndex];
+                            wpModel.resizeY = hsbResizePieceY.Value / 100f;
+                            skeleton.Weapons[ianimWeaponIndex] = wpModel;
+                        }
+                        else
+                        {
+                            wpModel = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model;
+                            wpModel.resizeY = hsbResizePieceY.Value / 100f;
+                            skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model = wpModel;
+                        }
+                        break;
+
+                    default:
+                        fPModel.resizeY = hsbResizePieceY.Value / 100f;
+                        break;
+                }
+
+                txtResizePieceY.Text = hsbResizePieceY.Value.ToString();
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            txtResizePieceY.Text = hsbResizePieceY.Value.ToString();
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void HsbResizePieceZ_ValueChanged(object sender, EventArgs e)
         {
-            if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
-
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    FieldBone tmpfBone;
-                    FieldRSDResource tmpRSDResource;
+                if (loadingBonePieceModifiersQ || SelectedBonePiece == -1) return;
 
-                    tmpfBone = fSkeleton.bones[SelectedBone];
-                    tmpRSDResource = tmpfBone.fRSDResources[SelectedBonePiece];
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
 
-                    tmpRSDResource.Model.resizeZ = hsbResizePieceZ.Value / 100f;
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        UnifiedBone tmpBone;
+                        UnifiedBoneModel tmpModel;
 
-                    tmpfBone.fRSDResources[SelectedBonePiece] = tmpRSDResource;
-                    fSkeleton.bones[SelectedBone] = tmpfBone;
+                        tmpBone = skeleton.Bones[SelectedBone];
+                        tmpModel = tmpBone.Models[SelectedBonePiece];
 
-                    break;
+                        tmpModel.Model.resizeZ = hsbResizePieceZ.Value / 100f;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    PModel wpModel;
+                        tmpBone.Models[SelectedBonePiece] = tmpModel;
+                        skeleton.Bones[SelectedBone] = tmpBone;
 
-                    if (SelectedBone == bSkeleton.nBones)
-                    {
-                        wpModel = bSkeleton.wpModels[ianimWeaponIndex];
-                        wpModel.resizeZ = hsbResizePieceZ.Value / 100f;
-                        bSkeleton.wpModels[ianimWeaponIndex] = wpModel;
-                    }
-                    else
-                    {
-                        wpModel = bSkeleton.bones[SelectedBone].Models[SelectedBonePiece];
-                        wpModel.resizeZ = hsbResizePieceZ.Value / 100f;
-                        bSkeleton.bones[SelectedBone].Models[SelectedBonePiece] = wpModel;
-                    }
-                    break;
+                        break;
 
-                default:
-                    fPModel.resizeZ = hsbResizePieceZ.Value / 100f;
-                    break;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        PModel wpModel;
+
+                        if (SelectedBone == skeleton.BoneCount)
+                        {
+                            wpModel = skeleton.Weapons[ianimWeaponIndex];
+                            wpModel.resizeZ = hsbResizePieceZ.Value / 100f;
+                            skeleton.Weapons[ianimWeaponIndex] = wpModel;
+                        }
+                        else
+                        {
+                            wpModel = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model;
+                            wpModel.resizeZ = hsbResizePieceZ.Value / 100f;
+                            skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model = wpModel;
+                        }
+                        break;
+
+                    default:
+                        fPModel.resizeZ = hsbResizePieceZ.Value / 100f;
+                        break;
+                }
+
+                txtResizePieceZ.Text = hsbResizePieceZ.Value.ToString();
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            txtResizePieceZ.Text = hsbResizePieceZ.Value.ToString();
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void HsbRepositionX_ValueChanged(object sender, EventArgs e)
         {
-            if (loadingBonePieceModifiersQ) return;
-
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    FieldBone tmpfBone;
-                    FieldRSDResource tmpRSDResource;
+                if (loadingBonePieceModifiersQ) return;
 
-                    tmpfBone = fSkeleton.bones[SelectedBone];
-                    tmpRSDResource = tmpfBone.fRSDResources[SelectedBonePiece];
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
 
-                    tmpRSDResource.Model.repositionX = hsbRepositionX.Value * ComputeDiameter(tmpRSDResource.Model.BoundingBox) / 100f;
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        UnifiedBone tmpBone;
+                        UnifiedBoneModel tmpModel;
 
-                    tmpfBone.fRSDResources[SelectedBonePiece] = tmpRSDResource;
-                    fSkeleton.bones[SelectedBone] = tmpfBone;
+                        tmpBone = skeleton.Bones[SelectedBone];
+                        tmpModel = tmpBone.Models[SelectedBonePiece];
 
-                    break;
+                        tmpModel.Model.repositionX = hsbRepositionX.Value * ComputeDiameter(tmpModel.Model.BoundingBox) / 100f;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    PModel wpModel;
+                        tmpBone.Models[SelectedBonePiece] = tmpModel;
+                        skeleton.Bones[SelectedBone] = tmpBone;
 
-                    if (SelectedBone == bSkeleton.nBones)
-                    {
-                        wpModel = bSkeleton.wpModels[ianimWeaponIndex];
-                        wpModel.repositionX = hsbRepositionX.Value * ComputeDiameter(wpModel.BoundingBox) / 100f;
-                        bSkeleton.wpModels[ianimWeaponIndex] = wpModel;
-                    }
-                    else
-                    {
-                        wpModel = bSkeleton.bones[SelectedBone].Models[SelectedBonePiece];
-                        wpModel.repositionX = hsbRepositionX.Value * ComputeDiameter(wpModel.BoundingBox) / 100f;
-                        bSkeleton.bones[SelectedBone].Models[SelectedBonePiece] = wpModel;
-                    }
-                    break;
+                        break;
 
-                default:
-                    fPModel.repositionX = hsbRepositionX.Value * ComputeDiameter(fPModel.BoundingBox) / 100f;
-                    break;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        PModel wpModel;
+
+                        if (SelectedBone == skeleton.BoneCount)
+                        {
+                            wpModel = skeleton.Weapons[ianimWeaponIndex];
+                            wpModel.repositionX = hsbRepositionX.Value * ComputeDiameter(wpModel.BoundingBox) / 100f;
+                            skeleton.Weapons[ianimWeaponIndex] = wpModel;
+                        }
+                        else
+                        {
+                            wpModel = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model;
+                            wpModel.repositionX = hsbRepositionX.Value * ComputeDiameter(wpModel.BoundingBox) / 100f;
+                            skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model = wpModel;
+                        }
+                        break;
+
+                    default:
+                        fPModel.repositionX = hsbRepositionX.Value * ComputeDiameter(fPModel.BoundingBox) / 100f;
+                        break;
+                }
+
+                txtRepositionX.Text = hsbRepositionX.Value.ToString();
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            txtRepositionX.Text = hsbRepositionX.Value.ToString();
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void HsbRepositionY_ValueChanged(object sender, EventArgs e)
         {
-            if (loadingBonePieceModifiersQ) return;
-
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    FieldBone tmpfBone;
-                    FieldRSDResource tmpRSDResource;
+                if (loadingBonePieceModifiersQ) return;
 
-                    tmpfBone = fSkeleton.bones[SelectedBone];
-                    tmpRSDResource = tmpfBone.fRSDResources[SelectedBonePiece];
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
 
-                    tmpRSDResource.Model.repositionY = hsbRepositionY.Value * ComputeDiameter(tmpRSDResource.Model.BoundingBox) / 100f;
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        UnifiedBone tmpBone;
+                        UnifiedBoneModel tmpModel;
 
-                    tmpfBone.fRSDResources[SelectedBonePiece] = tmpRSDResource;
-                    fSkeleton.bones[SelectedBone] = tmpfBone;
+                        tmpBone = skeleton.Bones[SelectedBone];
+                        tmpModel = tmpBone.Models[SelectedBonePiece];
 
-                    break;
+                        tmpModel.Model.repositionY = hsbRepositionY.Value * ComputeDiameter(tmpModel.Model.BoundingBox) / 100f;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    PModel wpModel;
+                        tmpBone.Models[SelectedBonePiece] = tmpModel;
+                        skeleton.Bones[SelectedBone] = tmpBone;
 
-                    if (SelectedBone == bSkeleton.nBones)
-                    {
-                        wpModel = bSkeleton.wpModels[ianimWeaponIndex];
-                        wpModel.repositionY = hsbRepositionY.Value * ComputeDiameter(wpModel.BoundingBox) / 100f;
-                        bSkeleton.wpModels[ianimWeaponIndex] = wpModel;
-                    }
-                    else
-                    {
-                        wpModel = bSkeleton.bones[SelectedBone].Models[SelectedBonePiece];
-                        wpModel.repositionY = hsbRepositionY.Value * ComputeDiameter(wpModel.BoundingBox) / 100f;
-                        bSkeleton.bones[SelectedBone].Models[SelectedBonePiece] = wpModel;
-                    }
-                    break;
+                        break;
 
-                default:
-                    fPModel.repositionY = hsbRepositionY.Value * ComputeDiameter(fPModel.BoundingBox) / 100f;
-                    break;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        PModel wpModel;
+
+                        if (SelectedBone == skeleton.BoneCount)
+                        {
+                            wpModel = skeleton.Weapons[ianimWeaponIndex];
+                            wpModel.repositionY = hsbRepositionY.Value * ComputeDiameter(wpModel.BoundingBox) / 100f;
+                            skeleton.Weapons[ianimWeaponIndex] = wpModel;
+                        }
+                        else
+                        {
+                            wpModel = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model;
+                            wpModel.repositionY = hsbRepositionY.Value * ComputeDiameter(wpModel.BoundingBox) / 100f;
+                            skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model = wpModel;
+                        }
+                        break;
+
+                    default:
+                        fPModel.repositionY = hsbRepositionY.Value * ComputeDiameter(fPModel.BoundingBox) / 100f;
+                        break;
+                }
+
+                txtRepositionY.Text = hsbRepositionY.Value.ToString();
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            txtRepositionY.Text = hsbRepositionY.Value.ToString();
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void HsbRepositionZ_ValueChanged(object sender, EventArgs e)
         {
-            if (loadingBonePieceModifiersQ) return;
-
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    FieldBone tmpfBone;
-                    FieldRSDResource tmpRSDResource;
+                if (loadingBonePieceModifiersQ) return;
 
-                    tmpfBone = fSkeleton.bones[SelectedBone];
-                    tmpRSDResource = tmpfBone.fRSDResources[SelectedBonePiece];
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
 
-                    tmpRSDResource.Model.repositionZ = hsbRepositionZ.Value * ComputeDiameter(tmpRSDResource.Model.BoundingBox) / 100f;
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        UnifiedBone tmpBone;
+                        UnifiedBoneModel tmpModel;
 
-                    tmpfBone.fRSDResources[SelectedBonePiece] = tmpRSDResource;
-                    fSkeleton.bones[SelectedBone] = tmpfBone;
+                        tmpBone = skeleton.Bones[SelectedBone];
+                        tmpModel = tmpBone.Models[SelectedBonePiece];
 
-                    break;
+                        tmpModel.Model.repositionZ = hsbRepositionZ.Value * ComputeDiameter(tmpModel.Model.BoundingBox) / 100f;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    PModel wpModel;
+                        tmpBone.Models[SelectedBonePiece] = tmpModel;
+                        skeleton.Bones[SelectedBone] = tmpBone;
 
-                    if (SelectedBone == bSkeleton.nBones)
-                    {
-                        wpModel = bSkeleton.wpModels[ianimWeaponIndex];
-                        wpModel.repositionZ = hsbRepositionZ.Value * ComputeDiameter(wpModel.BoundingBox) / 100f;
-                        bSkeleton.wpModels[ianimWeaponIndex] = wpModel;
-                    }
-                    else
-                    {
-                        wpModel = bSkeleton.bones[SelectedBone].Models[SelectedBonePiece];
-                        wpModel.repositionZ = hsbRepositionZ.Value * ComputeDiameter(wpModel.BoundingBox) / 100f;
-                        bSkeleton.bones[SelectedBone].Models[SelectedBonePiece] = wpModel;
-                    }
-                    break;
+                        break;
 
-                default:
-                    fPModel.repositionZ = hsbRepositionZ.Value * ComputeDiameter(fPModel.BoundingBox) / 100f;
-                    break;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        PModel wpModel;
+
+                        if (SelectedBone == skeleton.BoneCount)
+                        {
+                            wpModel = skeleton.Weapons[ianimWeaponIndex];
+                            wpModel.repositionZ = hsbRepositionZ.Value * ComputeDiameter(wpModel.BoundingBox) / 100f;
+                            skeleton.Weapons[ianimWeaponIndex] = wpModel;
+                        }
+                        else
+                        {
+                            wpModel = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model;
+                            wpModel.repositionZ = hsbRepositionZ.Value * ComputeDiameter(wpModel.BoundingBox) / 100f;
+                            skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model = wpModel;
+                        }
+                        break;
+
+                    default:
+                        fPModel.repositionZ = hsbRepositionZ.Value * ComputeDiameter(fPModel.BoundingBox) / 100f;
+                        break;
+                }
+
+                txtRepositionZ.Text = hsbRepositionZ.Value.ToString();
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            txtRepositionZ.Text = hsbRepositionZ.Value.ToString();
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void HsbRotateAlpha_ValueChanged(object sender, EventArgs e)
@@ -4171,55 +4276,58 @@ namespace KimeraCS
 
         private void ChkZeroAsTransparent_Click(object sender, EventArgs e)
         {
-            TEX tmpTEX;
-
-            int newZeroTransparentValue;
-
-            newZeroTransparentValue = chkColorKeyFlag.Checked ? 1 : 0;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    if (SelectedBone > -1 && SelectedBonePiece > -1)
-                    {
-                        if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].
-                                            textures[cbTextureSelect.SelectedIndex].texID != 0xFFFFFFFF)
+                TEX tmpTEX;
+
+                int newZeroTransparentValue;
+
+                newZeroTransparentValue = chkColorKeyFlag.Checked ? 1 : 0;
+
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        if (SelectedBone > -1 && SelectedBonePiece > -1)
                         {
-                            if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].
-                                                textures[cbTextureSelect.SelectedIndex].ColorKeyFlag != newZeroTransparentValue)
+                            if (skeleton.Bones[SelectedBone].Models[SelectedBonePiece].
+                                                Textures[cbTextureSelect.SelectedIndex].texID != 0xFFFFFFFF)
                             {
-                                tmpTEX = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex];
+                                if (skeleton.Bones[SelectedBone].Models[SelectedBonePiece].
+                                                    Textures[cbTextureSelect.SelectedIndex].ColorKeyFlag != newZeroTransparentValue)
+                                {
+                                    tmpTEX = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[cbTextureSelect.SelectedIndex];
+
+                                    UnloadTexture(ref tmpTEX);
+                                    LoadTEXTexture(ref tmpTEX);
+                                    LoadBitmapFromTEXTexture(ref tmpTEX);
+
+                                    skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[cbTextureSelect.SelectedIndex] = tmpTEX;
+                                }
+                            }
+                        }
+
+                        break;
+
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        if (skeleton.Textures[cbTextureSelect.SelectedIndex].texID != 0xFFFFFFFF)
+                        {
+                            if (skeleton.Textures[cbTextureSelect.SelectedIndex].ColorKeyFlag != newZeroTransparentValue)
+                            {
+                                tmpTEX = skeleton.Textures[cbTextureSelect.SelectedIndex];
 
                                 UnloadTexture(ref tmpTEX);
                                 LoadTEXTexture(ref tmpTEX);
                                 LoadBitmapFromTEXTexture(ref tmpTEX);
 
-                                fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex] = tmpTEX;
+                                skeleton.Textures[cbTextureSelect.SelectedIndex] = tmpTEX;
                             }
                         }
-                    }
+                        break;
+                }
 
-                    break;
-
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    if (bSkeleton.textures[cbTextureSelect.SelectedIndex].texID != 0xFFFFFFFF)
-                    {
-                        if (bSkeleton.textures[cbTextureSelect.SelectedIndex].ColorKeyFlag != newZeroTransparentValue)
-                        {
-                            tmpTEX = bSkeleton.textures[cbTextureSelect.SelectedIndex];
-
-                            UnloadTexture(ref tmpTEX);
-                            LoadTEXTexture(ref tmpTEX);
-                            LoadBitmapFromTEXTexture(ref tmpTEX);
-
-                            bSkeleton.textures[cbTextureSelect.SelectedIndex] = tmpTEX;
-                        }
-                    }
-                    break;
+                PanelModel_Paint(null, null);
             }
-
-            PanelModel_Paint(null, null);
         }
 
         private void TxtResizePieceX_TextChanged(object sender, EventArgs e)
@@ -4353,147 +4461,149 @@ namespace KimeraCS
 
         private void NudResizeBoneX_ValueChanged(object sender, EventArgs e)
         {
-            if (loadingBoneModifiersQ || SelectedBone == -1) return;
-
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    FieldBone tmpfBone;
+                if (loadingBoneModifiersQ || SelectedBone == -1) return;
 
-                    tmpfBone = fSkeleton.bones[SelectedBone];
-                    tmpfBone.resizeX = (float)nUDResizeBoneX.Value / 100;
-                    fSkeleton.bones[SelectedBone] = tmpfBone;
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
 
-                    break;
+                UnifiedBone tmpBone;
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        tmpBone = skeleton.Bones[SelectedBone];
+                        tmpBone.Scale.X = (float)nUDResizeBoneX.Value / 100;
+                        skeleton.Bones[SelectedBone] = tmpBone;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    PModel wpModel;
-                    BattleBone bBone;
+                        break;
 
-                    if (SelectedBone == bSkeleton.nBones)
-                    {
-                        wpModel = bSkeleton.wpModels[cbWeapon.SelectedIndex];
-                        wpModel.resizeX = (float)nUDResizeBoneX.Value / 100f;
-                        bSkeleton.wpModels[cbWeapon.SelectedIndex] = wpModel;
-                    }
-                    else
-                    {
-                        bBone = bSkeleton.bones[SelectedBone];
-                        bBone.resizeX = (float)nUDResizeBoneX.Value / 100f;
-                        bSkeleton.bones[SelectedBone] = bBone;
-                    }
-                    break;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        PModel wpModel;
+
+                        if (SelectedBone == skeleton.BoneCount)
+                        {
+                            wpModel = skeleton.Weapons[cbWeapon.SelectedIndex];
+                            wpModel.resizeX = (float)nUDResizeBoneX.Value / 100f;
+                            skeleton.Weapons[cbWeapon.SelectedIndex] = wpModel;
+                        }
+                        else
+                        {
+                            tmpBone = skeleton.Bones[SelectedBone];
+                            tmpBone.Scale.X = (float)nUDResizeBoneX.Value / 100f;
+                            skeleton.Bones[SelectedBone] = tmpBone;
+                        }
+                        break;
+                }
+
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void NudResizeBoneY_ValueChanged(object sender, EventArgs e)
         {
-            if (loadingBoneModifiersQ || SelectedBone == -1) return;
-
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    FieldBone tmpfBone;
+                if (loadingBoneModifiersQ || SelectedBone == -1) return;
 
-                    tmpfBone = fSkeleton.bones[SelectedBone];
-                    tmpfBone.resizeY = (float)nUDResizeBoneY.Value / 100;
-                    fSkeleton.bones[SelectedBone] = tmpfBone;
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
 
-                    break;
+                UnifiedBone tmpBone;
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        tmpBone = skeleton.Bones[SelectedBone];
+                        tmpBone.Scale.Y = (float)nUDResizeBoneY.Value / 100;
+                        skeleton.Bones[SelectedBone] = tmpBone;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    PModel wpModel;
-                    BattleBone bBone;
+                        break;
 
-                    if (SelectedBone == bSkeleton.nBones)
-                    {
-                        wpModel = bSkeleton.wpModels[cbWeapon.SelectedIndex];
-                        wpModel.resizeY = (float)nUDResizeBoneY.Value / 100f;
-                        bSkeleton.wpModels[cbWeapon.SelectedIndex] = wpModel;
-                    }
-                    else
-                    {
-                        bBone = bSkeleton.bones[SelectedBone];
-                        bBone.resizeY = (float)nUDResizeBoneY.Value / 100f;
-                        bSkeleton.bones[SelectedBone] = bBone;
-                    }
-                    break;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        PModel wpModel;
+
+                        if (SelectedBone == skeleton.BoneCount)
+                        {
+                            wpModel = skeleton.Weapons[cbWeapon.SelectedIndex];
+                            wpModel.resizeY = (float)nUDResizeBoneY.Value / 100f;
+                            skeleton.Weapons[cbWeapon.SelectedIndex] = wpModel;
+                        }
+                        else
+                        {
+                            tmpBone = skeleton.Bones[SelectedBone];
+                            tmpBone.Scale.Y = (float)nUDResizeBoneY.Value / 100f;
+                            skeleton.Bones[SelectedBone] = tmpBone;
+                        }
+                        break;
+                }
+
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void NudResizeBoneZ_ValueChanged(object sender, EventArgs e)
         {
-            if (loadingBoneModifiersQ || SelectedBone == -1) return;
-
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    FieldBone tmpfBone;
+                if (loadingBoneModifiersQ || SelectedBone == -1) return;
 
-                    tmpfBone = fSkeleton.bones[SelectedBone];
-                    tmpfBone.resizeZ = (float)nUDResizeBoneZ.Value / 100;
-                    fSkeleton.bones[SelectedBone] = tmpfBone;
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
 
-                    break;
+                UnifiedBone tmpBone;
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        tmpBone = skeleton.Bones[SelectedBone];
+                        tmpBone.Scale.Z = (float)nUDResizeBoneZ.Value / 100;
+                        skeleton.Bones[SelectedBone] = tmpBone;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    PModel wpModel;
-                    BattleBone bBone;
+                        break;
 
-                    if (SelectedBone == bSkeleton.nBones)
-                    {
-                        wpModel = bSkeleton.wpModels[cbWeapon.SelectedIndex];
-                        wpModel.resizeZ = (float)nUDResizeBoneZ.Value / 100f;
-                        bSkeleton.wpModels[cbWeapon.SelectedIndex] = wpModel;
-                    }
-                    else
-                    {
-                        bBone = bSkeleton.bones[SelectedBone];
-                        bBone.resizeZ = (float)nUDResizeBoneZ.Value / 100f;
-                        bSkeleton.bones[SelectedBone] = bBone;
-                    }
-                    break;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        PModel wpModel;
+
+                        if (SelectedBone == skeleton.BoneCount)
+                        {
+                            wpModel = skeleton.Weapons[cbWeapon.SelectedIndex];
+                            wpModel.resizeZ = (float)nUDResizeBoneZ.Value / 100f;
+                            skeleton.Weapons[cbWeapon.SelectedIndex] = wpModel;
+                        }
+                        else
+                        {
+                            tmpBone = skeleton.Bones[SelectedBone];
+                            tmpBone.Scale.Z = (float)nUDResizeBoneZ.Value / 100f;
+                            skeleton.Bones[SelectedBone] = tmpBone;
+                        }
+                        break;
+                }
+
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void NudBoneLength_TextChanged(object sender, EventArgs e)
         {
-
-            if (bLoaded && !loadingBonePieceModifiersQ)
+            if (skeleton != null && bLoaded && !loadingBonePieceModifiersQ)
             {
                 float fOldValue = 0.0f;
                 if (float.TryParse(((UpDownBase)sender).Text, out float fNudBoneLengthValue))
                 {
                     switch (modelType)
                     {
-                        case ModelType.K_HRC_SKELETON:
-                            fOldValue = (float)fSkeleton.bones[SelectedBone].len;
+                        case ModelType.HRCSkeleton:
+                            fOldValue = (float)skeleton.Bones[SelectedBone].Length;
                             break;
 
-                        case ModelType.K_AA_SKELETON:
-                        case ModelType.K_MAGIC_SKELETON:
-                            fOldValue = bSkeleton.bones[SelectedBone].len;
+                        case ModelType.AASkeleton:
+                        case ModelType.MagicSkeleton:
+                            fOldValue = skeleton.Bones[SelectedBone].Length;
                             break;
 
                     }
@@ -4513,512 +4623,523 @@ namespace KimeraCS
 
         private void NudBoneLength_ValueChanged(object sender, EventArgs e)
         {
-            if (loadingBoneModifiersQ || loadingBonePieceModifiersQ) return;
-
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    FieldBone tmpfBone;
+                if (loadingBoneModifiersQ || loadingBonePieceModifiersQ) return;
 
-                    tmpfBone = fSkeleton.bones[SelectedBone];
-                    tmpfBone.len = (float)nUDBoneOptionsLength.Value;
-                    fSkeleton.bones[SelectedBone] = tmpfBone;
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
 
-                    break;
+                UnifiedBone tmpBone = skeleton.Bones[SelectedBone];
+                tmpBone.Length = (float)nUDBoneOptionsLength.Value;
+                skeleton.Bones[SelectedBone] = tmpBone;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    BattleBone bBone;
-
-                    bBone = bSkeleton.bones[SelectedBone];
-                    bBone.len = (float)nUDBoneOptionsLength.Value;
-                    bSkeleton.bones[SelectedBone] = bBone;
-
-                    break;
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void BtnAddPiece_Click(object sender, EventArgs e)
         {
-
-            PModel AdditionalP;
-
-            if (modelType != ModelType.K_HRC_SKELETON && modelType != ModelType.K_AA_SKELETON && modelType != ModelType.K_MAGIC_SKELETON)
+            if (skeleton != null)
             {
-                // MessageBox.Show("This should not happen.", "Error");
-                return;
-            }
+                PModel AdditionalP;
 
-            // Set filter options and filter index.
-            openFile.Title = "Add Piece";
-            openFile.Filter = $"FF7 Field Part file|*.P|FF7 Battle Part file|*.*|FF7 Magic Part file|*.P*|{GetFileFilter()}";
-
-            switch (modelType)
-            {
-                case ModelType.K_HRC_SKELETON:
-                    openFile.FilterIndex = 1;
-                    break;
-
-                case ModelType.K_AA_SKELETON:
-                    openFile.FilterIndex = 2;
-                    break;
-
-                case ModelType.K_MAGIC_SKELETON:
-                    openFile.FilterIndex = 3;
-                    break;
-            }
-
-            openFile.FileName = null;
-
-            // Check Initial Directory
-            if (strGlobalPathPartModelFolder != null)
-            {
-                openFile.InitialDirectory = strGlobalPathPartModelFolder;
-            }
-            else
-            {
-                openFile.InitialDirectory = strGlobalPath;
-            }
-
-            try
-            {
-                // Process input if the user clicked OK.
-                if (openFile.ShowDialog() == DialogResult.OK)
+                if (modelType != ModelType.HRCSkeleton && modelType != ModelType.AASkeleton && modelType != ModelType.MagicSkeleton)
                 {
-                    if (File.Exists(openFile.FileName))
+                    // MessageBox.Show("This should not happen.", "Error");
+                    return;
+                }
+
+                // Set filter options and filter index.
+                openFile.Title = "Add Piece";
+                openFile.Filter = $"FF7 Field Part file|*.P|FF7 Battle Part file|*.*|FF7 Magic Part file|*.P*|{GetFileFilter()}";
+
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        openFile.FilterIndex = 1;
+                        break;
+
+                    case ModelType.AASkeleton:
+                        openFile.FilterIndex = 2;
+                        break;
+
+                    case ModelType.MagicSkeleton:
+                        openFile.FilterIndex = 3;
+                        break;
+                }
+
+                openFile.FileName = null;
+
+                // Check Initial Directory
+                if (strGlobalPathPartModelFolder != null)
+                {
+                    openFile.InitialDirectory = strGlobalPathPartModelFolder;
+                }
+                else
+                {
+                    openFile.InitialDirectory = strGlobalPath;
+                }
+
+                try
+                {
+                    // Process input if the user clicked OK.
+                    if (openFile.ShowDialog() == DialogResult.OK)
                     {
-                        // Set Global Paths
-                        strGlobalPartModelName = Path.GetFileName(openFile.FileName).ToUpper();
-                        strGlobalPathPartModelFolder = Path.GetDirectoryName(openFile.FileName);
-
-                        AdditionalP = new PModel();
-
-                        if (IsValidImport(openFile.FileName))
+                        if (File.Exists(openFile.FileName))
                         {
-                            // Use Assimp for 3D model formats
-                            var scene = LoadSceneFromFile(openFile.FileName);
-                            if (scene != null)
+                            // Set Global Paths
+                            strGlobalPartModelName = Path.GetFileName(openFile.FileName).ToUpper();
+                            strGlobalPathPartModelFolder = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
+
+                            AdditionalP = new PModel();
+
+                            if (IsValidImport(openFile.FileName))
                             {
-                                ConvertSceneToPModel(scene, ref AdditionalP, bAdjust3DSImport);
-                            }
-                        }
-                        else
-                        {
-                            // Use native P-model loader for FF7 formats
-                            UserPrompts.PModelLoader(ref AdditionalP, strGlobalPathPartModelFolder, strGlobalPartModelName, true);
-                        }
-
-                        if (AdditionalP.Header.numVerts > 0)
-                        {
-                            AddStateToBuffer(this);
-
-                            if (modelType == ModelType.K_HRC_SKELETON)
-                            {
-                                FieldBone tmpfBone = fSkeleton.bones[SelectedBone];
-                                AddFieldBone(ref tmpfBone, ref AdditionalP);
-                                fSkeleton.bones[SelectedBone] = tmpfBone;
+                                // Use Assimp for 3D model formats
+                                var scene = LoadSceneFromFile(openFile.FileName);
+                                if (scene != null)
+                                {
+                                    ConvertSceneToPModel(scene, ref AdditionalP, bAdjust3DSImport);
+                                }
                             }
                             else
                             {
-                                BattleBone tmpbBone = bSkeleton.bones[SelectedBone];
-                                AddBattleBoneModel(ref tmpbBone, ref AdditionalP);
-                                bSkeleton.bones[SelectedBone] = tmpbBone;
+                                // Use native P-model loader for FF7 formats
+                                UserPrompts.PModelLoader(ref AdditionalP, strGlobalPathPartModelFolder, strGlobalPartModelName, true);
                             }
 
-                            SelectedBonePiece++;
-                        }
+                            if (AdditionalP.Header.numVerts > 0)
+                            {
+                                AddStateToBuffer(this);
 
-                        SetTextureEditorFields();
-                        PanelModel_Paint(null, null);
-                        WriteCFGFile();
+                                skeleton.AddBoneModel(SelectedBone, AdditionalP);
+                                /*if (modelType == ModelType.K_HRC_SKELETON)
+                                {
+                                    FieldBone tmpfBone = skeleton.Bones[SelectedBone];
+                                    AddFieldBone(ref tmpfBone, ref AdditionalP);
+                                    skeleton.Bones[SelectedBone] = tmpfBone;
+                                }
+                                else
+                                {
+                                    BattleBone tmpbBone = skeleton.Bones[SelectedBone];
+                                    AddBattleBoneModel(ref tmpbBone, ref AdditionalP);
+                                    skeleton.Bones[SelectedBone] = tmpbBone;
+                                }*/
+
+                                SelectedBonePiece++;
+                            }
+
+                            SetTextureEditorFields();
+                            PanelModel_Paint(null, null);
+                            WriteCFGFile();
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                strGlobalExceptionMessage = ex.Message;
+                catch (Exception ex)
+                {
+                    strGlobalExceptionMessage = ex.Message;
 
-                MessageBox.Show("Global error Adding Piece file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
-                                "Error");
+                    MessageBox.Show("Global error Adding Piece file " + Path.GetFileName(openFile.FileName).ToUpper() + ".",
+                                    "Error");
+                }
             }
         }
 
         private void BtnRemovePiece_Click(object sender, EventArgs e)
         {
-            try
+            if (skeleton != null)
             {
-                if (modelType == ModelType.K_HRC_SKELETON)
+                try
                 {
-                    if (fSkeleton.bones[SelectedBone].nResources > 0)
+                    AddStateToBuffer(this);
+                    skeleton.RemoveBoneModel(SelectedBone, SelectedBonePiece);
+                    /*if (modelType == ModelType.K_HRC_SKELETON)
                     {
-                        AddStateToBuffer(this);
+                        if (skeleton.Bones[SelectedBone].Models?.Count > 0)
+                        {
+                            AddStateToBuffer(this);
 
-                        FieldBone tmpfBone = fSkeleton.bones[SelectedBone];
-                        RemoveFieldBone(ref tmpfBone, ref SelectedBonePiece);
-                        fSkeleton.bones[SelectedBone] = tmpfBone;
+                            FieldBone tmpfBone = skeleton.Bones[SelectedBone];
+                            RemoveFieldBone(ref tmpfBone, ref SelectedBonePiece);
+                            skeleton.Bones[SelectedBone] = tmpfBone;
+                        }
                     }
+                    else
+                    {
+                        if (skeleton.Bones[SelectedBone].nModels > 0)
+                        {
+                            AddStateToBuffer(this);
+
+                            BattleBone tmpbBone = skeleton.Bones[SelectedBone];
+                            RemoveBattleBoneModel(ref tmpbBone, ref SelectedBonePiece);
+                            skeleton.Bones[SelectedBone] = tmpbBone;
+                        }
+                    }*/
+
+                    SelectedBonePiece = -1;
+                    gbSelectedPieceFrame.Enabled = false;
+
+                    SetBoneModifiers();
+                    SetTextureEditorFields();
+                    PanelModel_Paint(null, null);
                 }
-                else
+                catch (Exception ex)
                 {
-                    if (bSkeleton.bones[SelectedBone].nModels > 0)
-                    {
-                        AddStateToBuffer(this);
+                    strGlobalExceptionMessage = ex.Message;
 
-                        BattleBone tmpbBone = bSkeleton.bones[SelectedBone];
-                        RemoveBattleBoneModel(ref tmpbBone, ref SelectedBonePiece);
-                        bSkeleton.bones[SelectedBone] = tmpbBone;
-                    }
+                    MessageBox.Show("Global error Removing Piece.", "Error");
                 }
-
-                SelectedBonePiece = -1;
-                gbSelectedPieceFrame.Enabled = false;
-
-                SetBoneModifiers();
-                SetTextureEditorFields();
-                PanelModel_Paint(null, null);
-            }
-            catch (Exception ex)
-            {
-                strGlobalExceptionMessage = ex.Message;
-
-                MessageBox.Show("Global error Removing Piece.", "Error");
             }
         }
 
         private void BtnRotate_Click(object sender, EventArgs e)
         {
-            TEX tex = new TEX();
-            int texIndex;
-
-            texIndex = cbTextureSelect.SelectedIndex;
-
-            if (texIndex > -1)
+            if (skeleton != null)
             {
-                switch (modelType)
+                TEX tex = new TEX();
+                int texIndex;
+
+                texIndex = cbTextureSelect.SelectedIndex;
+
+                if (texIndex > -1)
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        if (SelectedBone > -1)
-                            tex = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex];
-
-                        break;
-
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-                        if (SelectedBone > -1)
-                            tex = bSkeleton.textures[texIndex];
-                        break;
-                }
-
-                int row, col, BPPStride, i;
-                int newWidth, newHeight, originalWidth, originalHeight, newWidthMinusOne; //, newHeight, originalWidth, originalHeight;
-                int originalWidthStride, originalHeightStride;
-                int destinationX, destinationY, destinationPosition, sourcePosition;
-                byte[] result;
-
-                BPPStride = tex.bytesPerPixel;
-
-                result = new byte[tex.width * tex.height * BPPStride];
-
-                newWidth = tex.height;
-                newHeight = tex.width;
-
-                originalWidth = tex.width;
-                originalHeight = tex.height;
-                originalWidthStride = originalWidth * BPPStride;
-                originalHeightStride = originalHeight * BPPStride;
-
-                // We're going to use the new width and height minus one a lot so lets 
-                // pre-calculate that once to save some more time
-                newWidthMinusOne = newWidth - 1;
-
-                for (row = 0; row < originalHeightStride; row += BPPStride)
-                {
-                    destinationX = (newWidthMinusOne * BPPStride) - row;
-
-                    for (col = 0; col < originalWidthStride; col += BPPStride)
+                    switch (modelType)
                     {
-                        sourcePosition = (col + row * originalWidth);
-                        destinationY = col;
-                        destinationPosition = (destinationX + destinationY * newWidth);
+                        case ModelType.HRCSkeleton:
+                            if (SelectedBone > -1)
+                                tex = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[texIndex];
 
-                        for (i = 0; i < BPPStride; i++)
+                            break;
+
+                        case ModelType.AASkeleton:
+                        case ModelType.MagicSkeleton:
+                            if (SelectedBone > -1)
+                                tex = skeleton.Textures[texIndex];
+                            break;
+                    }
+
+                    if (tex.pixelData != null)
+                    {
+                        int row, col, BPPStride, i;
+                    int newWidth, newHeight, originalWidth, originalHeight, newWidthMinusOne; //, newHeight, originalWidth, originalHeight;
+                    int originalWidthStride, originalHeightStride;
+                    int destinationX, destinationY, destinationPosition, sourcePosition;
+                    byte[] result;
+
+                    BPPStride = tex.bytesPerPixel;
+
+                    result = new byte[tex.width * tex.height * BPPStride];
+
+                    newWidth = tex.height;
+                    newHeight = tex.width;
+
+                    originalWidth = tex.width;
+                    originalHeight = tex.height;
+                    originalWidthStride = originalWidth * BPPStride;
+                    originalHeightStride = originalHeight * BPPStride;
+
+                    // We're going to use the new width and height minus one a lot so lets 
+                    // pre-calculate that once to save some more time
+                    newWidthMinusOne = newWidth - 1;
+
+                    for (row = 0; row < originalHeightStride; row += BPPStride)
+                    {
+                        destinationX = (newWidthMinusOne * BPPStride) - row;
+
+                        for (col = 0; col < originalWidthStride; col += BPPStride)
                         {
-                            result[destinationPosition + i] = tex.pixelData[sourcePosition + i];
+                            sourcePosition = (col + row * originalWidth);
+                            destinationY = col;
+                            destinationPosition = (destinationX + destinationY * newWidth);
+
+                            for (i = 0; i < BPPStride; i++)
+                            {
+                                result[destinationPosition + i] = tex.pixelData[sourcePosition + i];
+                            }
                         }
                     }
-                }
 
-                tex.pixelData = result;
-                tex.width = newWidth;
-                tex.height = newHeight;
+                    tex.pixelData = result;
+                    tex.width = newWidth;
+                    tex.height = newHeight;
 
 
-                //  Let's update all the textures used in other Bones
-                UnloadTexture(ref tex);
-                LoadTEXTexture(ref tex);
-                LoadBitmapFromTEXTexture(ref tex);
+                    //  Let's update all the textures used in other Bones
+                    UnloadTexture(ref tex);
+                    LoadTEXTexture(ref tex);
+                    LoadBitmapFromTEXTexture(ref tex);
 
-                switch (modelType)
-                {
-                    case ModelType.K_HRC_SKELETON:
-                        if (SelectedBone > -1)
-                        {
-                            int r, t;
-
-                            //for (i = 0; i < fSkeleton.nBones; i++)
-                            for (i = 0; i < fSkeleton.bones.Count; i++)
+                    switch (modelType)
+                    {
+                        case ModelType.HRCSkeleton:
+                            if (SelectedBone > -1)
                             {
-                                for (r = 0; r < fSkeleton.bones[i].nResources; r++)
+                                int r, t;
+
+                                //for (i = 0; i < skeleton.BoneCount; i++)
+                                for (i = 0; i < skeleton.Bones.Count; i++)
                                 {
-                                    for (t = 0; t < fSkeleton.bones[i].fRSDResources[r].numTextures; t++)
+                                    for (r = 0; r < skeleton.Bones[i].Models?.Count; r++)
                                     {
-                                        if (fSkeleton.bones[i].fRSDResources[r].textures[t].TEXfileName == tex.TEXfileName)
+                                        for (t = 0; t < skeleton.Bones[i].Models[r].TextureCount; t++)
                                         {
-                                            fSkeleton.bones[i].fRSDResources[r].textures[t] = tex;
+                                            if (skeleton.Bones[i].Models[r].Textures[t].TEXfileName == tex.TEXfileName)
+                                            {
+                                                skeleton.Bones[i].Models[r].Textures[t] = tex;
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                        break;
+                            break;
 
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
+                        case ModelType.AASkeleton:
+                        case ModelType.MagicSkeleton:
 
-                        for (i = 0; i < bSkeleton.nTextures; i++)
-                        {
-                            if (bSkeleton.textures[i].TEXfileName == tex.TEXfileName)
+                            for (i = 0; i < skeleton.TextureCount; i++)
                             {
-                                bSkeleton.textures[i] = tex;
+                                if (skeleton.Textures[i].TEXfileName == tex.TEXfileName)
+                                {
+                                    skeleton.Textures[i] = tex;
+                                }
                             }
-                        }
-                        break;
+                            break;
+                    }
+
+                    SetTextureEditorFields();
+                    cbTextureSelect.SelectedIndex = texIndex;
+
+                    PanelModel_Paint(null, null);
                 }
-
-                SetTextureEditorFields();
-                cbTextureSelect.SelectedIndex = texIndex;
-
-                PanelModel_Paint(null, null);
+                    }
             }
         }
 
         private void BtnFlipVertical_Click(object sender, EventArgs e)
         {
-            TEX tex = new TEX();
-            int texIndex;
-
-            texIndex = cbTextureSelect.SelectedIndex;
-
-            if (texIndex > -1)
+            if (skeleton != null)
             {
-                switch (modelType)
+                TEX tex = new TEX();
+                int texIndex;
+
+                texIndex = cbTextureSelect.SelectedIndex;
+
+                if (texIndex > -1)
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        if (SelectedBone > -1)
-                            tex = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex];
-                        break;
-
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-
-                        if (SelectedBone > -1)
-                            tex = bSkeleton.textures[texIndex];
-                        break;
-                }
-
-                int row, col, BPPStride, i;
-                int current, flipped;
-                byte[] result;
-
-                //current = 0;
-                //flipped = 0;
-                BPPStride = tex.bytesPerPixel;
-
-                result = new byte[tex.width * tex.height * BPPStride];
-
-                int widthStride, heightStride;
-                widthStride = tex.width * BPPStride;
-                heightStride = tex.height * BPPStride;
-
-                for (row = 0; row < heightStride; row += BPPStride)
-                {
-                    for (col = 0; col < widthStride; col += BPPStride)
+                    switch (modelType)
                     {
-                        current = (row * tex.width) + col;
-                        flipped = (row * tex.width) + (widthStride - col - BPPStride);
+                        case ModelType.HRCSkeleton:
+                            if (SelectedBone > -1)
+                                tex = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[texIndex];
+                            break;
 
-                        for (i = 0; i < BPPStride; i++)
-                        {
-                            result[flipped + i] = tex.pixelData[current + i];
-                        }
+                        case ModelType.AASkeleton:
+                        case ModelType.MagicSkeleton:
+
+                            if (SelectedBone > -1)
+                                tex = skeleton.Textures[texIndex];
+                            break;
                     }
-                }
 
-                tex.pixelData = result;
+                    if (tex.pixelData != null)
+                    {
+                        int row, col, BPPStride, i;
+                        int current, flipped;
+                        byte[] result;
 
-                // Let's refresh this TEXTexture in the rest of P Models
-                UnloadTexture(ref tex);
-                LoadTEXTexture(ref tex);
-                LoadBitmapFromTEXTexture(ref tex);
+                        //current = 0;
+                        //flipped = 0;
+                        BPPStride = tex.bytesPerPixel;
 
-                switch (modelType)
-                {
-                    case ModelType.K_HRC_SKELETON:
-                        if (SelectedBone > -1)
+                        result = new byte[tex.width * tex.height * BPPStride];
+
+                        int widthStride, heightStride;
+                        widthStride = tex.width * BPPStride;
+                        heightStride = tex.height * BPPStride;
+
+                        for (row = 0; row < heightStride; row += BPPStride)
                         {
-                            int r, t;
-
-                            //for (i = 0; i < fSkeleton.nBones; i++)
-                            for (i = 0; i < fSkeleton.bones.Count; i++)
+                            for (col = 0; col < widthStride; col += BPPStride)
                             {
-                                for (r = 0; r < fSkeleton.bones[i].nResources; r++)
+                                current = (row * tex.width) + col;
+                                flipped = (row * tex.width) + (widthStride - col - BPPStride);
+
+                                for (i = 0; i < BPPStride; i++)
                                 {
-                                    for (t = 0; t < fSkeleton.bones[i].fRSDResources[r].numTextures; t++)
-                                    {
-                                        if (fSkeleton.bones[i].fRSDResources[r].textures[t].TEXfileName == tex.TEXfileName)
-                                        {
-                                            fSkeleton.bones[i].fRSDResources[r].textures[t] = tex;
-                                        }
-                                    }
+                                    result[flipped + i] = tex.pixelData[current + i];
                                 }
                             }
                         }
-                        break;
 
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
+                        tex.pixelData = result;
 
-                        for (i = 0; i < bSkeleton.nTextures; i++)
+                        // Let's refresh this TEXTexture in the rest of P Models
+                        UnloadTexture(ref tex);
+                        LoadTEXTexture(ref tex);
+                        LoadBitmapFromTEXTexture(ref tex);
+
+                        switch (modelType)
                         {
-                            if (bSkeleton.textures[i].TEXfileName == tex.TEXfileName)
-                            {
-                                bSkeleton.textures[i] = tex;
-                            }
+                            case ModelType.HRCSkeleton:
+                                if (SelectedBone > -1)
+                                {
+                                    int r, t;
+
+                                    //for (i = 0; i < skeleton.BoneCount; i++)
+                                    for (i = 0; i < skeleton.Bones.Count; i++)
+                                    {
+                                        for (r = 0; r < skeleton.Bones[i].Models?.Count; r++)
+                                        {
+                                            for (t = 0; t < skeleton.Bones[i].Models[r].TextureCount; t++)
+                                            {
+                                                if (skeleton.Bones[i].Models[r].Textures[t].TEXfileName == tex.TEXfileName)
+                                                {
+                                                    skeleton.Bones[i].Models[r].Textures[t] = tex;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+
+                            case ModelType.AASkeleton:
+                            case ModelType.MagicSkeleton:
+
+                                for (i = 0; i < skeleton.TextureCount; i++)
+                                {
+                                    if (skeleton.Textures[i].TEXfileName == tex.TEXfileName)
+                                    {
+                                        skeleton.Textures[i] = tex;
+                                    }
+                                }
+                                break;
                         }
-                        break;
+
+                        SetTextureEditorFields();
+                        cbTextureSelect.SelectedIndex = texIndex;
+
+                        PanelModel_Paint(null, null);
+                    }
                 }
-
-                SetTextureEditorFields();
-                cbTextureSelect.SelectedIndex = texIndex;
-
-                PanelModel_Paint(null, null);
             }
         }
 
         private void BtnFlipHorizontal_Click(object sender, EventArgs e)
         {
-            TEX tex = new TEX();
-            int texIndex;
-
-            texIndex = cbTextureSelect.SelectedIndex;
-
-            if (texIndex > -1)
+            if (skeleton != null)
             {
+                TEX tex = new TEX();
+                int texIndex;
 
-                switch (modelType)
+                texIndex = cbTextureSelect.SelectedIndex;
+
+                if (texIndex > -1)
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        if (SelectedBone > -1)
-                            tex = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex];
-                        break;
 
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-
-                        if (SelectedBone > -1)
-                            tex = bSkeleton.textures[texIndex];
-                        break;
-                }
-
-                int row, col, BPPStride, i;
-                int current, flipped;
-                byte[] result;
-                int widthStride, widheiTotal;
-
-                BPPStride = tex.bytesPerPixel;
-
-                widheiTotal = tex.width * tex.height * BPPStride;
-                result = new byte[widheiTotal];
-
-                widthStride = tex.width * BPPStride;
-
-                for (row = 0; row < tex.height; row++)
-                {
-                    for (col = 0; col < widthStride; col += BPPStride)
+                    switch (modelType)
                     {
-                        current = (row * widthStride) + col;
-                        flipped = widheiTotal - (widthStride * (row + 1)) + col;
+                        case ModelType.HRCSkeleton:
+                            if (SelectedBone > -1)
+                                tex = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[texIndex];
+                            break;
 
-                        for (i = 0; i < BPPStride; i++)
-                        {
-                            result[flipped + i] = tex.pixelData[current + i];
-                        }
+                        case ModelType.AASkeleton:
+                        case ModelType.MagicSkeleton:
+
+                            if (SelectedBone > -1)
+                                tex = skeleton.Textures[texIndex];
+                            break;
                     }
-                }
 
-                tex.pixelData = result;
+                    if (tex.pixelData != null)
+                    {
+                        int row, col, BPPStride, i;
+                        int current, flipped;
+                        byte[] result;
+                        int widthStride, widheiTotal;
 
-                // Let's refresh this TEXTexture in the rest of P Models
-                UnloadTexture(ref tex);
-                LoadTEXTexture(ref tex);
-                LoadBitmapFromTEXTexture(ref tex);
+                        BPPStride = tex.bytesPerPixel;
 
-                switch (modelType)
-                {
-                    case ModelType.K_HRC_SKELETON:
-                        if (SelectedBone > -1)
+                        widheiTotal = tex.width * tex.height * BPPStride;
+                        result = new byte[widheiTotal];
+
+                        widthStride = tex.width * BPPStride;
+
+                        for (row = 0; row < tex.height; row++)
                         {
-                            int r, t;
-
-                            //for (i = 0; i < fSkeleton.nBones; i++)
-                            for (i = 0; i < fSkeleton.bones.Count; i++)
+                            for (col = 0; col < widthStride; col += BPPStride)
                             {
-                                for (r = 0; r < fSkeleton.bones[i].nResources; r++)
+                                current = (row * widthStride) + col;
+                                flipped = widheiTotal - (widthStride * (row + 1)) + col;
+
+                                for (i = 0; i < BPPStride; i++)
                                 {
-                                    for (t = 0; t < fSkeleton.bones[i].fRSDResources[r].numTextures; t++)
-                                    {
-                                        if (fSkeleton.bones[i].fRSDResources[r].textures[t].TEXfileName == tex.TEXfileName)
-                                        {
-                                            fSkeleton.bones[i].fRSDResources[r].textures[t] = tex;
-                                        }
-                                    }
+                                    result[flipped + i] = tex.pixelData[current + i];
                                 }
                             }
                         }
-                        break;
 
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
+                        tex.pixelData = result;
 
-                        for (i = 0; i < bSkeleton.nTextures; i++)
+                        // Let's refresh this TEXTexture in the rest of P Models
+                        UnloadTexture(ref tex);
+                        LoadTEXTexture(ref tex);
+                        LoadBitmapFromTEXTexture(ref tex);
+
+                        switch (modelType)
                         {
-                            if (bSkeleton.textures[i].TEXfileName == tex.TEXfileName)
-                            {
-                                bSkeleton.textures[i] = tex;
-                            }
+                            case ModelType.HRCSkeleton:
+                                if (SelectedBone > -1)
+                                {
+                                    int r, t;
+
+                                    //for (i = 0; i < skeleton.BoneCount; i++)
+                                    for (i = 0; i < skeleton.Bones.Count; i++)
+                                    {
+                                        for (r = 0; r < skeleton.Bones[i].Models?.Count; r++)
+                                        {
+                                            for (t = 0; t < skeleton.Bones[i].Models[r].TextureCount; t++)
+                                            {
+                                                if (skeleton.Bones[i].Models[r].Textures[t].TEXfileName == tex.TEXfileName)
+                                                {
+                                                    skeleton.Bones[i].Models[r].Textures[t] = tex;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+
+                            case ModelType.AASkeleton:
+                            case ModelType.MagicSkeleton:
+
+                                for (i = 0; i < skeleton.TextureCount; i++)
+                                {
+                                    if (skeleton.Textures[i].TEXfileName == tex.TEXfileName)
+                                    {
+                                        skeleton.Textures[i] = tex;
+                                    }
+                                }
+                                break;
                         }
-                        break;
+
+                        //result = null;
+
+                        SetTextureEditorFields();
+                        cbTextureSelect.SelectedIndex = texIndex;
+
+                        PanelModel_Paint(null, null);
+                    }
                 }
-
-                //result = null;
-
-                SetTextureEditorFields();
-                cbTextureSelect.SelectedIndex = texIndex;
-
-                PanelModel_Paint(null, null);
             }
         }
 
         private void NudMoveTextureUpDown_ValueChanged(object sender, EventArgs e)
         {
             // Ok. We will use a NumericalUpDown control as UpDown VB6 control.
-            if (nUDTexUpDown != nUDMoveTextureUpDown.Value)
+            if (skeleton != null && nUDTexUpDown != nUDMoveTextureUpDown.Value)
             {
                 int texIndex = 0;
                 uint tmpTexID;  // = 0;
@@ -5029,20 +5150,20 @@ namespace KimeraCS
                     // Down
                     switch (modelType)
                     {
-                        case ModelType.K_HRC_SKELETON:
+                        case ModelType.HRCSkeleton:
                             if (SelectedBone > -1)
                             {
-                                if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].numTextures > 0)
+                                if (skeleton.Bones[SelectedBone].Models[SelectedBonePiece].TextureCount > 0)
                                     texIndex = cbTextureSelect.SelectedIndex;
 
-                                if (texIndex < fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].numTextures - 1)
+                                if (texIndex < skeleton.Bones[SelectedBone].Models[SelectedBonePiece].TextureCount - 1)
                                 {
-                                    tmpTEX = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex];
+                                    tmpTEX = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[texIndex];
 
-                                    fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex] =
-                                            fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex + 1];
+                                    skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[texIndex] =
+                                            skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[texIndex + 1];
 
-                                    fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex + 1] = tmpTEX;
+                                    skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[texIndex + 1] = tmpTEX;
 
                                     SetTextureEditorFields();
                                     cbTextureSelect.SelectedIndex = texIndex + 1;
@@ -5050,20 +5171,20 @@ namespace KimeraCS
                             }
                             break;
 
-                        case ModelType.K_AA_SKELETON:
-                        case ModelType.K_MAGIC_SKELETON:
+                        case ModelType.AASkeleton:
+                        case ModelType.MagicSkeleton:
 
                             texIndex = cbTextureSelect.SelectedIndex;
 
-                            if (texIndex < bSkeleton.nTextures - 1)
+                            if (texIndex < skeleton.TextureCount - 1)
                             {
-                                tmpTEX = bSkeleton.textures[texIndex];
-                                bSkeleton.textures[texIndex] = bSkeleton.textures[texIndex + 1];
-                                bSkeleton.textures[texIndex + 1] = tmpTEX;
+                                tmpTEX = skeleton.Textures[texIndex];
+                                skeleton.Textures[texIndex] = skeleton.Textures[texIndex + 1];
+                                skeleton.Textures[texIndex + 1] = tmpTEX;
 
-                                tmpTexID = bSkeleton.TexIDS[texIndex];
-                                bSkeleton.TexIDS[texIndex] = bSkeleton.TexIDS[texIndex + 1];
-                                bSkeleton.TexIDS[texIndex + 1] = tmpTexID;
+                                tmpTexID = skeleton.TextureIDs[texIndex];
+                                skeleton.TextureIDs[texIndex] = skeleton.TextureIDs[texIndex + 1];
+                                skeleton.TextureIDs[texIndex + 1] = tmpTexID;
 
                                 SetTextureEditorFields();
                                 cbTextureSelect.SelectedIndex = texIndex + 1;
@@ -5076,20 +5197,20 @@ namespace KimeraCS
                     // Up
                     switch (modelType)
                     {
-                        case ModelType.K_HRC_SKELETON:
+                        case ModelType.HRCSkeleton:
                             if (SelectedBone > -1)
                             {
-                                if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].numTextures > 0)
+                                if (skeleton.Bones[SelectedBone].Models[SelectedBonePiece].TextureCount > 0)
                                     texIndex = cbTextureSelect.SelectedIndex;
 
                                 if (texIndex > 0)
                                 {
-                                    tmpTEX = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex];
+                                    tmpTEX = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[texIndex];
 
-                                    fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex] =
-                                            fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex - 1];
+                                    skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[texIndex] =
+                                            skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[texIndex - 1];
 
-                                    fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[texIndex - 1] = tmpTEX;
+                                    skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[texIndex - 1] = tmpTEX;
 
                                     SetTextureEditorFields();
                                     cbTextureSelect.SelectedIndex = texIndex - 1;
@@ -5097,20 +5218,20 @@ namespace KimeraCS
                             }
                             break;
 
-                        case ModelType.K_AA_SKELETON:
-                        case ModelType.K_MAGIC_SKELETON:
+                        case ModelType.AASkeleton:
+                        case ModelType.MagicSkeleton:
 
                             texIndex = cbTextureSelect.SelectedIndex;
 
                             if (texIndex > 0)
                             {
-                                tmpTEX = bSkeleton.textures[texIndex];
-                                bSkeleton.textures[texIndex] = bSkeleton.textures[texIndex - 1];
-                                bSkeleton.textures[texIndex - 1] = tmpTEX;
+                                tmpTEX = skeleton.Textures[texIndex];
+                                skeleton.Textures[texIndex] = skeleton.Textures[texIndex - 1];
+                                skeleton.Textures[texIndex - 1] = tmpTEX;
 
-                                tmpTexID = bSkeleton.TexIDS[texIndex];
-                                bSkeleton.TexIDS[texIndex] = bSkeleton.TexIDS[texIndex - 1];
-                                bSkeleton.TexIDS[texIndex - 1] = tmpTexID;
+                                tmpTexID = skeleton.TextureIDs[texIndex];
+                                skeleton.TextureIDs[texIndex] = skeleton.TextureIDs[texIndex - 1];
+                                skeleton.TextureIDs[texIndex - 1] = tmpTexID;
 
                                 SetTextureEditorFields();
                                 cbTextureSelect.SelectedIndex = texIndex - 1;
@@ -5126,17 +5247,17 @@ namespace KimeraCS
 
         private void NudFrameDataPart_ValueChanged(object sender, EventArgs e)
         {
-            switch (Math.Abs(nUDFrameDataPart.Value % 3))
+            switch ((AnimationChange)Math.Abs(nUDFrameDataPart.Value % 3))
             {
-                case K_FRAME_BONE_ROTATION:
+                case AnimationChange.BoneRotation:
                     gbFrameDataPartOptions.Text = "Bone rotation";
                     break;
 
-                case K_FRAME_ROOT_ROTATION:
+                case AnimationChange.RootRotation:
                     gbFrameDataPartOptions.Text = "Root rotation";
                     break;
 
-                case K_FRAME_ROOT_TRANSLATION:
+                case AnimationChange.RootTranslation:
                     gbFrameDataPartOptions.Text = "Root translation";
                     break;
             }
@@ -5146,473 +5267,526 @@ namespace KimeraCS
 
         private void NudXAnimationFramePart_ValueChanged(object sender, EventArgs e)
         {
-
             if (loadingAnimationQ) return;
-
-            FieldRotation tmpfRotation;
-            FieldFrame tmpfFrame;
-            BattleFrameBone tmpbFrameBone;
-            BattleFrame tmpbFrame;
-
-            int frameIndex, nFrames, fi;
-            float val, diff;
-
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            val = (float)nUDXAnimationFramePart.Value;
-
-            frameIndex = iCurrentFrameScroll;
-            nFrames = frameIndex;
-
-            //  Must propagate the changes to the following frames?
-            if (chkPropagateChangesForward.Checked) nFrames = tbCurrentFrameScroll.Maximum;
-
-            switch (Math.Abs(nUDFrameDataPart.Value % 3))
+            if (skeleton != null)
             {
-                case K_FRAME_BONE_ROTATION:
-                    if (SelectedBone > -1)
-                    {
+                UnifiedBoneRotation tmpRotation;
+                UnifiedFrame tmpFrame;
+
+                int frameIndex, FrameCount, fi;
+                float val, diff;
+
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
+
+                val = (float)nUDXAnimationFramePart.Value;
+
+                frameIndex = iCurrentFrameScroll;
+                FrameCount = frameIndex;
+
+                //  Must propagate the changes to the following frames?
+                if (chkPropagateChangesForward.Checked) FrameCount = tbCurrentFrameScroll.Maximum;
+
+                switch ((AnimationChange)Math.Abs(nUDFrameDataPart.Value % 3))
+                {
+                    case AnimationChange.BoneRotation:
+                        if (SelectedBone > -1)
+                        {
+                            switch (modelType)
+                            {
+                                case ModelType.HRCSkeleton:
+                                    if (animation != null)
+                                    {
+                                        diff = val - animation.Frames[frameIndex].BoneRotations[SelectedBone].Alpha;
+
+                                        for (fi = frameIndex; fi <= FrameCount; fi++)
+                                        {
+                                            tmpRotation = animation.Frames[fi].BoneRotations[SelectedBone];
+                                            tmpRotation.Alpha += diff;
+                                            animation.Frames[fi].BoneRotations[SelectedBone] = tmpRotation;
+                                        }
+                                    }
+                                    break;
+
+                                case ModelType.AASkeleton:
+                                case ModelType.MagicSkeleton:
+                                    if (animationPack != null)
+                                    {
+                                        if (SelectedBone == skeleton.BoneCount)
+                                        {
+                                            diff = val - animationPack.WeaponAnimations[ianimIndex].Frames[frameIndex].BoneRotations[0].Alpha;
+
+                                            for (fi = frameIndex; fi <= FrameCount; fi++)
+                                            {
+                                                tmpRotation = animationPack.WeaponAnimations[ianimIndex].Frames[fi].BoneRotations[0];
+                                                tmpRotation.Alpha += diff;
+                                                animationPack.WeaponAnimations[ianimIndex].Frames[fi].BoneRotations[0] = tmpRotation;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            diff = val - animationPack.SkeletonAnimations[ianimIndex].Frames[frameIndex].BoneRotations[SelectedBone + 1].Alpha;
+
+                                            for (fi = frameIndex; fi <= FrameCount; fi++)
+                                            {
+                                                tmpRotation = animationPack.SkeletonAnimations[ianimIndex].Frames[fi].BoneRotations[SelectedBone + 1];
+                                                tmpRotation.Alpha += diff;
+                                                animationPack.SkeletonAnimations[ianimIndex].Frames[fi].BoneRotations[SelectedBone + 1] = tmpRotation;
+                                            }
+                                        }
+                                    }
+                                    break;
+                            }
+                        }
+                        break;
+
+                    case AnimationChange.RootRotation:
                         switch (modelType)
                         {
-                            case ModelType.K_HRC_SKELETON:
-                                diff = val - fAnimation.frames[frameIndex].rotations[SelectedBone].alpha;
-
-                                for (fi = frameIndex; fi <= nFrames; fi++)
+                            case ModelType.HRCSkeleton:
+                                if (animation != null)
                                 {
-                                    tmpfRotation = fAnimation.frames[fi].rotations[SelectedBone];
-                                    tmpfRotation.alpha += diff;
-                                    fAnimation.frames[fi].rotations[SelectedBone] = tmpfRotation;
+                                    diff = val - animation.Frames[frameIndex].RootRotation.Alpha;
+
+                                    for (fi = frameIndex; fi <= FrameCount; fi++)
+                                    {
+                                        tmpFrame = animation.Frames[fi];
+                                        tmpFrame.RootRotation.Alpha += diff;
+                                        animation.Frames[fi] = tmpFrame;
+                                    }
                                 }
                                 break;
 
-                            case ModelType.K_AA_SKELETON:
-                            case ModelType.K_MAGIC_SKELETON:
-                                if (SelectedBone == bSkeleton.nBones)
+                            case ModelType.AASkeleton:
+                            case ModelType.MagicSkeleton:
+                                if (animationPack != null)
                                 {
-                                    diff = val - bAnimationsPack.WeaponAnimations[ianimIndex].frames[frameIndex].bones[0].alpha;
+                                    diff = val - animationPack.SkeletonAnimations[ianimIndex].Frames[frameIndex].BoneRotations[0].Alpha;
 
-                                    for (fi = frameIndex; fi <= nFrames; fi++)
+                                    for (fi = frameIndex; fi <= FrameCount; fi++)
                                     {
-                                        tmpbFrameBone = bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi].bones[0];
-                                        tmpbFrameBone.alpha += diff;
-                                        bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi].bones[0] = tmpbFrameBone;
-                                    }
-                                }
-                                else
-                                {
-                                    diff = val - bAnimationsPack.SkeletonAnimations[ianimIndex].frames[frameIndex].bones[SelectedBone + 1].alpha;
-
-                                    for (fi = frameIndex; fi <= nFrames; fi++)
-                                    {
-                                        tmpbFrameBone = bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi].bones[SelectedBone + 1];
-                                        tmpbFrameBone.alpha += diff;
-                                        bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi].bones[SelectedBone + 1] = tmpbFrameBone;
+                                        tmpRotation = animationPack.SkeletonAnimations[ianimIndex].Frames[fi].BoneRotations[0];
+                                        tmpRotation.Alpha += diff;
+                                        animationPack.SkeletonAnimations[ianimIndex].Frames[fi].BoneRotations[0] = tmpRotation;
                                     }
                                 }
                                 break;
                         }
-                    }
-                    break;
+                        break;
 
-                case K_FRAME_ROOT_ROTATION:
-                    switch (modelType)
-                    {
-                        case ModelType.K_HRC_SKELETON:
-                            diff = val - fAnimation.frames[frameIndex].rootRotationAlpha;
-
-                            for (fi = frameIndex; fi <= nFrames; fi++)
-                            {
-                                tmpfFrame = fAnimation.frames[fi];
-                                tmpfFrame.rootRotationAlpha += diff;
-                                fAnimation.frames[fi] = tmpfFrame;
-                            }
-                            break;
-
-                        case ModelType.K_AA_SKELETON:
-                        case ModelType.K_MAGIC_SKELETON:
-                            diff = val - bAnimationsPack.SkeletonAnimations[ianimIndex].frames[frameIndex].bones[0].alpha;
-
-                            for (fi = frameIndex; fi <= nFrames; fi++)
-                            {
-                                tmpbFrameBone = bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi].bones[0];
-                                tmpbFrameBone.alpha += diff;
-                                bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi].bones[0] = tmpbFrameBone;
-                            }
-                            break;
-                    }
-                    break;
-
-                case K_FRAME_ROOT_TRANSLATION:
-                    switch (modelType)
-                    {
-                        case ModelType.K_HRC_SKELETON:
-                            diff = val - fAnimation.frames[frameIndex].rootTranslationX;
-
-                            for (fi = frameIndex; fi <= nFrames; fi++)
-                            {
-                                tmpfFrame = fAnimation.frames[fi];
-                                tmpfFrame.rootTranslationX += diff;
-                                fAnimation.frames[fi] = tmpfFrame;
-                            }
-                            break;
-
-                        case ModelType.K_AA_SKELETON:
-                        case ModelType.K_MAGIC_SKELETON:
-                            if (SelectedBone == bSkeleton.nBones)
-                            {
-                                diff = val - bAnimationsPack.WeaponAnimations[ianimIndex].frames[frameIndex].startX;
-
-                                for (fi = frameIndex; fi <= nFrames; fi++) {
-                                    tmpbFrame = bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi];
-                                    tmpbFrame.startX += (int)diff;
-                                    bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi] = tmpbFrame;
-                                }
-                            }
-                            else
-                            {
-                                diff = val - bAnimationsPack.SkeletonAnimations[ianimIndex].frames[frameIndex].startX;
-
-                                for (fi = frameIndex; fi <= nFrames; fi++)
+                    case AnimationChange.RootTranslation:
+                        switch (modelType)
+                        {
+                            case ModelType.HRCSkeleton:
+                                if (animation != null)
                                 {
-                                    tmpbFrame = bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi];
-                                    tmpbFrame.startX += (int)diff;
-                                    bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi] = tmpbFrame;
-                                }
+                                    diff = val - animation.Frames[frameIndex].RootTranslation.X;
 
-                                if (bSkeleton.wpModels.Count > 0)
-                                {
-                                    for (fi = frameIndex; fi <= nFrames; fi++)
+                                    for (fi = frameIndex; fi <= FrameCount; fi++)
                                     {
-                                        tmpbFrame = bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi];
-                                        tmpbFrame.startX += (int)diff;
-                                        bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi] = tmpbFrame;
+                                        tmpFrame = animation.Frames[fi];
+                                        tmpFrame.RootTranslation.X += diff;
+                                        animation.Frames[fi] = tmpFrame;
                                     }
                                 }
-                            }
-                            break;
+                                break;
 
-                    }
-                    break;
+                            case ModelType.AASkeleton:
+                            case ModelType.MagicSkeleton:
+                                if (animationPack != null)
+                                {
+                                    if (SelectedBone == skeleton.BoneCount)
+                                    {
+                                        diff = val - animationPack.WeaponAnimations[ianimIndex].Frames[frameIndex].RootTranslation.X;
+
+                                        for (fi = frameIndex; fi <= FrameCount; fi++)
+                                        {
+                                            tmpFrame = animationPack.WeaponAnimations[ianimIndex].Frames[fi];
+                                            tmpFrame.RootTranslation.X += (int)diff;
+                                            animationPack.WeaponAnimations[ianimIndex].Frames[fi] = tmpFrame;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        diff = val - animationPack.SkeletonAnimations[ianimIndex].Frames[frameIndex].RootTranslation.X;
+
+                                        for (fi = frameIndex; fi <= FrameCount; fi++)
+                                        {
+                                            tmpFrame = animationPack.SkeletonAnimations[ianimIndex].Frames[fi];
+                                            tmpFrame.RootTranslation.X += (int)diff;
+                                            animationPack.SkeletonAnimations[ianimIndex].Frames[fi] = tmpFrame;
+                                        }
+
+                                        if (skeleton.WeaponCount > 0)
+                                        {
+                                            for (fi = frameIndex; fi <= FrameCount; fi++)
+                                            {
+                                                tmpFrame = animationPack.WeaponAnimations[ianimIndex].Frames[fi];
+                                                tmpFrame.RootTranslation.X += (int)diff;
+                                                animationPack.WeaponAnimations[ianimIndex].Frames[fi] = tmpFrame;
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+
+                        }
+                        break;
+                }
+
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void NudYAnimationFramePart_ValueChanged(object sender, EventArgs e)
         {
             if (loadingAnimationQ) return;
-
-            FieldRotation tmpfRotation;
-            FieldFrame tmpfFrame;
-            BattleFrameBone tmpbFrameBone;
-            BattleFrame tmpbFrame;
-
-            int frameIndex, nFrames, fi;
-            float val, diff;
-
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            val = (float)nUDYAnimationFramePart.Value;
-
-            frameIndex = iCurrentFrameScroll;
-            nFrames = frameIndex;
-
-            //  Must propagate the changes to the following frames?
-            if (chkPropagateChangesForward.Checked) nFrames = tbCurrentFrameScroll.Maximum;
-
-            switch (Math.Abs(nUDFrameDataPart.Value % 3))
+            if (skeleton != null)
             {
-                case K_FRAME_BONE_ROTATION:
-                    if (SelectedBone > -1)
-                    {
+                UnifiedBoneRotation tmpRotation;
+                UnifiedFrame tmpFrame;
+
+                int frameIndex, FrameCount, fi;
+                float val, diff;
+
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
+
+                val = (float)nUDYAnimationFramePart.Value;
+
+                frameIndex = iCurrentFrameScroll;
+                FrameCount = frameIndex;
+
+                //  Must propagate the changes to the following frames?
+                if (chkPropagateChangesForward.Checked) FrameCount = tbCurrentFrameScroll.Maximum;
+
+                switch ((AnimationChange)Math.Abs(nUDFrameDataPart.Value % 3))
+                {
+                    case AnimationChange.BoneRotation:
+                        if (SelectedBone > -1)
+                        {
+                            switch (modelType)
+                            {
+                                case ModelType.HRCSkeleton:
+                                    if (animation != null)
+                                    {
+                                        diff = val - animation.Frames[frameIndex].BoneRotations[SelectedBone].Beta;
+
+                                        for (fi = frameIndex; fi <= FrameCount; fi++)
+                                        {
+                                            tmpRotation = animation.Frames[fi].BoneRotations[SelectedBone];
+                                            tmpRotation.Beta += diff;
+                                            animation.Frames[fi].BoneRotations[SelectedBone] = tmpRotation;
+                                        }
+                                    }
+                                    break;
+
+                                case ModelType.AASkeleton:
+                                case ModelType.MagicSkeleton:
+                                    if (animationPack != null)
+                                    {
+                                        if (SelectedBone == skeleton.BoneCount)
+                                        {
+                                            diff = val - animationPack.WeaponAnimations[ianimIndex].Frames[frameIndex].BoneRotations[0].Beta;
+
+                                            for (fi = frameIndex; fi <= FrameCount; fi++)
+                                            {
+                                                tmpRotation = animationPack.WeaponAnimations[ianimIndex].Frames[fi].BoneRotations[0];
+                                                tmpRotation.Beta += diff;
+                                                animationPack.WeaponAnimations[ianimIndex].Frames[fi].BoneRotations[0] = tmpRotation;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            diff = val - animationPack.SkeletonAnimations[ianimIndex].Frames[frameIndex].BoneRotations[SelectedBone + 1].Beta;
+
+                                            for (fi = frameIndex; fi <= FrameCount; fi++)
+                                            {
+                                                tmpRotation = animationPack.SkeletonAnimations[ianimIndex].Frames[fi].BoneRotations[SelectedBone + 1];
+                                                tmpRotation.Beta += diff;
+                                                animationPack.SkeletonAnimations[ianimIndex].Frames[fi].BoneRotations[SelectedBone + 1] = tmpRotation;
+                                            }
+                                        }
+                                    }
+                                    break;
+                            }
+                        }
+                        break;
+
+                    case AnimationChange.RootRotation:
                         switch (modelType)
                         {
-                            case ModelType.K_HRC_SKELETON:
-                                diff = val - fAnimation.frames[frameIndex].rotations[SelectedBone].beta;
-
-                                for (fi = frameIndex; fi <= nFrames; fi++)
+                            case ModelType.HRCSkeleton:
+                                if (animation != null)
                                 {
-                                    tmpfRotation = fAnimation.frames[fi].rotations[SelectedBone];
-                                    tmpfRotation.beta += diff;
-                                    fAnimation.frames[fi].rotations[SelectedBone] = tmpfRotation;
+                                    diff = val - animation.Frames[frameIndex].RootRotation.Beta;
+
+                                    for (fi = frameIndex; fi <= FrameCount; fi++)
+                                    {
+                                        tmpFrame = animation.Frames[fi];
+                                        tmpFrame.RootRotation.Beta += diff;
+                                        animation.Frames[fi] = tmpFrame;
+                                    }
                                 }
                                 break;
 
-                            case ModelType.K_AA_SKELETON:
-                            case ModelType.K_MAGIC_SKELETON:
-                                if (SelectedBone == bSkeleton.nBones)
+                            case ModelType.AASkeleton:
+                            case ModelType.MagicSkeleton:
+                                if (animationPack != null)
                                 {
-                                    diff = val - bAnimationsPack.WeaponAnimations[ianimIndex].frames[frameIndex].bones[0].beta;
+                                    diff = val - animationPack.SkeletonAnimations[ianimIndex].Frames[frameIndex].BoneRotations[0].Beta;
 
-                                    for (fi = frameIndex; fi <= nFrames; fi++)
+                                    for (fi = frameIndex; fi <= FrameCount; fi++)
                                     {
-                                        tmpbFrameBone = bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi].bones[0];
-                                        tmpbFrameBone.beta += diff;
-                                        bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi].bones[0] = tmpbFrameBone;
-                                    }
-                                }
-                                else
-                                {
-                                    diff = val - bAnimationsPack.SkeletonAnimations[ianimIndex].frames[frameIndex].bones[SelectedBone + 1].beta;
-
-                                    for (fi = frameIndex; fi <= nFrames; fi++)
-                                    {
-                                        tmpbFrameBone = bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi].bones[SelectedBone + 1];
-                                        tmpbFrameBone.beta += diff;
-                                        bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi].bones[SelectedBone + 1] = tmpbFrameBone;
+                                        tmpRotation = animationPack.SkeletonAnimations[ianimIndex].Frames[fi].BoneRotations[0];
+                                        tmpRotation.Beta += diff;
+                                        animationPack.SkeletonAnimations[ianimIndex].Frames[fi].BoneRotations[0] = tmpRotation;
                                     }
                                 }
                                 break;
                         }
-                    }
-                    break;
+                        break;
 
-                case K_FRAME_ROOT_ROTATION:
-                    switch (modelType)
-                    {
-                        case ModelType.K_HRC_SKELETON:
-                            diff = val - fAnimation.frames[frameIndex].rootRotationBeta;
-
-                            for (fi = frameIndex; fi <= nFrames; fi++)
-                            {
-                                tmpfFrame = fAnimation.frames[fi];
-                                tmpfFrame.rootRotationBeta += diff;
-                                fAnimation.frames[fi] = tmpfFrame;
-                            }
-                            break;
-
-                        case ModelType.K_AA_SKELETON:
-                        case ModelType.K_MAGIC_SKELETON:
-                            diff = val - bAnimationsPack.SkeletonAnimations[ianimIndex].frames[frameIndex].bones[0].beta;
-
-                            for (fi = frameIndex; fi <= nFrames; fi++)
-                            {
-                                tmpbFrameBone = bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi].bones[0];
-                                tmpbFrameBone.beta += diff;
-                                bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi].bones[0] = tmpbFrameBone;
-                            }
-                            break;
-                    }
-                    break;
-
-                case K_FRAME_ROOT_TRANSLATION:
-                    switch (modelType)
-                    {
-                        case ModelType.K_HRC_SKELETON:
-                            diff = val - fAnimation.frames[frameIndex].rootTranslationY;
-
-                            for (fi = frameIndex; fi <= nFrames; fi++)
-                            {
-                                tmpfFrame = fAnimation.frames[fi];
-                                tmpfFrame.rootTranslationY += diff;
-                                fAnimation.frames[fi] = tmpfFrame;
-                            }
-                            break;
-
-                        case ModelType.K_AA_SKELETON:
-                        case ModelType.K_MAGIC_SKELETON:
-                            if (SelectedBone == bSkeleton.nBones)
-                            {
-                                diff = val - bAnimationsPack.WeaponAnimations[ianimIndex].frames[frameIndex].startY;
-
-                                for (fi = frameIndex; fi <= nFrames; fi++)
+                    case AnimationChange.RootTranslation:
+                        switch (modelType)
+                        {
+                            case ModelType.HRCSkeleton:
+                                if (animation != null)
                                 {
-                                    tmpbFrame = bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi];
-                                    tmpbFrame.startY += (int)diff;
-                                    bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi] = tmpbFrame;
-                                }
-                            }
-                            else
-                            {
-                                diff = val - bAnimationsPack.SkeletonAnimations[ianimIndex].frames[frameIndex].startY;
+                                    diff = val - animation.Frames[frameIndex].RootTranslation.Y;
 
-                                for (fi = frameIndex; fi <= nFrames; fi++)
-                                {
-                                    tmpbFrame = bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi];
-                                    tmpbFrame.startY += (int)diff;
-                                    bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi] = tmpbFrame;
-                                }
-
-                                if (bSkeleton.wpModels.Count > 0)
-                                {
-                                    for (fi = frameIndex; fi <= nFrames; fi++)
+                                    for (fi = frameIndex; fi <= FrameCount; fi++)
                                     {
-                                        tmpbFrame = bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi];
-                                        tmpbFrame.startY += (int)diff;
-                                        bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi] = tmpbFrame;
+                                        tmpFrame = animation.Frames[fi];
+                                        tmpFrame.RootTranslation.Y += diff;
+                                        animation.Frames[fi] = tmpFrame;
                                     }
                                 }
-                            }
-                            break;
+                                break;
 
-                    }
-                    break;
+                            case ModelType.AASkeleton:
+                            case ModelType.MagicSkeleton:
+                                if (animationPack != null)
+                                {
+                                    if (SelectedBone == skeleton.BoneCount)
+                                    {
+                                        diff = val - animationPack.WeaponAnimations[ianimIndex].Frames[frameIndex].RootTranslation.Y;
+
+                                        for (fi = frameIndex; fi <= FrameCount; fi++)
+                                        {
+                                            tmpFrame = animationPack.WeaponAnimations[ianimIndex].Frames[fi];
+                                            tmpFrame.RootTranslation.Y += (int)diff;
+                                            animationPack.WeaponAnimations[ianimIndex].Frames[fi] = tmpFrame;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        diff = val - animationPack.SkeletonAnimations[ianimIndex].Frames[frameIndex].RootTranslation.Y;
+
+                                        for (fi = frameIndex; fi <= FrameCount; fi++)
+                                        {
+                                            tmpFrame = animationPack.SkeletonAnimations[ianimIndex].Frames[fi];
+                                            tmpFrame.RootTranslation.Y += (int)diff;
+                                            animationPack.SkeletonAnimations[ianimIndex].Frames[fi] = tmpFrame;
+                                        }
+
+                                        if (skeleton.WeaponCount > 0)
+                                        {
+                                            for (fi = frameIndex; fi <= FrameCount; fi++)
+                                            {
+                                                tmpFrame = animationPack.WeaponAnimations[ianimIndex].Frames[fi];
+                                                tmpFrame.RootTranslation.Y += (int)diff;
+                                                animationPack.WeaponAnimations[ianimIndex].Frames[fi] = tmpFrame;
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+
+                        }
+                        break;
+                }
+
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void NudZAnimationFramePart_ValueChanged(object sender, EventArgs e)
         {
             if (loadingAnimationQ) return;
 
-            FieldRotation tmpfRotation;
-            FieldFrame tmpfFrame;
-            BattleFrameBone tmpbFrameBone;
-            BattleFrame tmpbFrame;
-
-            int frameIndex, nFrames, fi;
-            float val, diff;
-
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            val = (float)nUDZAnimationFramePart.Value;
-
-            frameIndex = iCurrentFrameScroll;
-            nFrames = frameIndex;
-
-            //  Must propagate the changes to the following frames?
-            if (chkPropagateChangesForward.Checked) nFrames = tbCurrentFrameScroll.Maximum;
-
-            switch (Math.Abs(nUDFrameDataPart.Value % 3))
+            if (skeleton != null)
             {
-                case K_FRAME_BONE_ROTATION:
-                    if (SelectedBone > -1)
-                    {
+                UnifiedBoneRotation tmpRotation;
+                UnifiedFrame tmpFrame;
+
+                int frameIndex, FrameCount, fi;
+                float val, diff;
+
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
+
+                val = (float)nUDZAnimationFramePart.Value;
+
+                frameIndex = iCurrentFrameScroll;
+                FrameCount = frameIndex;
+
+                //  Must propagate the changes to the following frames?
+                if (chkPropagateChangesForward.Checked) FrameCount = tbCurrentFrameScroll.Maximum;
+
+                switch ((AnimationChange)Math.Abs(nUDFrameDataPart.Value % 3))
+                {
+                    case AnimationChange.BoneRotation:
+                        if (SelectedBone > -1)
+                        {
+                            switch (modelType)
+                            {
+                                case ModelType.HRCSkeleton:
+                                    if (animation != null)
+                                    {
+                                        diff = val - animation.Frames[frameIndex].BoneRotations[SelectedBone].Gamma;
+
+                                        for (fi = frameIndex; fi <= FrameCount; fi++)
+                                        {
+                                            tmpRotation = animation.Frames[fi].BoneRotations[SelectedBone];
+                                            tmpRotation.Gamma += diff;
+                                            animation.Frames[fi].BoneRotations[SelectedBone] = tmpRotation;
+                                        }
+                                    }
+                                    break;
+
+                                case ModelType.AASkeleton:
+                                case ModelType.MagicSkeleton:
+
+                                    if (animationPack != null)
+                                    {
+                                        if (SelectedBone == skeleton.BoneCount)
+                                        {
+                                            diff = val - animationPack.WeaponAnimations[ianimIndex].Frames[frameIndex].BoneRotations[0].Gamma;
+
+                                            for (fi = frameIndex; fi <= FrameCount; fi++)
+                                            {
+                                                tmpRotation = animationPack.WeaponAnimations[ianimIndex].Frames[fi].BoneRotations[0];
+                                                tmpRotation.Gamma += diff;
+                                                animationPack.WeaponAnimations[ianimIndex].Frames[fi].BoneRotations[0] = tmpRotation;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            diff = val - animationPack.SkeletonAnimations[ianimIndex].Frames[frameIndex].BoneRotations[SelectedBone + 1].Gamma;
+
+                                            for (fi = frameIndex; fi <= FrameCount; fi++)
+                                            {
+                                                tmpRotation = animationPack.SkeletonAnimations[ianimIndex].Frames[fi].BoneRotations[SelectedBone + 1];
+                                                tmpRotation.Gamma += diff;
+                                                animationPack.SkeletonAnimations[ianimIndex].Frames[fi].BoneRotations[SelectedBone + 1] = tmpRotation;
+                                            }
+                                        }
+                                    }
+                                    break;
+                            }
+                        }
+                        break;
+
+                    case AnimationChange.RootRotation:
                         switch (modelType)
                         {
-                            case ModelType.K_HRC_SKELETON:
-                                diff = val - fAnimation.frames[frameIndex].rotations[SelectedBone].gamma;
-
-                                for (fi = frameIndex; fi <= nFrames; fi++)
+                            case ModelType.HRCSkeleton:
+                                if (animation != null)
                                 {
-                                    tmpfRotation = fAnimation.frames[fi].rotations[SelectedBone];
-                                    tmpfRotation.gamma += diff;
-                                    fAnimation.frames[fi].rotations[SelectedBone] = tmpfRotation;
+                                    diff = val - animation.Frames[frameIndex].RootRotation.Gamma;
+
+                                    for (fi = frameIndex; fi <= FrameCount; fi++)
+                                    {
+                                        tmpFrame = animation.Frames[fi];
+                                        tmpFrame.RootRotation.Gamma += diff;
+                                        animation.Frames[fi] = tmpFrame;
+                                    }
                                 }
                                 break;
 
-                            case ModelType.K_AA_SKELETON:
-                            case ModelType.K_MAGIC_SKELETON:
-
-                                if (SelectedBone == bSkeleton.nBones)
+                            case ModelType.AASkeleton:
+                            case ModelType.MagicSkeleton:
+                                if (animationPack != null)
                                 {
-                                    diff = val - bAnimationsPack.WeaponAnimations[ianimIndex].frames[frameIndex].bones[0].gamma;
+                                    diff = val - animationPack.SkeletonAnimations[ianimIndex].Frames[frameIndex].BoneRotations[0].Gamma;
 
-                                    for (fi = frameIndex; fi <= nFrames; fi++)
+                                    for (fi = frameIndex; fi <= FrameCount; fi++)
                                     {
-                                        tmpbFrameBone = bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi].bones[0];
-                                        tmpbFrameBone.gamma += diff;
-                                        bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi].bones[0] = tmpbFrameBone;
-                                    }
-                                }
-                                else
-                                {
-                                    diff = val - bAnimationsPack.SkeletonAnimations[ianimIndex].frames[frameIndex].bones[SelectedBone + 1].gamma;
-
-                                    for (fi = frameIndex; fi <= nFrames; fi++)
-                                    {
-                                        tmpbFrameBone = bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi].bones[SelectedBone + 1];
-                                        tmpbFrameBone.gamma += diff;
-                                        bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi].bones[SelectedBone + 1] = tmpbFrameBone;
+                                        tmpRotation = animationPack.SkeletonAnimations[ianimIndex].Frames[fi].BoneRotations[0];
+                                        tmpRotation.Gamma += diff;
+                                        animationPack.SkeletonAnimations[ianimIndex].Frames[fi].BoneRotations[0] = tmpRotation;
                                     }
                                 }
                                 break;
                         }
-                    }
-                    break;
+                        break;
 
-                case K_FRAME_ROOT_ROTATION:
-                    switch (modelType)
-                    {
-                        case ModelType.K_HRC_SKELETON:
-                            diff = val - fAnimation.frames[frameIndex].rootRotationGamma;
-
-                            for (fi = frameIndex; fi <= nFrames; fi++)
-                            {
-                                tmpfFrame = fAnimation.frames[fi];
-                                tmpfFrame.rootRotationGamma += diff;
-                                fAnimation.frames[fi] = tmpfFrame;
-                            }
-                            break;
-
-                        case ModelType.K_AA_SKELETON:
-                        case ModelType.K_MAGIC_SKELETON:
-
-                            diff = val - bAnimationsPack.SkeletonAnimations[ianimIndex].frames[frameIndex].bones[0].gamma;
-
-                            for (fi = frameIndex; fi <= nFrames; fi++)
-                            {
-                                tmpbFrameBone = bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi].bones[0];
-                                tmpbFrameBone.gamma += diff;
-                                bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi].bones[0] = tmpbFrameBone;
-                            }
-                            break;
-                    }
-                    break;
-
-                case K_FRAME_ROOT_TRANSLATION:
-                    switch (modelType)
-                    {
-                        case ModelType.K_HRC_SKELETON:
-                            diff = val - fAnimation.frames[frameIndex].rootTranslationZ;
-
-                            for (fi = frameIndex; fi <= nFrames; fi++)
-                            {
-                                tmpfFrame = fAnimation.frames[fi];
-                                tmpfFrame.rootTranslationZ += diff;
-                                fAnimation.frames[fi] = tmpfFrame;
-                            }
-                            break;
-
-                        case ModelType.K_AA_SKELETON:
-                        case ModelType.K_MAGIC_SKELETON:
-
-                            if (SelectedBone == bSkeleton.nBones)
-                            {
-                                diff = val - bAnimationsPack.WeaponAnimations[ianimIndex].frames[frameIndex].startZ;
-
-                                for (fi = frameIndex; fi <= nFrames; fi++)
+                    case AnimationChange.RootTranslation:
+                        switch (modelType)
+                        {
+                            case ModelType.HRCSkeleton:
+                                if (animation != null)
                                 {
-                                    tmpbFrame = bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi];
-                                    tmpbFrame.startZ += (int)diff;
-                                    bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi] = tmpbFrame;
-                                }
-                            }
-                            else
-                            {
-                                diff = val - bAnimationsPack.SkeletonAnimations[ianimIndex].frames[frameIndex].startZ;
+                                    diff = val - animation.Frames[frameIndex].RootTranslation.Z;
 
-                                for (fi = frameIndex; fi <= nFrames; fi++)
-                                {
-                                    tmpbFrame = bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi];
-                                    tmpbFrame.startZ += (int)diff;
-                                    bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi] = tmpbFrame;
-                                }
-
-                                if (bSkeleton.wpModels.Count > 0)
-                                {
-                                    for (fi = frameIndex; fi <= nFrames; fi++)
+                                    for (fi = frameIndex; fi <= FrameCount; fi++)
                                     {
-                                        tmpbFrame = bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi];
-                                        tmpbFrame.startZ += (int)diff;
-                                        bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi] = tmpbFrame;
+                                        tmpFrame = animation.Frames[fi];
+                                        tmpFrame.RootTranslation.Z += diff;
+                                        animation.Frames[fi] = tmpFrame;
                                     }
                                 }
-                            }
-                            break;
+                                break;
 
-                    }
-                    break;
+                            case ModelType.AASkeleton:
+                            case ModelType.MagicSkeleton:
+                                if (animationPack != null)
+                                {
+                                    if (SelectedBone == skeleton.BoneCount)
+                                    {
+                                        diff = val - animationPack.WeaponAnimations[ianimIndex].Frames[frameIndex].RootTranslation.Z;
+
+                                        for (fi = frameIndex; fi <= FrameCount; fi++)
+                                        {
+                                            tmpFrame = animationPack.WeaponAnimations[ianimIndex].Frames[fi];
+                                            tmpFrame.RootTranslation.Z += (int)diff;
+                                            animationPack.WeaponAnimations[ianimIndex].Frames[fi] = tmpFrame;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        diff = val - animationPack.SkeletonAnimations[ianimIndex].Frames[frameIndex].RootTranslation.Z;
+
+                                        for (fi = frameIndex; fi <= FrameCount; fi++)
+                                        {
+                                            tmpFrame = animationPack.SkeletonAnimations[ianimIndex].Frames[fi];
+                                            tmpFrame.RootTranslation.Z += (int)diff;
+                                            animationPack.SkeletonAnimations[ianimIndex].Frames[fi] = tmpFrame;
+                                        }
+
+                                        if (skeleton.WeaponCount > 0)
+                                        {
+                                            for (fi = frameIndex; fi <= FrameCount; fi++)
+                                            {
+                                                tmpFrame = animationPack.WeaponAnimations[ianimIndex].Frames[fi];
+                                                tmpFrame.RootTranslation.Z += (int)diff;
+                                                animationPack.WeaponAnimations[ianimIndex].Frames[fi] = tmpFrame;
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+
+                        }
+                        break;
+                }
+
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void BtnRemoveFrame_Click(object sender, EventArgs e)
@@ -5621,15 +5795,15 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case ModelType.K_HRC_SKELETON:
-                    if (fAnimation.nFrames > 1)
+                case ModelType.HRCSkeleton:
+                    if (animation != null && animation.FrameCount > 1)
                     {
-                        fAnimation.frames.RemoveAt(tbCurrentFrameScroll.Value);
+                        animation.Frames.RemoveAt(tbCurrentFrameScroll.Value);
 
                         if (tbCurrentFrameScroll.Value == tbCurrentFrameScroll.Maximum)
                             tbCurrentFrameScroll.Value--;
 
-                        fAnimation.nFrames--;
+                        //animation.FrameCount--;
                         tbCurrentFrameScroll.Maximum--;
                     }
                     else
@@ -5638,46 +5812,46 @@ namespace KimeraCS
                     }
                     break;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-
-                    BattleAnimation tmpbAnimation;
-                    float primarySecondaryCountersCoef;
-
-                    tmpbAnimation = bAnimationsPack.SkeletonAnimations[ianimIndex];
-
-                    if (tmpbAnimation.numFramesShort > 1)
+                case ModelType.AASkeleton:
+                case ModelType.MagicSkeleton:
+                    if (skeleton != null && animationPack != null)
                     {
-                        //for (fi = tbCurrentFrameScroll.Value; fi < tmpbAnimation.numFramesShort - 1; fi++)
-                        //    tmpbAnimation.frames[fi] = tmpbAnimation.frames[fi + 1];
-                        tmpbAnimation.frames.RemoveAt(tbCurrentFrameScroll.Value);
+                        UnifiedAnimation tmpAnimation;
+                        float primarySecondaryCountersCoef;
 
-                        primarySecondaryCountersCoef = tmpbAnimation.numFrames / tmpbAnimation.numFramesShort;
-                        tmpbAnimation.numFramesShort--;
-                        tmpbAnimation.numFrames = (int)(tmpbAnimation.numFramesShort * primarySecondaryCountersCoef);
-                        bAnimationsPack.SkeletonAnimations[ianimIndex] = tmpbAnimation;
+                        tmpAnimation = animationPack.SkeletonAnimations[ianimIndex];
 
-                        //  Also don't forget the weapon frames if available
-                        if (ianimIndex < bAnimationsPack.nbWeaponAnims && bSkeleton.wpModels.Count > 0)
+                        if (tmpAnimation.FrameCount > 1)
                         {
-                            tmpbAnimation = bAnimationsPack.WeaponAnimations[ianimIndex];
-                            //for (fi = tbCurrentFrameScroll.Value; fi < tmpbAnimation.numFramesShort - 1; fi++)
-                            //    tmpbAnimation.frames[fi] = tmpbAnimation.frames[fi + 1];
-                            tmpbAnimation.frames.RemoveAt(tbCurrentFrameScroll.Value);
+                            //for (fi = tbCurrentFrameScroll.Value; fi < tmpAnimation.FrameCount - 1; fi++)
+                            //    tmpAnimation.Frames[fi] = tmpAnimation.Frames[fi + 1];
+                            tmpAnimation.Frames.RemoveAt(tbCurrentFrameScroll.Value);
 
-                            tmpbAnimation.numFramesShort = bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort;
-                            tmpbAnimation.numFrames = bAnimationsPack.SkeletonAnimations[ianimIndex].numFrames;
-                            bAnimationsPack.WeaponAnimations[ianimIndex] = tmpbAnimation;
+                            primarySecondaryCountersCoef = tmpAnimation.FrameCount / tmpAnimation.FrameCount;
+                            //tmpAnimation.FrameCount--;
+                            //tmpAnimation.FrameCount = (int)(tmpAnimation.FrameCount * primarySecondaryCountersCoef);
+                            animationPack.SkeletonAnimations[ianimIndex] = tmpAnimation;
+
+                            //  Also don't forget the weapon frames if available
+                            if (ianimIndex < animationPack.WeaponAnimationCount && skeleton.WeaponCount > 0)
+                            {
+                                tmpAnimation = animationPack.WeaponAnimations[ianimIndex];
+                                //for (fi = tbCurrentFrameScroll.Value; fi < tmpAnimation.FrameCount - 1; fi++)
+                                //    tmpAnimation.Frames[fi] = tmpAnimation.Frames[fi + 1];
+                                tmpAnimation.Frames.RemoveAt(tbCurrentFrameScroll.Value);
+
+                                //tmpAnimation.FrameCount = animationPack.SkeletonAnimations[ianimIndex].FrameCount;
+                                animationPack.WeaponAnimations[ianimIndex] = tmpAnimation;
+                            }
+
+                            if (tbCurrentFrameScroll.Value == tbCurrentFrameScroll.Maximum) tbCurrentFrameScroll.Value--;
+                            tbCurrentFrameScroll.Maximum--;
                         }
-
-                        if (tbCurrentFrameScroll.Value == tbCurrentFrameScroll.Maximum) tbCurrentFrameScroll.Value--;
-                        tbCurrentFrameScroll.Maximum--;
+                        else
+                        {
+                            MessageBox.Show("Frame of Battle Animation not removed (the animation needs at least 1 frame).", "Information");
+                        }
                     }
-                    else
-                    {
-                        MessageBox.Show("Frame of Battle Animation not removed (the animation needs at least 1 frame).", "Information");
-                    }
-
                     break;
             }
 
@@ -5690,48 +5864,53 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case ModelType.K_HRC_SKELETON:
-                    fAnimation.nFrames += 1;
+                case ModelType.HRCSkeleton:
+                    if (animation != null)
+                    {
+                        //animation.FrameCount += 1;
 
-                    fAnimation.frames.Insert(tbCurrentFrameScroll.Value,
-                                             CopyfFrame(fAnimation.frames[tbCurrentFrameScroll.Value]));
+                        animation.Frames.Insert(tbCurrentFrameScroll.Value,
+                                                 new UnifiedFrame(animation.Frames[tbCurrentFrameScroll.Value]));
 
-                    tbCurrentFrameScroll.Maximum += 1;
+                        tbCurrentFrameScroll.Maximum += 1;
+                    }
                     break;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-
-                    BattleAnimation tmpbAnimation;
-                    float primarySecondaryCountersCoef;
-
-                    tmpbAnimation = bAnimationsPack.SkeletonAnimations[ianimIndex];
-
-                    //  Numframes1 and NumFrames2 are usually different.
-                    //  Don't know if this is relevant at all, but keep the balance between them just in case
-                    primarySecondaryCountersCoef = tmpbAnimation.numFrames / tmpbAnimation.numFramesShort;
-                    tmpbAnimation.numFramesShort++;
-                    tmpbAnimation.numFrames = (int)(tmpbAnimation.numFramesShort * primarySecondaryCountersCoef);
-
-                    tmpbAnimation.frames.Insert(tbCurrentFrameScroll.Value,
-                                                CopybFrame(bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value]));
-
-                    bAnimationsPack.SkeletonAnimations[ianimIndex] = tmpbAnimation;
-
-                    //  Also don't forget about the weapon frames(where available)
-                    if (ianimIndex < bAnimationsPack.nbWeaponAnims && bSkeleton.wpModels.Count > 0)
+                case ModelType.AASkeleton:
+                case ModelType.MagicSkeleton:
+                    if (skeleton != null && animationPack != null)
                     {
-                        tmpbAnimation = bAnimationsPack.WeaponAnimations[ianimIndex];
-                        tmpbAnimation.numFramesShort = bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort;
-                        tmpbAnimation.numFrames = bAnimationsPack.SkeletonAnimations[ianimIndex].numFrames;
+                        UnifiedAnimation tmpAnimation;
+                        float primarySecondaryCountersCoef;
 
-                        tmpbAnimation.frames.Insert(tbCurrentFrameScroll.Value,
-                                                    CopybFrame(bAnimationsPack.WeaponAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value]));
+                        tmpAnimation = animationPack.SkeletonAnimations[ianimIndex];
 
-                        bAnimationsPack.WeaponAnimations[ianimIndex] = tmpbAnimation;
+                        //  Numframes1 and NumFrames2 are usually different.
+                        //  Don't know if this is relevant at all, but keep the balance between them just in case
+                        primarySecondaryCountersCoef = tmpAnimation.FrameCount / tmpAnimation.FrameCount;
+                        //tmpAnimation.FrameCount++;
+                        //tmpAnimation.FrameCount = (int)(tmpAnimation.FrameCount * primarySecondaryCountersCoef);
+
+                        tmpAnimation.Frames.Insert(tbCurrentFrameScroll.Value,
+                                                    new UnifiedFrame(animationPack.SkeletonAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value]));
+
+                        animationPack.SkeletonAnimations[ianimIndex] = tmpAnimation;
+
+                        //  Also don't forget about the weapon frames(where available)
+                        if (ianimIndex < animationPack.WeaponAnimationCount && skeleton.WeaponCount > 0)
+                        {
+                            tmpAnimation = animationPack.WeaponAnimations[ianimIndex];
+                            //tmpAnimation.FrameCount = animationPack.SkeletonAnimations[ianimIndex].FrameCount;
+                            //tmpAnimation.FrameCount = animationPack.SkeletonAnimations[ianimIndex].FrameCount;
+
+                            tmpAnimation.Frames.Insert(tbCurrentFrameScroll.Value,
+                                                        new UnifiedFrame(animationPack.WeaponAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value]));
+
+                            animationPack.WeaponAnimations[ianimIndex] = tmpAnimation;
+                        }
+
+                        tbCurrentFrameScroll.Maximum++;
                     }
-
-                    tbCurrentFrameScroll.Maximum++;
                     break;
             }
 
@@ -5740,154 +5919,158 @@ namespace KimeraCS
 
         private void BtnInterpolateFrame_Click(object sender, EventArgs e)
         {
-            //int animIndex, fi, currentFrame, nextFrame, nFrames, numInterpolatedFrames, i;
-            int fi, currentFrame, nextFrame, numInterpolatedFrames, i;
-            string numInterpolatedFramesStr;
-            float alpha, primarySecondaryCountersCoef;
-
-
-            // Set interpolated frames value readed from Kimera.cfg or updated previously
-            if (modelType == ModelType.K_HRC_SKELETON)
-                numInterpolatedFramesStr = idefaultFieldInterpFrames.ToString();
-            else
-                numInterpolatedFramesStr = idefaultBattleInterpFrames.ToString();
-
-
-            // Ask for interpolated frames value
-            if (InputBox("Animation interpolation",
-                         "Number of frames to interpolate between each frame:",
-                         ref numInterpolatedFramesStr) == DialogResult.OK)
+            if (skeleton != null)
             {
-                if (!int.TryParse(numInterpolatedFramesStr, out numInterpolatedFrames))
+                //int animIndex, fi, currentFrame, nextFrame, FrameCount, numInterpolatedFrames, i;
+                int fi, currentFrame, nextFrame, numInterpolatedFrames, i;
+                string numInterpolatedFramesStr;
+                float alpha, primarySecondaryCountersCoef;
+
+
+                // Set interpolated frames value readed from Kimera.cfg or updated previously
+                if (modelType == ModelType.HRCSkeleton)
+                    numInterpolatedFramesStr = idefaultFieldInterpFrames.ToString();
+                else
+                    numInterpolatedFramesStr = idefaultBattleInterpFrames.ToString();
+
+
+                // Ask for interpolated frames value
+                if (InputBox("Animation interpolation",
+                             "Number of frames to interpolate between each frame:",
+                             ref numInterpolatedFramesStr) == DialogResult.OK)
                 {
-                    MessageBox.Show("The value entered is not valid.", "Error");
-                    return;
-                }
-            }
-            else return;
-
-
-            // Update interpolated frames value in Kimera.cfg file
-            if (modelType == ModelType.K_HRC_SKELETON)
-            {
-                if (idefaultFieldInterpFrames != numInterpolatedFrames)
-                {
-                    idefaultFieldInterpFrames = numInterpolatedFrames;
-                    WriteCFGFile();
-                }
-            }
-            else
-            {
-                if (idefaultBattleInterpFrames != numInterpolatedFrames)
-                {
-                    idefaultBattleInterpFrames = numInterpolatedFrames;
-                    WriteCFGFile();
-                }
-            }
-
-
-            // Interpolate frames processing
-            currentFrame = tbCurrentFrameScroll.Value;
-            nextFrame = currentFrame + numInterpolatedFrames + 1;
-
-            if (tbCurrentFrameScroll.Value == tbCurrentFrameScroll.Maximum) nextFrame = 0;
-
-            AddStateToBuffer(this);
-
-            switch (modelType)
-            {
-                case ModelType.K_HRC_SKELETON:
-                    //  Create new frames
-                    FieldFrame tmpfFrame = new FieldFrame();
-
-                    fAnimation.nFrames += numInterpolatedFrames;
-                    for (i = 0; i < numInterpolatedFrames; i++) fAnimation.frames.Add(tmpfFrame);
-
-                    // Move the original frames into their new positions
-                    for (fi = fAnimation.nFrames - 1; fi >= currentFrame + numInterpolatedFrames; fi--)
-                        fAnimation.frames[fi] = fAnimation.frames[fi - numInterpolatedFrames];
-
-                    // Interpolate the new frames
-                    for (fi = 1; fi <= numInterpolatedFrames; fi++)
+                    if (!int.TryParse(numInterpolatedFramesStr, out numInterpolatedFrames))
                     {
-                        alpha = (float)fi / (numInterpolatedFrames + 1);
-
-                        GetTwoFieldFramesInterpolation(fSkeleton, fAnimation.frames[currentFrame], fAnimation.frames[nextFrame],
-                                                       alpha, ref tmpfFrame);
-                        fAnimation.frames[currentFrame + fi] = tmpfFrame;
+                        MessageBox.Show("The value entered is not valid.", "Error");
+                        return;
                     }
+                }
+                else return;
 
-                    break;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-
-                    BattleAnimation tmpbAnimation;
-                    BattleFrame tmpbFrame = new BattleFrame();
-
-                    //bAnimationsPack.SkeletonAnimations[ianimIndex]
-                    primarySecondaryCountersCoef = bAnimationsPack.SkeletonAnimations[ianimIndex].numFrames /
-                                                   bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort;
-
-                    tmpbAnimation = bAnimationsPack.SkeletonAnimations[ianimIndex];
-
-                    // Create new frames
-                    tmpbAnimation.numFramesShort += (ushort)numInterpolatedFrames;
-                    tmpbAnimation.numFrames = (int)(tmpbAnimation.numFramesShort * primarySecondaryCountersCoef);
-                    for (i = 0; i < numInterpolatedFrames; i++) tmpbAnimation.frames.Add(tmpbFrame);
-
-                    // Move the original frames into their new positions
-                    for (fi = tmpbAnimation.numFramesShort - 1; fi >= currentFrame + numInterpolatedFrames + 1; fi--)
-                        tmpbAnimation.frames[fi] = tmpbAnimation.frames[fi - numInterpolatedFrames];
-
-                    // Interpolate the new frames
-                    for (fi = 1; fi <= numInterpolatedFrames; fi++)
+                // Update interpolated frames value in Kimera.cfg file
+                if (modelType == ModelType.HRCSkeleton)
+                {
+                    if (idefaultFieldInterpFrames != numInterpolatedFrames)
                     {
-                        alpha = (float)fi / (numInterpolatedFrames + 1);
-
-                        GetTwoBattleFramesInterpolation(bSkeleton, tmpbAnimation.frames[currentFrame], tmpbAnimation.frames[nextFrame],
-                                                       alpha, ref tmpbFrame);
-                        tmpbAnimation.frames[currentFrame + fi] = tmpbFrame;
+                        idefaultFieldInterpFrames = numInterpolatedFrames;
+                        WriteCFGFile();
                     }
-
-                    // Ok, commit the struct
-                    bAnimationsPack.SkeletonAnimations[ianimIndex] = tmpbAnimation;
-
-                    //  Also don't forget about the weapon frames(where available)
-                    if (bSkeleton.wpModels.Count > 0)
+                }
+                else
+                {
+                    if (idefaultBattleInterpFrames != numInterpolatedFrames)
                     {
+                        idefaultBattleInterpFrames = numInterpolatedFrames;
+                        WriteCFGFile();
+                    }
+                }
 
-                        tmpbAnimation = bAnimationsPack.WeaponAnimations[ianimIndex];
 
-                        //  Create new frames
-                        tmpbAnimation.numFramesShort += (ushort)numInterpolatedFrames;
-                        tmpbAnimation.numFrames = (int)(tmpbAnimation.numFramesShort * primarySecondaryCountersCoef);
-                        for (i = 0; i < numInterpolatedFrames; i++) tmpbAnimation.frames.Add(tmpbFrame);
+                // Interpolate frames processing
+                currentFrame = tbCurrentFrameScroll.Value;
+                nextFrame = currentFrame + numInterpolatedFrames + 1;
 
-                        // Move the original frames into their new positions
-                        for (fi = tmpbAnimation.numFramesShort - 1; fi >= currentFrame + numInterpolatedFrames + 1; fi--)
-                            tmpbAnimation.frames[fi] = tmpbAnimation.frames[fi - numInterpolatedFrames];
+                if (tbCurrentFrameScroll.Value == tbCurrentFrameScroll.Maximum) nextFrame = 0;
 
-                        // Interpolate the new frames
-                        for (fi = 1; fi <= numInterpolatedFrames; fi++)
+                AddStateToBuffer(this);
+
+                var tmpFrame = new UnifiedFrame();
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        if (animation != null)
                         {
-                            alpha = (float)fi / (numInterpolatedFrames + 1);
+                            //  Create new frames
+                            //animation.FrameCount += numInterpolatedFrames;
+                            for (i = 0; i < numInterpolatedFrames; i++) animation.Frames.Add(tmpFrame);
 
-                            GetTwoBattleFramesWeaponInterpolation(tmpbAnimation.frames[currentFrame], tmpbAnimation.frames[nextFrame],
-                                                                  alpha, ref tmpbFrame);
-                            tmpbAnimation.frames[currentFrame + fi] = tmpbFrame;
+                            // Move the original frames into their new positions
+                            for (fi = animation.FrameCount - 1; fi >= currentFrame + numInterpolatedFrames; fi--)
+                                animation.Frames[fi] = animation.Frames[fi - numInterpolatedFrames];
+
+                            // Interpolate the new frames
+                            for (fi = 1; fi <= numInterpolatedFrames; fi++)
+                            {
+                                alpha = (float)fi / (numInterpolatedFrames + 1);
+
+                                UnifiedAnimation.GetTwoFramesInterpolation(skeleton, animation.Frames[currentFrame], animation.Frames[nextFrame],
+                                                               alpha, ref tmpFrame);
+                                animation.Frames[currentFrame + fi] = tmpFrame;
+                            }
                         }
+                        break;
 
-                        // Ok, commit the struct
-                        bAnimationsPack.WeaponAnimations[ianimIndex] = tmpbAnimation;
-                    }
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        if (animationPack != null)
+                        {
+                            UnifiedAnimation tmpAnimation;
 
-                    break;
+                            //animationPack.SkeletonAnimations[ianimIndex]
+                            primarySecondaryCountersCoef = animationPack.SkeletonAnimations[ianimIndex].FrameCount /
+                                                           animationPack.SkeletonAnimations[ianimIndex].FrameCount;
+
+                            tmpAnimation = animationPack.SkeletonAnimations[ianimIndex];
+
+                            // Create new frames
+                            //tmpAnimation.FrameCount += (ushort)numInterpolatedFrames;
+                            //tmpAnimation.FrameCount = (int)(tmpAnimation.FrameCount * primarySecondaryCountersCoef);
+                            for (i = 0; i < numInterpolatedFrames; i++) tmpAnimation.Frames.Add(tmpFrame);
+
+                            // Move the original frames into their new positions
+                            for (fi = tmpAnimation.FrameCount - 1; fi >= currentFrame + numInterpolatedFrames + 1; fi--)
+                                tmpAnimation.Frames[fi] = tmpAnimation.Frames[fi - numInterpolatedFrames];
+
+                            // Interpolate the new frames
+                            for (fi = 1; fi <= numInterpolatedFrames; fi++)
+                            {
+                                alpha = (float)fi / (numInterpolatedFrames + 1);
+
+                                UnifiedAnimation.GetTwoFramesInterpolation(skeleton, tmpAnimation.Frames[currentFrame], tmpAnimation.Frames[nextFrame],
+                                                               alpha, ref tmpFrame);
+                                tmpAnimation.Frames[currentFrame + fi] = tmpFrame;
+                            }
+
+                            // Ok, commit the struct
+                            animationPack.SkeletonAnimations[ianimIndex] = tmpAnimation;
+
+                            //  Also don't forget about the weapon frames(where available)
+                            if (skeleton.WeaponCount > 0)
+                            {
+
+                                tmpAnimation = animationPack.WeaponAnimations[ianimIndex];
+
+                                //  Create new frames
+                                //tmpAnimation.FrameCount += (ushort)numInterpolatedFrames;
+                                //tmpAnimation.FrameCount = (int)(tmpAnimation.FrameCount * primarySecondaryCountersCoef);
+                                for (i = 0; i < numInterpolatedFrames; i++) tmpAnimation.Frames.Add(tmpFrame);
+
+                                // Move the original frames into their new positions
+                                for (fi = tmpAnimation.FrameCount - 1; fi >= currentFrame + numInterpolatedFrames + 1; fi--)
+                                    tmpAnimation.Frames[fi] = tmpAnimation.Frames[fi - numInterpolatedFrames];
+
+                                // Interpolate the new frames
+                                for (fi = 1; fi <= numInterpolatedFrames; fi++)
+                                {
+                                    alpha = (float)fi / (numInterpolatedFrames + 1);
+
+                                    UnifiedAnimation.GetTwoFramesInterpolation(tmpAnimation.Frames[currentFrame], tmpAnimation.Frames[nextFrame],
+                                                                          alpha, ref tmpFrame);
+                                    tmpAnimation.Frames[currentFrame + fi] = tmpFrame;
+                                }
+
+                                // Ok, commit the struct
+                                animationPack.WeaponAnimations[ianimIndex] = tmpAnimation;
+                            }
+                        }
+                        break;
+                }
+
+                tbCurrentFrameScroll.Maximum += numInterpolatedFrames;
+                SetFrameEditorFields();
+                PanelModel_Paint(null, null);
             }
-
-            tbCurrentFrameScroll.Maximum += numInterpolatedFrames;
-            SetFrameEditorFields();
-            PanelModel_Paint(null, null);
         }
 
         private void ChkShowBones_CheckedChanged(object sender, EventArgs e)
@@ -5898,129 +6081,135 @@ namespace KimeraCS
 
         private void BtnInterpolateAnimation_Click(object sender, EventArgs e)
         {
-            int fi, ifi, frameOffset, nFrames, numInterpolatedFrames, nextElemDiff, i;
-            int baseFinalFrame;
-            string numInterpolatedFramesStr;
-            float alpha;
-
-            bool bisLoopQ;
-
-            //  Check if number of frames > 1
-            if (NumAnimFramesIsOne(ianimIndex))
+            if (skeleton != null)
             {
-                MessageBox.Show("Can't interpolate animations with a single frame.", "Interpolation warning", MessageBoxButtons.OK);
-                return;
-            }
+                int frameOffset, numInterpolatedFrames, nextElemDiff;
+                string numInterpolatedFramesStr;
 
-            // Ask for interpolated frames
-            if (modelType == ModelType.K_HRC_SKELETON)
-                numInterpolatedFramesStr = idefaultFieldInterpFrames.ToString();
-            else
-                numInterpolatedFramesStr = idefaultBattleInterpFrames.ToString();
+                bool bisLoopQ;
 
-            if (InputBox("Animation interpolation",
-                         "Number of frames to interpolate between each frame:",
-                         ref numInterpolatedFramesStr) == DialogResult.OK)
-            {
-                if (!int.TryParse(numInterpolatedFramesStr, out numInterpolatedFrames))
+                //  Check if number of frames > 1
+                if (NumAnimFramesIsOne(ianimIndex))
                 {
-                    MessageBox.Show("The value entered is not valid.", "Error");
+                    MessageBox.Show("Can't interpolate animations with a single frame.", "Interpolation warning", MessageBoxButtons.OK);
                     return;
                 }
-            }
-            else return;
 
-            // Update default value of interpolated frames
-            if (modelType == ModelType.K_HRC_SKELETON)
-                idefaultFieldInterpFrames = numInterpolatedFrames;
-            else
-                idefaultBattleInterpFrames = numInterpolatedFrames;
-            WriteCFGFile();
+                // Ask for interpolated frames
+                if (modelType == ModelType.HRCSkeleton)
+                    numInterpolatedFramesStr = idefaultFieldInterpFrames.ToString();
+                else
+                    numInterpolatedFramesStr = idefaultBattleInterpFrames.ToString();
 
-            nextElemDiff = numInterpolatedFrames + 1;
-
-            bisLoopQ = MessageBox.Show("Is this animation a loop?", "Animation type", MessageBoxButtons.YesNo) == DialogResult.Yes;
-            frameOffset = 0;
-
-            AddStateToBuffer(this);
-
-            if (!bisLoopQ) frameOffset = numInterpolatedFrames;
-
-            switch (modelType)
-            {
-                case ModelType.K_HRC_SKELETON:
-                    FieldFrame fFrame = new FieldFrame();
-
-                    //  Create new frames
-                    fAnimation.nFrames = fAnimation.nFrames * (numInterpolatedFrames + 1) - frameOffset;
-                    nFrames = fAnimation.nFrames - fAnimation.frames.Count;
-                    for (i = 0; i < nFrames; i++) fAnimation.frames.Add(fFrame);
-
-                    //  Move the original frames into their new positions
-                    for (fi = fAnimation.nFrames - (1 + numInterpolatedFrames - frameOffset); fi >= 0; fi -= nextElemDiff)
-                        fAnimation.frames[fi] = fAnimation.frames[fi / (numInterpolatedFrames + 1)];
-
-                    //  Interpolate the new frames
-                    for (fi = 0; fi <= fAnimation.nFrames - (1 + nextElemDiff + numInterpolatedFrames - frameOffset); fi += nextElemDiff)
+                if (InputBox("Animation interpolation",
+                             "Number of frames to interpolate between each frame:",
+                             ref numInterpolatedFramesStr) == DialogResult.OK)
+                {
+                    if (!int.TryParse(numInterpolatedFramesStr, out numInterpolatedFrames))
                     {
-                        for (ifi = 1; ifi <= numInterpolatedFrames; ifi++)
+                        MessageBox.Show("The value entered is not valid.", "Error");
+                        return;
+                    }
+                }
+                else return;
+
+                // Update default value of interpolated frames
+                if (modelType == ModelType.HRCSkeleton)
+                    idefaultFieldInterpFrames = numInterpolatedFrames;
+                else
+                    idefaultBattleInterpFrames = numInterpolatedFrames;
+                WriteCFGFile();
+
+                nextElemDiff = numInterpolatedFrames + 1;
+
+                bisLoopQ = MessageBox.Show("Is this animation a loop?", "Animation type", MessageBoxButtons.YesNo) == DialogResult.Yes;
+                frameOffset = 0;
+
+                AddStateToBuffer(this);
+
+                if (!bisLoopQ) frameOffset = numInterpolatedFrames;
+
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        if (animation != null)
                         {
-                            alpha = (float)ifi / (numInterpolatedFrames + 1);
+                            animation.InterpolateAnimation(skeleton, numInterpolatedFrames, bisLoopQ);
+                            /*UnifiedFrame frame = new();
 
-                            fFrame = fAnimation.frames[fi + ifi];
-                            GetTwoFieldFramesInterpolation(fSkeleton, fAnimation.frames[fi],
-                                                           fAnimation.frames[fi + numInterpolatedFrames + 1], alpha, ref fFrame);
-                            fAnimation.frames[fi + ifi] = fFrame;
+                            //  Create new frames
+                            //animation.FrameCount = animation.FrameCount * (numInterpolatedFrames + 1) - frameOffset;
+                            nFrames = animation.FrameCount - animation.Frames.Count;
+                            for (i = 0; i < nFrames; i++) animation.Frames.Add(frame);
+
+                            //  Move the original frames into their new positions
+                            for (fi = animation.FrameCount - (1 + numInterpolatedFrames - frameOffset); fi >= 0; fi -= nextElemDiff)
+                                animation.Frames[fi] = animation.Frames[fi / (numInterpolatedFrames + 1)];
+
+                            //  Interpolate the new frames
+                            for (fi = 0; fi <= animation.FrameCount - (1 + nextElemDiff + numInterpolatedFrames - frameOffset); fi += nextElemDiff)
+                            {
+                                for (ifi = 1; ifi <= numInterpolatedFrames; ifi++)
+                                {
+                                    alpha = (float)ifi / (numInterpolatedFrames + 1);
+
+                                    frame = animation.Frames[fi + ifi];
+                                    UnifiedAnimation.GetTwoFramesInterpolation(skeleton, animation.Frames[fi],
+                                                                   animation.Frames[fi + numInterpolatedFrames + 1], alpha, ref frame);
+                                    animation.Frames[fi + ifi] = frame;
+                                }
+                            }
+
+                            //  Looped animation
+                            if (bisLoopQ)
+                            {
+                                baseFinalFrame = animation.FrameCount - numInterpolatedFrames - 1;
+
+                                for (ifi = 1; ifi <= numInterpolatedFrames; ifi++)
+                                {
+                                    alpha = (float)ifi / (numInterpolatedFrames + 1);
+
+                                    frame = animation.Frames[baseFinalFrame + ifi];
+                                    UnifiedAnimation.GetTwoFramesInterpolation(skeleton, animation.Frames[baseFinalFrame],
+                                                                   animation.Frames[0], alpha, ref frame);
+                                    animation.Frames[baseFinalFrame + ifi] = frame;
+                                }
+                            }*/
+
+                            tbCurrentFrameScroll.Maximum = animation.FrameCount - 1;
                         }
-                    }
+                        break;
 
-                    //  Looped animation
-                    if (bisLoopQ)
-                    {
-                        baseFinalFrame = fAnimation.nFrames - numInterpolatedFrames - 1;
-
-                        for (ifi = 1; ifi <= numInterpolatedFrames; ifi++)
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        if (animationPack != null)
                         {
-                            alpha = (float)ifi / (numInterpolatedFrames + 1);
+                            UnifiedAnimation tmpAnimation;
+                            //BattleFrame tmpFrame = new BattleFrame();
+                            //float primarySecondaryCountersCoef;
 
-                            fFrame = fAnimation.frames[baseFinalFrame + ifi];
-                            GetTwoFieldFramesInterpolation(fSkeleton, fAnimation.frames[baseFinalFrame],
-                                                           fAnimation.frames[0], alpha, ref fFrame);
-                            fAnimation.frames[baseFinalFrame + ifi] = fFrame;
+                            tmpAnimation = animationPack.SkeletonAnimations[ianimIndex];
+                            tmpAnimation.InterpolateAnimation(skeleton, numInterpolatedFrames, bisLoopQ);
+                            animationPack.SkeletonAnimations[ianimIndex] = tmpAnimation;
+
+                            if (ianimIndex < animationPack.WeaponAnimationCount && skeleton.WeaponCount > 0)
+                            {
+                                tmpAnimation = animationPack.WeaponAnimations[ianimIndex];
+                                tmpAnimation.InterpolateAnimationToMatch(animationPack.SkeletonAnimations[ianimIndex].FrameCount,
+                                                                         numInterpolatedFrames, bisLoopQ);
+                                animationPack.WeaponAnimations[ianimIndex] = tmpAnimation;
+                            }
+
+                            tbCurrentFrameScroll.Maximum = animationPack.SkeletonAnimations[ianimIndex].FrameCount - 1;
                         }
-                    }
+                        break;
+                }
 
-                    tbCurrentFrameScroll.Maximum = fAnimation.nFrames - 1;
-                    break;
+                tbCurrentFrameScroll.Value *= (numInterpolatedFrames + 1);
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-
-                    BattleAnimation tmpbAnimation;
-                    //BattleFrame tmpbFrame = new BattleFrame();
-                    //float primarySecondaryCountersCoef;
-
-                    tmpbAnimation = bAnimationsPack.SkeletonAnimations[ianimIndex];
-                    InterpolateBattleSkeletonAnimation(ref bSkeleton, ref tmpbAnimation, numInterpolatedFrames, bisLoopQ);
-                    bAnimationsPack.SkeletonAnimations[ianimIndex] = tmpbAnimation;
-
-                    if (ianimIndex < bAnimationsPack.nbWeaponAnims && bSkeleton.nWeapons > 0)
-                    {
-                        tmpbAnimation = bAnimationsPack.WeaponAnimations[ianimIndex];
-                        InterpolateBattleWeaponAnimation(ref tmpbAnimation, numInterpolatedFrames, bisLoopQ,
-                                                         bAnimationsPack.SkeletonAnimations[ianimIndex].numFrames,
-                                                         bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort);
-                        bAnimationsPack.WeaponAnimations[ianimIndex] = tmpbAnimation;
-                    }
-
-                    tbCurrentFrameScroll.Maximum = bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort - 1;
-                    break;
+                SetFrameEditorFields();
+                PanelModel_Paint(null, null);
             }
-
-            tbCurrentFrameScroll.Value *= (numInterpolatedFrames + 1);
-
-            SetFrameEditorFields();
-            PanelModel_Paint(null, null);
         }
 
         private void BtnFrameNext_Click(object sender, EventArgs e)
@@ -6076,16 +6265,16 @@ namespace KimeraCS
             }
 
             // Frames less or equal 1 not Play Animation (Field skeleton)
-            if (modelType == ModelType.K_HRC_SKELETON)
-                if (fAnimation.nFrames <= 1)
+            if (modelType == ModelType.HRCSkeleton)
+                if (animation != null && animation.FrameCount <= 1)
                 {
                     btnPlayStopAnim.Checked = false;
                     return;
                 }
 
             // Frames less or equal 1 not Play Animation (Battle Magic skeleton)
-            if (modelType == ModelType.K_AA_SKELETON || modelType == ModelType.K_MAGIC_SKELETON)
-                if (bAnimationsPack.SkeletonAnimations[0].frames.Count <= 1)
+            if (modelType == ModelType.AASkeleton || modelType == ModelType.MagicSkeleton)
+                if (animationPack != null && animationPack.SkeletonAnimations[0].Frames.Count <= 1)
                 {
                     btnPlayStopAnim.Checked = false;
                     return;
@@ -6104,42 +6293,45 @@ namespace KimeraCS
 
         private void PlayAnimation()
         {
-            TimeSpan current_ts;
-            TimeSpan prev_ts;
-            bool bthisFocus = false;
-
-            swPlayAnimation.Start();
-
-            prev_ts = swPlayAnimation.Elapsed;
-
-            // Loop for playing animation.
-            // We can stop the animation from any place using "btnPlayStopAnim.Checked = false;"
-            while (btnPlayStopAnim.Checked)
+            if (swPlayAnimation != null)
             {
+                TimeSpan current_ts;
+                TimeSpan prev_ts;
+                bool bthisFocus = false;
 
-                current_ts = swPlayAnimation.Elapsed;
+                swPlayAnimation.Start();
 
-                if (current_ts.TotalMilliseconds - prev_ts.TotalMilliseconds >= fFPS)
+                prev_ts = swPlayAnimation.Elapsed;
+
+                // Loop for playing animation.
+                // We can stop the animation from any place using "btnPlayStopAnim.Checked = false;"
+                while (btnPlayStopAnim.Checked)
                 {
-                    if (tbCurrentFrameScroll.Value == tbCurrentFrameScroll.Maximum) tbCurrentFrameScroll.Value = 0;
-                    else tbCurrentFrameScroll.Value += 1;
 
-                    SetFrameEditorFields();
-                    PanelModel_Paint(null, null);
+                    current_ts = swPlayAnimation.Elapsed;
 
-                    prev_ts = current_ts;
+                    if (current_ts.TotalMilliseconds - prev_ts.TotalMilliseconds >= fFPS)
+                    {
+                        if (tbCurrentFrameScroll.Value == tbCurrentFrameScroll.Maximum) tbCurrentFrameScroll.Value = 0;
+                        else tbCurrentFrameScroll.Value += 1;
+
+                        SetFrameEditorFields();
+                        PanelModel_Paint(null, null);
+
+                        prev_ts = current_ts;
+                    }
+
+                    Application.DoEvents();
+                    if (!this.Focused && !bthisFocus)
+                    {
+                        this.Focus();
+                        bthisFocus = true;
+                    }
+
                 }
 
-                Application.DoEvents();
-                if (!this.Focused && !bthisFocus)
-                {
-                    this.Focus();
-                    bthisFocus = true;
-                }
-
+                swPlayAnimation.Stop();
             }
-
-            swPlayAnimation.Stop();
         }
 
         private void ToolStripFPS15_Click(object sender, EventArgs e)
@@ -6204,27 +6396,27 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case ModelType.K_HRC_SKELETON:
-                    if (txtAnimationFrame.Text != "")
+                case ModelType.HRCSkeleton:
+                    if (animation != null && txtAnimationFrame.Text != "")
                     {
-                        CopyfFieldFrame = CopyfFrame(fAnimation.frames[tbCurrentFrameScroll.Value]);
+                        CopyFrame = new UnifiedFrame(animation.Frames[tbCurrentFrameScroll.Value]);
 
                         btnPasteFrame.Enabled = true;
                         txtCopyPasteFrame.Text = "Frm:" + txtAnimationFrame.Text;
                     }
                     break;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
+                case ModelType.AASkeleton:
+                case ModelType.MagicSkeleton:
 
-                    if (txtAnimationFrame.Text != "" && ianimIndex >= 0)
+                    if (animationPack != null && txtAnimationFrame.Text != "" && ianimIndex >= 0)
                     {
-                        CopybBattleFrame = CopybFrame(bAnimationsPack.SkeletonAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value]);
+                        CopyFrame = new UnifiedFrame(animationPack.SkeletonAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value]);
 
                         // Copy weapon animation if it has any
-                        if (ianimIndex < bAnimationsPack.nbWeaponAnims && bAnimationsPack.WeaponAnimations.Count > 0)
+                        if (ianimIndex < animationPack.WeaponAnimationCount && animationPack.WeaponAnimations.Count > 0)
                         {
-                            CopybBattleWFrame = CopybFrame(bAnimationsPack.WeaponAnimations[ianimIndex].frames[tbCurrentFrameScroll.Value]);
+                            CopyWFrame = new UnifiedFrame(animationPack.WeaponAnimations[ianimIndex].Frames[tbCurrentFrameScroll.Value]);
                         }
 
                         btnPasteFrame.Enabled = true;
@@ -6236,57 +6428,59 @@ namespace KimeraCS
 
         private void BtnPasteFrame_Click(object sender, EventArgs e)
         {
-
-            AddStateToBuffer(this);
-
-            switch (modelType)
+            if (skeleton != null && CopyFrame != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    if (txtAnimationFrame.Text != "")
-                    {
-                        fAnimation.nFrames += 1;
-                        fAnimation.frames.Insert(tbCurrentFrameScroll.Value + 1, CopyfFieldFrame);
+                AddStateToBuffer(this);
 
-                        tbCurrentFrameScroll.Maximum += 1;
-                    }
-                    break;
-
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-
-                    float primarySecondaryCountersCoef;
-                    BattleAnimation tmpbAnimation;
-
-                    if (txtAnimationFrame.Text != "" && ianimIndex >= 0)
-                    {
-                        tmpbAnimation = bAnimationsPack.SkeletonAnimations[ianimIndex];
-
-                        primarySecondaryCountersCoef = tmpbAnimation.numFrames / tmpbAnimation.numFramesShort;
-
-                        tmpbAnimation.numFramesShort++;
-                        tmpbAnimation.numFrames = (int)(tmpbAnimation.numFramesShort * primarySecondaryCountersCoef);
-
-                        tmpbAnimation.frames.Insert(tbCurrentFrameScroll.Value + 1, CopybFrame(CopybBattleFrame));
-
-                        bAnimationsPack.SkeletonAnimations[ianimIndex] = tmpbAnimation;
-
-
-                        //  If we want to copy battle animation with weapon animation, we will do that also.
-                        if (ianimIndex < bAnimationsPack.nbWeaponAnims && bSkeleton.wpModels.Count > 0)
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        if (animation != null && txtAnimationFrame.Text != "")
                         {
-                            tmpbAnimation = bAnimationsPack.WeaponAnimations[ianimIndex];
+                            //animation.FrameCount += 1;
+                            animation.Frames.Insert(tbCurrentFrameScroll.Value + 1, new UnifiedFrame(CopyFrame));
 
-                            tmpbAnimation.numFramesShort = bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort;
-                            tmpbAnimation.numFrames = bAnimationsPack.SkeletonAnimations[ianimIndex].numFrames;
-
-                            tmpbAnimation.frames.Insert(tbCurrentFrameScroll.Value + 1, CopybFrame(CopybBattleWFrame));
-
-                            bAnimationsPack.WeaponAnimations[ianimIndex] = tmpbAnimation;
+                            tbCurrentFrameScroll.Maximum += 1;
                         }
+                        break;
 
-                        tbCurrentFrameScroll.Maximum++;
-                    }
-                    break;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+
+                        float primarySecondaryCountersCoef;
+                        UnifiedAnimation tmpAnimation;
+
+                        if (animationPack != null && txtAnimationFrame.Text != "" && ianimIndex >= 0)
+                        {
+                            tmpAnimation = animationPack.SkeletonAnimations[ianimIndex];
+
+                            primarySecondaryCountersCoef = tmpAnimation.FrameCount / tmpAnimation.FrameCount;
+
+                            //tmpAnimation.FrameCount++;
+                            //tmpAnimation.FrameCount = (int)(tmpAnimation.FrameCount * primarySecondaryCountersCoef);
+
+                            tmpAnimation.Frames.Insert(tbCurrentFrameScroll.Value + 1, new UnifiedFrame(CopyFrame));
+
+                            animationPack.SkeletonAnimations[ianimIndex] = tmpAnimation;
+
+
+                            //  If we want to copy battle animation with weapon animation, we will do that also.
+                            if (CopyWFrame != null && ianimIndex < animationPack.WeaponAnimationCount && skeleton.WeaponCount > 0)
+                            {
+                                tmpAnimation = animationPack.WeaponAnimations[ianimIndex];
+
+                                //tmpAnimation.FrameCount = animationPack.SkeletonAnimations[ianimIndex].FrameCount;
+                                //tmpAnimation.FrameCount = animationPack.SkeletonAnimations[ianimIndex].FrameCount;
+
+                                tmpAnimation.Frames.Insert(tbCurrentFrameScroll.Value + 1, new UnifiedFrame(CopyWFrame));
+
+                                animationPack.WeaponAnimations[ianimIndex] = tmpAnimation;
+                            }
+
+                            tbCurrentFrameScroll.Maximum++;
+                        }
+                        break;
+                }
             }
         }
 
@@ -6298,77 +6492,80 @@ namespace KimeraCS
 
         public void SetBonePieceModifiers()
         {
-            PModel Model;
-            float diam;
-
-            loadingBonePieceModifiersQ = true;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    Model = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].Model;
-                    diam = ComputeDiameter(Model.BoundingBox) / 100;
-                    break;
+                PModel Model;
+                float diam;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
+                loadingBonePieceModifiersQ = true;
 
-                    if (SelectedBone == bSkeleton.nBones)
-                    {
-                        //weaponIndex = getBattleWeaponIndex();
-                        Model = bSkeleton.wpModels[ianimWeaponIndex];
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        Model = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model;
                         diam = ComputeDiameter(Model.BoundingBox) / 100;
-                    }
-                    else
-                    {
-                        Model = bSkeleton.bones[SelectedBone].Models[SelectedBonePiece];
-                        diam = ComputeDiameter(Model.BoundingBox) / 100;
-                    }
-                    break;
+                        break;
 
-                default:
-                    Model = fPModel;
-                    diam = ComputeDiameter(Model.BoundingBox) / 100;
-                    break;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+
+                        if (SelectedBone == skeleton.BoneCount)
+                        {
+                            //weaponIndex = getBattleWeaponIndex();
+                            Model = skeleton.Weapons[ianimWeaponIndex];
+                            diam = ComputeDiameter(Model.BoundingBox) / 100;
+                        }
+                        else
+                        {
+                            Model = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model;
+                            diam = ComputeDiameter(Model.BoundingBox) / 100;
+                        }
+                        break;
+
+                    default:
+                        Model = fPModel;
+                        diam = ComputeDiameter(Model.BoundingBox) / 100;
+                        break;
+                }
+
+                hsbResizePieceX.Value = (int)(Model.resizeX * 100);
+                hsbResizePieceY.Value = (int)(Model.resizeY * 100);
+                hsbResizePieceZ.Value = (int)(Model.resizeZ * 100);
+
+                hsbRepositionX.Value = (int)(Model.repositionX / diam);
+                hsbRepositionY.Value = (int)(Model.repositionY / diam);
+                hsbRepositionZ.Value = (int)(Model.repositionZ / diam);
+
+                hsbRotateAlpha.Value = (int)(Model.rotateAlpha);
+                hsbRotateBeta.Value = (int)(Model.rotateBeta);
+                hsbRotateGamma.Value = (int)(Model.rotateGamma);
+
+                txtResizePieceX.Text = (Model.resizeX * 100).ToString();
+                txtResizePieceY.Text = (Model.resizeY * 100).ToString();
+                txtResizePieceZ.Text = (Model.resizeZ * 100).ToString();
+
+                txtRepositionX.Text = (Model.repositionX / diam).ToString();
+                txtRepositionY.Text = (Model.repositionY / diam).ToString();
+                txtRepositionZ.Text = (Model.repositionZ / diam).ToString();
+
+                txtRotateAlpha.Text = (Model.rotateAlpha).ToString();
+                txtRotateBeta.Text = (Model.rotateBeta).ToString();
+                txtRotateGamma.Text = (Model.rotateGamma).ToString();
+
+                hsbResizePieceX.Refresh();
+                hsbResizePieceY.Refresh();
+                hsbResizePieceZ.Refresh();
+
+                hsbRepositionX.Refresh();
+                hsbRepositionY.Refresh();
+                hsbRepositionZ.Refresh();
+
+                hsbRotateAlpha.Refresh();
+                hsbRotateBeta.Refresh();
+                hsbRotateGamma.Refresh();
+
+                loadingBonePieceModifiersQ = false;
             }
-
-            hsbResizePieceX.Value = (int)(Model.resizeX * 100);
-            hsbResizePieceY.Value = (int)(Model.resizeY * 100);
-            hsbResizePieceZ.Value = (int)(Model.resizeZ * 100);
-
-            hsbRepositionX.Value = (int)(Model.repositionX / diam);
-            hsbRepositionY.Value = (int)(Model.repositionY / diam);
-            hsbRepositionZ.Value = (int)(Model.repositionZ / diam);
-
-            hsbRotateAlpha.Value = (int)(Model.rotateAlpha);
-            hsbRotateBeta.Value = (int)(Model.rotateBeta);
-            hsbRotateGamma.Value = (int)(Model.rotateGamma);
-
-            txtResizePieceX.Text = (Model.resizeX * 100).ToString();
-            txtResizePieceY.Text = (Model.resizeY * 100).ToString();
-            txtResizePieceZ.Text = (Model.resizeZ * 100).ToString();
-
-            txtRepositionX.Text = (Model.repositionX / diam).ToString();
-            txtRepositionY.Text = (Model.repositionY / diam).ToString();
-            txtRepositionZ.Text = (Model.repositionZ / diam).ToString();
-
-            txtRotateAlpha.Text = (Model.rotateAlpha).ToString();
-            txtRotateBeta.Text = (Model.rotateBeta).ToString();
-            txtRotateGamma.Text = (Model.rotateGamma).ToString();
-
-            hsbResizePieceX.Refresh();
-            hsbResizePieceY.Refresh();
-            hsbResizePieceZ.Refresh();
-
-            hsbRepositionX.Refresh();
-            hsbRepositionY.Refresh();
-            hsbRepositionZ.Refresh();
-
-            hsbRotateAlpha.Refresh();
-            hsbRotateBeta.Refresh();
-            hsbRotateGamma.Refresh();
-
-            loadingBonePieceModifiersQ = false;
         }
 
         private void FrmSkeletonEditor_Move(object sender, EventArgs e)
@@ -6394,12 +6591,12 @@ namespace KimeraCS
 
         private void InterpolateAllAnimationsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            frmInterpAll.ShowDialog();
+            frmInterpAll?.ShowDialog();
         }
 
         private void TEXToPNGBatchConversionToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            frmTEX2PNGBC.ShowDialog();
+            frmTEX2PNGBC?.ShowDialog();
         }
 
         private void FrmSkeletonEditor_Activated(object sender, EventArgs e)
@@ -6489,20 +6686,23 @@ namespace KimeraCS
 
         private void CbBattleAnimation_SelectedIndexChanged(object sender, EventArgs e)
         {
-            ianimIndex = int.Parse(cbBattleAnimation.Text);
+            if (animationPack != null)
+            {
+                ianimIndex = int.Parse(cbBattleAnimation.Text);
 
-            bDontRefreshPicture = true;
+                bDontRefreshPicture = true;
 
-            iCurrentFrameScroll = 0;
-            txtAnimationFrame.Text = iCurrentFrameScroll.ToString();
-            tbCurrentFrameScroll.Value = iCurrentFrameScroll;
-            tbCurrentFrameScroll.Maximum = bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort - 1;
+                iCurrentFrameScroll = 0;
+                txtAnimationFrame.Text = iCurrentFrameScroll.ToString();
+                tbCurrentFrameScroll.Value = iCurrentFrameScroll;
+                tbCurrentFrameScroll.Maximum = animationPack.SkeletonAnimations[ianimIndex].FrameCount - 1;
 
-            bDontRefreshPicture = false;
+                bDontRefreshPicture = false;
 
-            SetFrameEditorFields();
+                SetFrameEditorFields();
 
-            PanelModel_Paint(null, null);
+                PanelModel_Paint(null, null);
+            }
         }
 
         private void TbCurrentFrameScroll_ValueChanged(object sender, EventArgs e)
@@ -6515,56 +6715,59 @@ namespace KimeraCS
         {
             if (loadingBonePieceModifiersQ) return;
 
-            if (!DoNotAddStateQ) AddStateToBuffer(this);
-            DoNotAddStateQ = true;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    FieldBone tmpfBone = fSkeleton.bones[SelectedBone];
-                    FieldRSDResource tmpRSDResource = tmpfBone.fRSDResources[SelectedBonePiece];
+                if (!DoNotAddStateQ) AddStateToBuffer(this);
+                DoNotAddStateQ = true;
 
-                    RotatePModelModifiers(ref tmpRSDResource.Model,
-                                                    hsbRotateAlpha.Value, hsbRotateBeta.Value, hsbRotateGamma.Value);
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        /*FieldBone tmpfBone = skeleton.Bones[SelectedBone];
+                        FieldRSDResource tmpRSDResource = tmpfBone.Models[SelectedBonePiece];
 
-                    tmpfBone.fRSDResources[SelectedBonePiece] = tmpRSDResource;
-                    fSkeleton.bones[SelectedBone] = tmpfBone;
+                        RotatePModelModifiers(ref tmpRSDResource.Model,
+                                                        hsbRotateAlpha.Value, hsbRotateBeta.Value, hsbRotateGamma.Value);
 
-                    break;
+                        tmpfBone.Models[SelectedBonePiece] = tmpRSDResource;
+                        skeleton.Bones[SelectedBone] = tmpfBone;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
+                        break;*/
 
-                    PModel tmpbModel;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
 
-                    if (SelectedBone == bSkeleton.nBones)
-                    {
-                        tmpbModel = bSkeleton.wpModels[ianimWeaponIndex];
-                        RotatePModelModifiers(ref tmpbModel, hsbRotateAlpha.Value, hsbRotateBeta.Value, hsbRotateGamma.Value);
-                        bSkeleton.wpModels[ianimWeaponIndex] = tmpbModel;
-                    }
-                    else
-                    {
-                        tmpbModel = bSkeleton.bones[SelectedBone].Models[SelectedBonePiece];
-                        RotatePModelModifiers(ref tmpbModel, hsbRotateAlpha.Value, hsbRotateBeta.Value, hsbRotateGamma.Value);
-                        bSkeleton.bones[SelectedBone].Models[SelectedBonePiece] = tmpbModel;
-                    }
+                        PModel tmpbModel;
 
-                    break;
+                        if (SelectedBone == skeleton.BoneCount)
+                        {
+                            tmpbModel = skeleton.Weapons[ianimWeaponIndex];
+                            RotatePModelModifiers(ref tmpbModel, hsbRotateAlpha.Value, hsbRotateBeta.Value, hsbRotateGamma.Value);
+                            skeleton.Weapons[ianimWeaponIndex] = tmpbModel;
+                        }
+                        else
+                        {
+                            tmpbModel = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model;
+                            RotatePModelModifiers(ref tmpbModel, hsbRotateAlpha.Value, hsbRotateBeta.Value, hsbRotateGamma.Value);
+                            skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model = tmpbModel;
+                        }
 
-                default:
-                    RotatePModelModifiers(ref fPModel,
-                                                    hsbRotateAlpha.Value, hsbRotateBeta.Value, hsbRotateGamma.Value);
+                        break;
 
-                    break;
+                    default:
+                        RotatePModelModifiers(ref fPModel,
+                                                        hsbRotateAlpha.Value, hsbRotateBeta.Value, hsbRotateGamma.Value);
+
+                        break;
+                }
+
+                txtRotateAlpha.Text = hsbRotateAlpha.Value.ToString();
+                txtRotateBeta.Text = hsbRotateBeta.Value.ToString();
+                txtRotateGamma.Text = hsbRotateGamma.Value.ToString();
+
+                PanelModel_Paint(null, null);
+                DoNotAddStateQ = false;
             }
-
-            txtRotateAlpha.Text = hsbRotateAlpha.Value.ToString();
-            txtRotateBeta.Text = hsbRotateBeta.Value.ToString();
-            txtRotateGamma.Text = hsbRotateGamma.Value.ToString();
-
-            PanelModel_Paint(null, null);
-            DoNotAddStateQ = false;
         }
 
         private void LoadSkeletonFromDB()
@@ -6588,7 +6791,7 @@ namespace KimeraCS
                 //InitOpenGLContext();
 
                 // Close FrmPEditor if opened
-                if (FindWindowOpened("FrmPEditor")) frmPEdit.Close();
+                if (FindWindowOpened("FrmPEditor")) frmPEdit?.Close();
 
                 // Disable/Make Invisible in Forms Data controls
                 InitializeWinFormsDataControls();
@@ -6600,24 +6803,27 @@ namespace KimeraCS
                 ShowDBErrorMessages(iLoadResult, FrmFieldDB.strFieldFile);
                 if (iLoadResult < 1) return;
 
-                // Enable/Make Visible Win Forms Data controls
-                EnableWinFormsDataControls();
+                if (skeleton != null && animation != null)
+                {
+                    // Enable/Make Visible Win Forms Data controls
+                    EnableWinFormsDataControls();
 
-                // ComputeBoundingBoxes
-                ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[0], ref p_min, ref p_max);
-                diameter = ComputeFieldDiameter(fSkeleton);
+                    // ComputeBoundingBoxes
+                    skeleton.ComputeBoundingBox(animation.Frames[0], ref p_min, ref p_max);
+                    diameter = skeleton.ComputeDiameter();
 
-                // Set frame values in frame editor groupbox...
-                SetFrameEditorFields();
+                    // Set frame values in frame editor groupbox...
+                    SetFrameEditorFields();
 
-                // Set texture values in texture editor groupbox...
-                SetTextureEditorFields();
+                    // Set texture values in texture editor groupbox...
+                    SetTextureEditorFields();
 
-                // PostLoadModelPreparations
-                PostLoadModelPreparations(ref p_min, ref p_max);
+                    // PostLoadModelPreparations
+                    PostLoadModelPreparations(ref p_min, ref p_max);
 
-                // We can draw the model in panel
-                PanelModel_Paint(null, null);
+                    // We can draw the model in panel
+                    PanelModel_Paint(null, null);
+                }
             }
             catch
             {
@@ -6642,7 +6848,7 @@ namespace KimeraCS
                 //InitOpenGLContext();
 
                 // Close FrmPEditor if opened
-                if (FindWindowOpened("FrmPEditor")) frmPEdit.Close();
+                if (FindWindowOpened("FrmPEditor")) frmPEdit?.Close();
 
                 // Disable/Make Invisible in Forms Data controls
                 InitializeWinFormsDataControls();
@@ -6654,10 +6860,10 @@ namespace KimeraCS
                 ShowDBErrorMessages(iLoadResult, strfileNameModel);
                 if (iLoadResult < 1) return;
 
-                if (showModel)
+                if (skeleton != null && animationPack != null && showModel)
                 {
                     // Set Global Paths
-                    if (modelType == ModelType.K_AA_SKELETON)
+                    if (modelType == ModelType.AASkeleton)
                     {
                         strGlobalBattleSkeletonFileName = strfileNameModel;
                         strGlobalBattleSkeletonName = Path.GetFileName(strfileNameModel).ToUpper();
@@ -6677,9 +6883,9 @@ namespace KimeraCS
                     EnableWinFormsDataControls();
 
                     // ComputeBoundingBoxes
-                    ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[0], ref p_min, ref p_max);
+                    skeleton.ComputeBoundingBox(animationPack.SkeletonAnimations[ianimIndex].Frames[0], ref p_min, ref p_max);
 
-                    diameter = ComputeBattleDiameter(bSkeleton);
+                    diameter = skeleton.ComputeDiameter();
 
                     // Set frame values in frame editor groupbox...
                     SetFrameEditorFields();
@@ -6730,190 +6936,199 @@ namespace KimeraCS
 
         private void SetWeaponAnimationAttachedToBone(bool middleQ, FrmSkeletonEditor frmSkEditor)
         {
-            int fi, jsp;
-            double[] MV_matrix = new double[16];
-            BattleFrame tmpbFrame;
-
-            AddStateToBuffer(frmSkEditor);
-
-            GL.MatrixMode(MatrixMode.Modelview);
-            GL.PushMatrix();
-            GL.LoadIdentity();
-
-            for (fi = 0; fi < bAnimationsPack.SkeletonAnimations[ianimIndex].numFramesShort; fi++)
+            if (skeleton != null && animationPack != null)
             {
-                if (middleQ) jsp = MoveToBattleBoneMiddle(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi], SelectedBone);
-                else jsp = MoveToBattleBoneEnd(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[fi], SelectedBone);
+                int fi, jsp;
+                double[] MV_matrix = new double[16];
+                UnifiedFrame tmpFrame;
 
-                GL.GetDouble(GetPName.ModelviewMatrix, MV_matrix);
+                AddStateToBuffer(frmSkEditor);
 
-                tmpbFrame = bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi];
-                tmpbFrame.startX = (int)MV_matrix[12];
-                tmpbFrame.startY = (int)MV_matrix[13];
-                tmpbFrame.startZ = (int)MV_matrix[14];
-                bAnimationsPack.WeaponAnimations[ianimIndex].frames[fi] = tmpbFrame;
+                GL.MatrixMode(MatrixMode.Modelview);
+                GL.PushMatrix();
+                GL.LoadIdentity();
 
-                while (jsp > 0)
+                for (fi = 0; fi < animationPack.SkeletonAnimations[ianimIndex].FrameCount; fi++)
                 {
-                    GL.PopMatrix();
-                    jsp--;
+                    if (middleQ) jsp = skeleton.MoveToBoneMiddle(animationPack.SkeletonAnimations[ianimIndex].Frames[fi], SelectedBone);
+                    else jsp = skeleton.MoveToBoneEnd(animationPack.SkeletonAnimations[ianimIndex].Frames[fi], SelectedBone);
+
+                    GL.GetDouble(GetPName.ModelviewMatrix, MV_matrix);
+
+                    tmpFrame = animationPack.WeaponAnimations[ianimIndex].Frames[fi];
+                    tmpFrame.RootTranslation.X = (int)MV_matrix[12];
+                    tmpFrame.RootTranslation.Y = (int)MV_matrix[13];
+                    tmpFrame.RootTranslation.Z = (int)MV_matrix[14];
+                    animationPack.WeaponAnimations[ianimIndex].Frames[fi] = tmpFrame;
+
+                    while (jsp > 0)
+                    {
+                        GL.PopMatrix();
+                        jsp--;
+                    }
                 }
+
+                GL.PopMatrix();
+
+                selectBoneForWeaponAttachmentQ = false;
+                SetFrameEditorFields();
             }
-
-            GL.PopMatrix();
-
-            selectBoneForWeaponAttachmentQ = false;
-            SetFrameEditorFields();
         }
 
         private void PbTextureViewer_DoubleClick(object sender, EventArgs e)
         {
-            if (cbTextureSelect.Items.Count > 0 && cbTextureSelect.SelectedIndex > -1)
+            if (skeleton != null && cbTextureSelect.Items.Count > 0 && cbTextureSelect.SelectedIndex > -1)
             {
                 switch (modelType)
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        if (fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[cbTextureSelect.SelectedIndex].texID == 0xFFFFFFFF)
+                    case ModelType.HRCSkeleton:
+                        if (skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[cbTextureSelect.SelectedIndex].texID == 0xFFFFFFFF)
                             return;
 
-                        frmTexViewer = new FrmTextureViewer(this, fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].Model);
+                        frmTexViewer = new FrmTextureViewer(this, skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model);
 
                         break;
 
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-                        if (bSkeleton.textures[cbTextureSelect.SelectedIndex].texID == 0xFFFFFFFF) return;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        if (skeleton.Textures[cbTextureSelect.SelectedIndex].texID == 0xFFFFFFFF) return;
 
-                        if (bSkeleton.wpModels.Count > 0 && SelectedBone == bSkeleton.nBones)
+                        if (skeleton.WeaponCount > 0 && SelectedBone == skeleton.BoneCount)
                         {
                             if (ianimWeaponIndex == -1) return;
-                            frmTexViewer = new FrmTextureViewer(this, bSkeleton.wpModels[cbWeapon.SelectedIndex]);
+                            frmTexViewer = new FrmTextureViewer(this, skeleton.Weapons[cbWeapon.SelectedIndex]);
                         }
                         else
                         {
-                            frmTexViewer = new FrmTextureViewer(this, bSkeleton.bones[SelectedBone].Models[SelectedBonePiece]);
+                            frmTexViewer = new FrmTextureViewer(this, skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model);
                         }
                         break;
                 }
 
-                frmTexViewer.ShowDialog();
+                frmTexViewer?.ShowDialog();
             }
         }
 
 
         private void InputFramesDataTXTToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            int iOpenResult;
-
-            // Set filter options and filter index depending on modelType
-            openFile.Title = "Input Frame Data from TXT";
-            openFile.Filter = "Frame Data|*.txt|All files|*.*";
-
-            // Check Initial Directory
-            openFile.FileName = Path.GetFileNameWithoutExtension(strGlobalFieldAnimationName) + ".TXT";
-            openFile.FilterIndex = 1;
-            openFile.InitialDirectory = strGlobalPathFieldAnimationFolder;
-
-            try
+            if (animation != null)
             {
-                // Process input if the user clicked OK.
-                if (openFile.ShowDialog() == DialogResult.OK)
+                int iOpenResult;
+
+                // Set filter options and filter index depending on modelType
+                openFile.Title = "Input Frame Data from TXT";
+                openFile.Filter = "Frame Data|*.txt|All files|*.*";
+
+                // Check Initial Directory
+                openFile.FileName = Path.GetFileNameWithoutExtension(strGlobalFieldAnimationName) + ".TXT";
+                openFile.FilterIndex = 1;
+                openFile.InitialDirectory = strGlobalPathFieldAnimationFolder;
+
+                try
                 {
-                    // Let's save state to buffer
-                    AddStateToBuffer(this);
-
-                    // We load the Frames Data
-                    iOpenResult = ReadFrameData(openFile.FileName, false);
-
-                    if (iOpenResult == -1)
+                    // Process input if the user clicked OK.
+                    if (openFile.ShowDialog() == DialogResult.OK)
                     {
-                        MessageBox.Show("It has been some problem [input] while loading the Frame Data from file " +
-                                        Path.GetFileName(openFile.FileName).ToUpper() + ".",
-                                        "Error");
+                        // Let's save state to buffer
+                        AddStateToBuffer(this);
+
+                        // We load the Frames Data
+                        iOpenResult = ReadFrameData(openFile.FileName, false);
+
+                        if (iOpenResult == -1)
+                        {
+                            MessageBox.Show("It has been some problem [input] while loading the Frame Data from file " +
+                                            Path.GetFileName(openFile.FileName).ToUpper() + ".",
+                                            "Error");
+                        }
+
+                        strGlobalFieldAnimationName = animation.FileName;
+
+                        // Let's stop the Animation
+                        btnPlayStopAnim.Checked = false;
+
+                        iCurrentFrameScroll = 0;
+                        tbCurrentFrameScroll.Value = 0;
+                        txtAnimationFrame.Text = iCurrentFrameScroll.ToString();
+
+                        tbCurrentFrameScroll.Maximum = animation.FrameCount - 1;
+
+                        SetFrameEditorFields();
+
+                        UpdateMainSkeletonWindowTitle();
+
+                        PanelModel_Paint(null, null);
                     }
-
-                    strGlobalFieldAnimationName = fAnimation.strFieldAnimationFile;
-
-                    // Let's stop the Animation
-                    btnPlayStopAnim.Checked = false;
-
-                    iCurrentFrameScroll = 0;
-                    tbCurrentFrameScroll.Value = 0;
-                    txtAnimationFrame.Text = iCurrentFrameScroll.ToString();
-
-                    tbCurrentFrameScroll.Maximum = fAnimation.nFrames - 1;
-
-                    SetFrameEditorFields();
-
-                    UpdateMainSkeletonWindowTitle();
-
-                    PanelModel_Paint(null, null);
                 }
-            }
-            catch
-            {
-                MessageBox.Show("Error exception [input] loading the Frame Data from file " +
-                                Path.GetFileName(openFile.FileName).ToUpper() + ".",
-                                "Error");
-                return;
+                catch
+                {
+                    MessageBox.Show("Error exception [input] loading the Frame Data from file " +
+                                    Path.GetFileName(openFile.FileName).ToUpper() + ".",
+                                    "Error");
+                    return;
+                }
             }
         }
 
         private void InputFramesDataFromTXTOnlyFieldModelsSelectiveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            int iOpenResult;
-
-            // Set filter options and filter index depending on modelType
-            openFile.Title = "Input Frame Data from TXT (Selective)";
-            openFile.Filter = "Frame Data|*.txt|All files|*.*";
-
-            // Check Initial Directory
-            openFile.FileName = Path.GetFileNameWithoutExtension(strGlobalFieldAnimationName) + ".TXT";
-            openFile.FilterIndex = 1;
-            openFile.InitialDirectory = strGlobalPathFieldAnimationFolder;
-
-            try
+            if (animation != null)
             {
-                // Process input if the user clicked OK.
-                if (openFile.ShowDialog() == DialogResult.OK)
+                int iOpenResult;
+
+                // Set filter options and filter index depending on modelType
+                openFile.Title = "Input Frame Data from TXT (Selective)";
+                openFile.Filter = "Frame Data|*.txt|All files|*.*";
+
+                // Check Initial Directory
+                openFile.FileName = Path.GetFileNameWithoutExtension(strGlobalFieldAnimationName) + ".TXT";
+                openFile.FilterIndex = 1;
+                openFile.InitialDirectory = strGlobalPathFieldAnimationFolder;
+
+                try
                 {
-                    // Let's save state to buffer
-                    AddStateToBuffer(this);
-
-                    // We load the Frames Data
-                    iOpenResult = ReadFrameDataSelective(openFile.FileName);
-
-                    if (iOpenResult == -1)
+                    // Process input if the user clicked OK.
+                    if (openFile.ShowDialog() == DialogResult.OK)
                     {
-                        MessageBox.Show("It has been some problem while loading the Frame Data from file (Selective) " +
-                                        Path.GetFileName(openFile.FileName).ToUpper() + ".",
-                                        "Error");
+                        // Let's save state to buffer
+                        AddStateToBuffer(this);
+
+                        // We load the Frames Data
+                        iOpenResult = ReadFrameDataSelective(openFile.FileName);
+
+                        if (iOpenResult == -1)
+                        {
+                            MessageBox.Show("It has been some problem while loading the Frame Data from file (Selective) " +
+                                            Path.GetFileName(openFile.FileName).ToUpper() + ".",
+                                            "Error");
+                        }
+
+                        strGlobalFieldAnimationName = animation.FileName;
+
+                        // Let's stop the Animation
+                        btnPlayStopAnim.Checked = false;
+
+                        iCurrentFrameScroll = 0;
+                        tbCurrentFrameScroll.Value = 0;
+                        txtAnimationFrame.Text = iCurrentFrameScroll.ToString();
+
+                        tbCurrentFrameScroll.Maximum = animation.FrameCount - 1;
+
+                        SetFrameEditorFields();
+
+                        UpdateMainSkeletonWindowTitle();
+
+                        PanelModel_Paint(null, null);
                     }
-
-                    strGlobalFieldAnimationName = fAnimation.strFieldAnimationFile;
-
-                    // Let's stop the Animation
-                    btnPlayStopAnim.Checked = false;
-
-                    iCurrentFrameScroll = 0;
-                    tbCurrentFrameScroll.Value = 0;
-                    txtAnimationFrame.Text = iCurrentFrameScroll.ToString();
-
-                    tbCurrentFrameScroll.Maximum = fAnimation.nFrames - 1;
-
-                    SetFrameEditorFields();
-
-                    UpdateMainSkeletonWindowTitle();
-
-                    PanelModel_Paint(null, null);
                 }
-            }
-            catch
-            {
-                MessageBox.Show("Error exception loading the Frame Data from file (Selective) " +
-                                Path.GetFileName(openFile.FileName).ToUpper() + ".",
-                                "Error");
-                return;
+                catch
+                {
+                    MessageBox.Show("Error exception loading the Frame Data from file (Selective) " +
+                                    Path.GetFileName(openFile.FileName).ToUpper() + ".",
+                                    "Error");
+                    return;
+                }
             }
         }
 
@@ -7038,59 +7253,62 @@ namespace KimeraCS
 
         private void MergeFramesDataTXTOnlyFieldModelsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            int iOpenResult;
-
-            // Set filter options and filter index depending on modelType
-            openFile.Title = "Merge Frame Data from TXT";
-            openFile.Filter = "Frame Data|*.txt|All files|*.*";
-
-            // Check Initial Directory
-            openFile.FileName = Path.GetFileNameWithoutExtension(strGlobalFieldAnimationName) + ".TXT";
-            openFile.FilterIndex = 1;
-            openFile.InitialDirectory = strGlobalPathFieldAnimationFolder;
-
-            try
+            if (animation != null)
             {
-                // Process input if the user clicked OK.
-                if (openFile.ShowDialog() == DialogResult.OK)
+                int iOpenResult;
+
+                // Set filter options and filter index depending on modelType
+                openFile.Title = "Merge Frame Data from TXT";
+                openFile.Filter = "Frame Data|*.txt|All files|*.*";
+
+                // Check Initial Directory
+                openFile.FileName = Path.GetFileNameWithoutExtension(strGlobalFieldAnimationName) + ".TXT";
+                openFile.FilterIndex = 1;
+                openFile.InitialDirectory = strGlobalPathFieldAnimationFolder;
+
+                try
                 {
-                    // Let's save state to buffer
-                    AddStateToBuffer(this);
-
-                    // We load the Frames Data
-                    iOpenResult = ReadFrameData(openFile.FileName, true);
-
-                    if (iOpenResult == -1)
+                    // Process input if the user clicked OK.
+                    if (openFile.ShowDialog() == DialogResult.OK)
                     {
-                        MessageBox.Show("It has been some problem [merge] while loading the Frame Data from file " +
-                                        Path.GetFileName(openFile.FileName).ToUpper() + ".",
-                                        "Error");
+                        // Let's save state to buffer
+                        AddStateToBuffer(this);
+
+                        // We load the Frames Data
+                        iOpenResult = ReadFrameData(openFile.FileName, true);
+
+                        if (iOpenResult == -1)
+                        {
+                            MessageBox.Show("It has been some problem [merge] while loading the Frame Data from file " +
+                                            Path.GetFileName(openFile.FileName).ToUpper() + ".",
+                                            "Error");
+                        }
+
+                        strGlobalFieldAnimationName = animation.FileName;
+
+                        // Let's stop the Animation
+                        btnPlayStopAnim.Checked = false;
+
+                        iCurrentFrameScroll = 0;
+                        tbCurrentFrameScroll.Value = 0;
+                        txtAnimationFrame.Text = iCurrentFrameScroll.ToString();
+
+                        tbCurrentFrameScroll.Maximum = animation.FrameCount - 1;
+
+                        SetFrameEditorFields();
+
+                        UpdateMainSkeletonWindowTitle();
+
+                        PanelModel_Paint(null, null);
                     }
-
-                    strGlobalFieldAnimationName = fAnimation.strFieldAnimationFile;
-
-                    // Let's stop the Animation
-                    btnPlayStopAnim.Checked = false;
-
-                    iCurrentFrameScroll = 0;
-                    tbCurrentFrameScroll.Value = 0;
-                    txtAnimationFrame.Text = iCurrentFrameScroll.ToString();
-
-                    tbCurrentFrameScroll.Maximum = fAnimation.nFrames - 1;
-
-                    SetFrameEditorFields();
-
-                    UpdateMainSkeletonWindowTitle();
-
-                    PanelModel_Paint(null, null);
                 }
-            }
-            catch
-            {
-                MessageBox.Show("Error exception [merge] loading the Frame Data from file " +
-                                Path.GetFileName(openFile.FileName).ToUpper() + ".",
-                                "Error");
-                return;
+                catch
+                {
+                    MessageBox.Show("Error exception [merge] loading the Frame Data from file " +
+                                    Path.GetFileName(openFile.FileName).ToUpper() + ".",
+                                    "Error");
+                    return;
+                }
             }
         }
 
@@ -7124,46 +7342,52 @@ namespace KimeraCS
 
         private void AddJointToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string tmpText = "";
-            if (fAnimation.nFrames > 1)
+            if (animation != null)
             {
-                MessageBox.Show("You can Add/Edit Joints when the loaded animation has only 1 frame.",
-                                "Information");
-                return;
+                string tmpText = "";
+                if (animation.FrameCount > 1)
+                {
+                    MessageBox.Show("You can Add/Edit Joints when the loaded animation has only 1 frame.",
+                                    "Information");
+                    return;
+                }
+
+                if (cbBoneSelector.SelectedIndex != -1) tmpText = cbBoneSelector.Text;
+
+                frmSJ = new FrmSkeletonJoints(this, 0, tmpText);
+                frmSJ.ShowDialog();
+                frmSJ.Dispose();
             }
-
-            if (cbBoneSelector.SelectedIndex != -1) tmpText = cbBoneSelector.Text;
-
-            frmSJ = new FrmSkeletonJoints(this, 0, tmpText);
-            frmSJ.ShowDialog();
-            frmSJ.Dispose();
         }
 
         private void EditJointToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (fAnimation.nFrames > 1)
+            if (animation != null)
             {
-                MessageBox.Show("You can Add/Edit Joints when the loaded animation has only 1 frame.",
-                                "Information");
-                return;
-            }
+                if (animation.FrameCount > 1)
+                {
+                    MessageBox.Show("You can Add/Edit Joints when the loaded animation has only 1 frame.",
+                                    "Information");
+                    return;
+                }
 
-            if (cbBoneSelector.SelectedIndex >= 0)
-            {
-                frmSJ = new FrmSkeletonJoints(this, 1, cbBoneSelector.Text);
-                frmSJ.ShowDialog();
-                frmSJ.Dispose();
+                if (cbBoneSelector.SelectedIndex >= 0)
+                {
+                    frmSJ = new FrmSkeletonJoints(this, 1, cbBoneSelector.Text);
+                    frmSJ.ShowDialog();
+                    frmSJ.Dispose();
+                }
+                else
+                    MessageBox.Show("If you want to Edit Joints you need to select a Bone in Selected Bone combobox.",
+                                    "Information");
             }
-            else
-                MessageBox.Show("If you want to Edit Joints you need to select a Bone in Selected Bone combobox.",
-                                "Information");
         }
 
         public void UpdateMainSkeletonWindowTitle()
         {
             switch (modelType)
             {
-                case ModelType.K_HRC_SKELETON:
+                case ModelType.HRCSkeleton:
 
                     if (IsRSDResource) Text = STR_APPNAME + " - Model: " + strGlobalRSDResourceName.ToUpper();
                     else
@@ -7171,17 +7395,17 @@ namespace KimeraCS
                                              " / Anim: " + strGlobalFieldAnimationName.ToUpper();
                     break;
 
-                case ModelType.K_AA_SKELETON:
+                case ModelType.AASkeleton:
                     Text = STR_APPNAME + " - Model: " + strGlobalBattleSkeletonName.ToUpper() +
                                          " / Anim: " + strGlobalBattleAnimationName.ToUpper();
                     break;
 
-                case ModelType.K_MAGIC_SKELETON:
+                case ModelType.MagicSkeleton:
                     Text = STR_APPNAME + " - Model: " + strGlobalMagicSkeletonName.ToUpper() +
                                          " / Anim: " + strGlobalMagicAnimationName.ToUpper();
                     break;
 
-                case ModelType.K_3DS_MODEL:
+                case ModelType.ImportedModel:
                     Text = STR_APPNAME + " - Model: " + Path.GetFileNameWithoutExtension(strGlobal3DSModelName).ToUpper() + ".P";
                     break;
 
@@ -7331,21 +7555,24 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case ModelType.K_P_FIELD_MODEL:
-                case ModelType.K_P_BATTLE_MODEL:
-                case ModelType.K_P_MAGIC_MODEL:
-                case ModelType.K_3DS_MODEL:
+                case ModelType.PFieldModel:
+                case ModelType.PBattleModel:
+                case ModelType.PMagicModel:
+                case ModelType.ImportedModel:
                     ComputePModelBoundingBox(fPModel, ref p_min, ref p_max);
                     break;
 
-                case ModelType.K_HRC_SKELETON:
-                    ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[iCurrentFrameScroll], ref p_min, ref p_max);
+                case ModelType.HRCSkeleton:
+                    if (skeleton != null && animation != null)
+                        skeleton.ComputeBoundingBox(animation.Frames[iCurrentFrameScroll],
+                                                    ref p_min, ref p_max);
                     break;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll],
-                                             ref p_min, ref p_max);
+                case ModelType.AASkeleton:
+                case ModelType.MagicSkeleton:
+                    if (skeleton != null && animationPack != null)
+                        skeleton.ComputeBoundingBox(animationPack.SkeletonAnimations[ianimIndex].Frames[iCurrentFrameScroll],
+                                                    ref p_min, ref p_max);
                     break;
             }
 
@@ -7363,10 +7590,9 @@ namespace KimeraCS
             // Create context from current FrmSkeletonEditor state and delegate
             var modelData = new SkeletonModelData()
             {
-                FieldSkeleton = fSkeleton,
-                FieldAnimation = fAnimation,
-                BattleSkeleton = bSkeleton,
-                BattleAnimations = bAnimationsPack,
+                Skeleton = skeleton,
+                Animation = animation,
+                AnimationPack = animationPack,
                 PModel = fPModel,
                 TextureIds = tex_ids
             };
@@ -7401,452 +7627,93 @@ namespace KimeraCS
             ModelDrawing.DrawSkeletonModel(ctx);
         }
 
-        /// <summary>
-        /// M�ller�Trumbore ray-triangle intersection algorithm.
-        /// </summary>
-        private bool RayTriangleIntersect(OpenTK.Mathematics.Vector3 rayOrigin, OpenTK.Mathematics.Vector3 rayDir,
-                                                  OpenTK.Mathematics.Vector3 v0, OpenTK.Mathematics.Vector3 v1, OpenTK.Mathematics.Vector3 v2,
-                                                  out float distance)
-        {
-            distance = 0;
-            const float EPSILON = 0.0000001f;
-
-            OpenTK.Mathematics.Vector3 edge1 = v1 - v0;
-            OpenTK.Mathematics.Vector3 edge2 = v2 - v0;
-            OpenTK.Mathematics.Vector3 h = OpenTK.Mathematics.Vector3.Cross(rayDir, edge2);
-            float a = OpenTK.Mathematics.Vector3.Dot(edge1, h);
-
-            if (a > -EPSILON && a < EPSILON)
-                return false; // Ray is parallel to triangle
-
-            float f = 1.0f / a;
-            OpenTK.Mathematics.Vector3 s = rayOrigin - v0;
-            float u = f * OpenTK.Mathematics.Vector3.Dot(s, h);
-
-            if (u < 0.0f || u > 1.0f)
-                return false;
-
-            OpenTK.Mathematics.Vector3 q = OpenTK.Mathematics.Vector3.Cross(s, edge1);
-            float v = f * OpenTK.Mathematics.Vector3.Dot(rayDir, q);
-
-            if (v < 0.0f || u + v > 1.0f)
-                return false;
-
-            // Compute distance to intersection point
-            distance = f * OpenTK.Mathematics.Vector3.Dot(edge2, q);
-            return distance > EPSILON;
-        }
-
-        /// <summary>
-        /// Tests ray intersection with a PModel's geometry.
-        /// </summary>
-        private bool RayIntersectsModel(OpenTK.Mathematics.Vector3 rayOrigin, OpenTK.Mathematics.Vector3 rayDir,
-                                                PModel model, Matrix4 modelTransform,
-                                                out float minDist)
-        {
-            minDist = float.MaxValue;
-            bool hit = false;
-
-            if (model.Polys == null) return false;
-
-            for (int gi = 0; gi < model.Header.numGroups; gi++)
-            {
-                if (model.Groups[gi].HiddenQ) continue;
-
-                int offsetVert = model.Groups[gi].offsetVert;
-
-                for (int pi = model.Groups[gi].offsetPoly;
-                     pi < model.Groups[gi].offsetPoly + model.Groups[gi].numPoly;
-                     pi++)
-                {
-                    // Transform vertices by the model transform
-                    Vector4 v0h = new Vector4(
-                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].X,
-                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].Y,
-                        model.Verts[model.Polys[pi].Verts[0] + offsetVert].Z, 1.0f) * modelTransform;
-                    Vector4 v1h = new Vector4(
-                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].X,
-                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].Y,
-                        model.Verts[model.Polys[pi].Verts[1] + offsetVert].Z, 1.0f) * modelTransform;
-                    Vector4 v2h = new Vector4(
-                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].X,
-                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].Y,
-                        model.Verts[model.Polys[pi].Verts[2] + offsetVert].Z, 1.0f) * modelTransform;
-
-                    OpenTK.Mathematics.Vector3 v0 = v0h.Xyz / v0h.W;
-                    OpenTK.Mathematics.Vector3 v1 = v1h.Xyz / v1h.W;
-                    OpenTK.Mathematics.Vector3 v2 = v2h.Xyz / v2h.W;
-
-                    if (RayTriangleIntersect(rayOrigin, rayDir, v0, v1, v2, out float dist))
-                    {
-                        if (dist > 0 && dist < minDist)
-                        {
-                            minDist = dist;
-                            hit = true;
-                        }
-                    }
-                }
-            }
-
-            return hit;
-        }
-
-        /// <summary>
-        /// Computes the bone transform for a given bone index using pure Matrix4 math.
-        /// </summary>
-        private Matrix4 ComputeBoneTransform(BattleSkeleton bSkeleton, BattleFrame bFrame, int boneIndex)
-        {
-            double[] rot_mat = new double[16];
-            int[] joint_stack = new int[bSkeleton.nBones + 1];
-            Matrix4[] matrixStack = new Matrix4[bSkeleton.nBones + 2];
-            int matrixStackPtr = 0;
-            int jsp = 0;
-
-            joint_stack[jsp] = -1;
-            int itmpbones = bSkeleton.nBones > 1 ? 1 : 0;
-
-            // Build root transform (pre-multiply to match OpenGL)
-            //BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma, ref rot_mat);
-            Matrix4 currentMatrix = BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma)
-                * Matrix4.CreateTranslation(bFrame.startX, bFrame.startY, bFrame.startZ);
-
-            matrixStack[matrixStackPtr++] = currentMatrix;
-
-            for (int bi = 0; bi <= boneIndex; bi++)
-            {
-                while (!(bSkeleton.bones[bi].parentBone == joint_stack[jsp]) && jsp > 0)
-                {
-                    matrixStackPtr--;
-                    currentMatrix = matrixStack[matrixStackPtr];
-                    jsp--;
-                }
-                matrixStack[matrixStackPtr++] = currentMatrix;
-
-                //BuildRotationMatrixWithQuaternions(bFrame.bones[bi + itmpbones].alpha,
-                //                                   bFrame.bones[bi + itmpbones].beta,
-                //                                   bFrame.bones[bi + itmpbones].gamma, ref rot_mat);
-                // Pre-multiply to match OpenGL's transform order
-                currentMatrix = BuildRotationMatrixWithQuaternions(bFrame.bones[bi + itmpbones].alpha,
-                                                   bFrame.bones[bi + itmpbones].beta,
-                                                   bFrame.bones[bi + itmpbones].gamma)
-                                * currentMatrix;
-
-                if (bi < boneIndex)
-                {
-                    // Pre-multiply translation
-                    currentMatrix = Matrix4.CreateTranslation(0, 0, bSkeleton.bones[bi].len) * currentMatrix;
-                }
-
-                jsp++;
-                joint_stack[jsp] = bi;
-            }
-
-            return currentMatrix;
-        }
-
-        private int GetClosestBattleBoneModel(BattleSkeleton bSkeleton, BattleFrame bFrame, int boneIndex,
-                                                    int px, int py)
-        {
-            // Get viewport
-            int[] vp = new int[4];
-            GL.GetInteger(GetPName.Viewport, vp);
-            int height = vp[3];
-
-            // Get view and projection matrices from GLRenderer
-            Matrix4 view = GLRenderer.ViewMatrix;
-            Matrix4 projection = GLRenderer.ProjectionMatrix;
-
-            // Create ray from screen coordinates
-            Vector4 viewport = new Vector4(vp[0], vp[1], vp[2], vp[3]);
-            float screenY = height - py;
-
-            // Unproject to create ray
-            OpenTK.Mathematics.Vector3 nearPoint = Unproject(new OpenTK.Mathematics.Vector3(px, screenY, 0.0f), Matrix4.Identity, view, projection, viewport);
-            OpenTK.Mathematics.Vector3 farPoint = Unproject(new OpenTK.Mathematics.Vector3(px, screenY, 1.0f), Matrix4.Identity, view, projection, viewport);
-            OpenTK.Mathematics.Vector3 rayOrigin = nearPoint;
-            OpenTK.Mathematics.Vector3 rayDir = OpenTK.Mathematics.Vector3.Normalize(farPoint - nearPoint);
-
-            // Compute bone transform
-            Matrix4 boneTransform = ComputeBoneTransform(bSkeleton, bFrame, boneIndex);
-
-            // Test each model in the bone
-            int closestModel = -1;
-            float closestDist = float.MaxValue;
-
-            for (int mi = 0; mi < bSkeleton.bones[boneIndex].nModels; mi++)
-            {
-                var model = bSkeleton.bones[boneIndex].Models[mi];
-
-                // Build model transform (pre-multiply to match OpenGL)
-                // Scale, then rotation (ZXY order reversed), then translation, then bone transform
-                Matrix4 modelTransform = Matrix4.CreateScale(model.resizeX, model.resizeY, model.resizeZ)
-                    * Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(model.rotateGamma))
-                    * Matrix4.CreateRotationX(MathHelper.DegreesToRadians(model.rotateAlpha))
-                    * Matrix4.CreateRotationY(MathHelper.DegreesToRadians(model.rotateBeta))
-                    * Matrix4.CreateTranslation(model.repositionX, model.repositionY, model.repositionZ)
-                    * boneTransform;
-
-                if (RayIntersectsModel(rayOrigin, rayDir, model, modelTransform, out float dist))
-                {
-                    if (dist < closestDist)
-                    {
-                        closestDist = dist;
-                        closestModel = mi;
-                    }
-                }
-            }
-
-            return closestModel;
-        }
-
-        /// <summary>
-        /// Tests ray intersection with all models in a battle bone.
-        /// </summary>
-        private bool RayIntersectsBattleBone(OpenTK.Mathematics.Vector3 rayOrigin, OpenTK.Mathematics.Vector3 rayDir,
-                                                     BattleBone bone, Matrix4 boneTransform,
-                                                     out float minDist)
-        {
-            minDist = float.MaxValue;
-            bool hit = false;
-
-            for (int mi = 0; mi < bone.nModels; mi++)
-            {
-                var model = bone.Models[mi];
-                if (model.Polys == null) continue;
-
-                // Build model transform (pre-multiply to match OpenGL)
-                // Scale, then rotation (ZXY order reversed), then translation, then bone transform
-                Matrix4 modelTransform = Matrix4.CreateScale(model.resizeX, model.resizeY, model.resizeZ)
-                    * Matrix4.CreateRotationZ(MathHelper.DegreesToRadians((float)model.rotateGamma))
-                    * Matrix4.CreateRotationX(MathHelper.DegreesToRadians((float)model.rotateAlpha))
-                    * Matrix4.CreateRotationY(MathHelper.DegreesToRadians((float)model.rotateBeta))
-                    * Matrix4.CreateTranslation(model.repositionX, model.repositionY, model.repositionZ)
-                    * boneTransform;
-
-                if (RayIntersectsModel(rayOrigin, rayDir, model, modelTransform, out float dist))
-                {
-                    if (dist < minDist)
-                    {
-                        minDist = dist;
-                        hit = true;
-                    }
-                }
-            }
-
-            return hit;
-        }
-
-        private int GetClosestBattleBone(BattleSkeleton bSkeleton, BattleFrame bFrame, BattleFrame wpFrame, int weaponIndex,
-                                               int px, int py)
-        {
-            // Get viewport
-            int[] vp = new int[4];
-            GL.GetInteger(GetPName.Viewport, vp);
-            int height = vp[3];
-
-            // Get view and projection matrices from GLRenderer
-            Matrix4 view = GLRenderer.ViewMatrix;
-            Matrix4 projection = GLRenderer.ProjectionMatrix;
-
-            // Create ray from screen coordinates
-            Vector4 viewport = new Vector4(vp[0], vp[1], vp[2], vp[3]);
-            float screenY = height - py;
-
-            // Unproject to create ray
-            OpenTK.Mathematics.Vector3 nearPoint = Unproject(new OpenTK.Mathematics.Vector3(px, screenY, 0.0f), Matrix4.Identity, view, projection, viewport);
-            OpenTK.Mathematics.Vector3 farPoint = Unproject(new OpenTK.Mathematics.Vector3(px, screenY, 1.0f), Matrix4.Identity, view, projection, viewport);
-            OpenTK.Mathematics.Vector3 rayOrigin = nearPoint;
-            OpenTK.Mathematics.Vector3 rayDir = OpenTK.Mathematics.Vector3.Normalize(farPoint - nearPoint);
-
-            double[] rot_mat = new double[16];
-            int[] joint_stack = new int[bSkeleton.nBones + 1];
-            Matrix4[] matrixStack = new Matrix4[bSkeleton.nBones + 2];
-            int matrixStackPtr = 0;
-            int jsp = 0;
-
-            joint_stack[jsp] = -1;
-            int itmpbones = bSkeleton.nBones > 1 ? 1 : 0;
-
-            // Build root transform (pre-multiply to match OpenGL)
-            //BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma, ref rot_mat);
-            Matrix4 currentMatrix = BuildRotationMatrixWithQuaternions(bFrame.bones[0].alpha, bFrame.bones[0].beta, bFrame.bones[0].gamma)
-                * Matrix4.CreateTranslation(bFrame.startX, bFrame.startY, bFrame.startZ);
-
-            matrixStack[matrixStackPtr++] = currentMatrix;
-
-            int closestBone = -1;
-            float closestDist = float.MaxValue;
-
-            for (int bi = 0; bi < bSkeleton.nBones; bi++)
-            {
-                if (bSkeleton.IsBattleLocation)
-                {
-                    // Battle location bones don't have hierarchy
-                    if (RayIntersectsBattleBone(rayOrigin, rayDir, bSkeleton.bones[bi], currentMatrix, out float dist))
-                    {
-                        if (dist < closestDist)
-                        {
-                            closestDist = dist;
-                            closestBone = bi;
-                        }
-                    }
-                }
-                else
-                {
-                    while (!(bSkeleton.bones[bi].parentBone == joint_stack[jsp]) && jsp > 0)
-                    {
-                        matrixStackPtr--;
-                        currentMatrix = matrixStack[matrixStackPtr];
-                        jsp--;
-                    }
-                    matrixStack[matrixStackPtr++] = currentMatrix;
-
-                    //BuildRotationMatrixWithQuaternions(bFrame.bones[bi + itmpbones].alpha,
-                    //                                   bFrame.bones[bi + itmpbones].beta,
-                    //                                   bFrame.bones[bi + itmpbones].gamma,
-                    //                                   ref rot_mat);
-                    // Pre-multiply to match OpenGL's transform order
-                    currentMatrix = BuildRotationMatrixWithQuaternions(bFrame.bones[bi + itmpbones].alpha,
-                                                       bFrame.bones[bi + itmpbones].beta,
-                                                       bFrame.bones[bi + itmpbones].gamma)
-                                  * currentMatrix;
-
-                    if (RayIntersectsBattleBone(rayOrigin, rayDir, bSkeleton.bones[bi], currentMatrix, out float dist))
-                    {
-                        if (dist < closestDist)
-                        {
-                            closestDist = dist;
-                            closestBone = bi;
-                        }
-                    }
-
-                    // Pre-multiply translation
-                    currentMatrix = Matrix4.CreateTranslation(0, 0, bSkeleton.bones[bi].len) * currentMatrix;
-                    jsp++;
-                    joint_stack[jsp] = bi;
-                }
-            }
-
-            // Test weapon if applicable
-            if (ianimWeaponIndex > -1 && bSkeleton.wpModels.Count > 0 && bAnimationsPack.WeaponAnimations.Count > 0)
-            {
-                var wpModel = bSkeleton.wpModels[weaponIndex];
-                if (wpModel.Polys != null)
-                {
-                    // Build weapon transform (pre-multiply to match OpenGL)
-                    //BuildRotationMatrixWithQuaternions(wpFrame.bones[0].alpha, wpFrame.bones[0].beta, wpFrame.bones[0].gamma, ref rot_mat);
-                    Matrix4 wpTransform = BuildRotationMatrixWithQuaternions(wpFrame.bones[0].alpha,
-                                            wpFrame.bones[0].beta, wpFrame.bones[0].gamma)
-                        * Matrix4.CreateTranslation(wpFrame.startX, wpFrame.startY, wpFrame.startZ);
-
-                    // Apply model's local transforms (scale, rotation, translation in reverse order)
-                    wpTransform = Matrix4.CreateScale(wpModel.resizeX, wpModel.resizeY, wpModel.resizeZ)
-                        * Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(wpModel.rotateGamma))
-                        * Matrix4.CreateRotationX(MathHelper.DegreesToRadians(wpModel.rotateAlpha))
-                        * Matrix4.CreateRotationY(MathHelper.DegreesToRadians(wpModel.rotateBeta))
-                        * Matrix4.CreateTranslation(wpModel.repositionX, wpModel.repositionY, wpModel.repositionZ)
-                        * wpTransform;
-
-                    if (RayIntersectsModel(rayOrigin, rayDir, wpModel, wpTransform, out float dist))
-                    {
-                        if (dist < closestDist)
-                        {
-                            closestDist = dist;
-                            closestBone = bSkeleton.nBones; // Weapon is indexed after all bones
-                        }
-                    }
-                }
-            }
-
-            return closestBone;
-        }
-
         private static int WriteSkeleton(string strFileName, bool compileMultiPBones, bool isExport)
         {
-            Vector3 p_min = new Vector3();
-            Vector3 p_max = new Vector3();
-            BattleFrame tmpwpFrame;
-
             int isaveSkeletonResult = 0;
-
-            try
+            if (skeleton != null)
             {
-                switch (modelType)
+                Vector3 p_min = new Vector3();
+                Vector3 p_max = new Vector3();
+                UnifiedFrame tmpwpFrame;
+
+                try
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        ComputeFieldBoundingBox(fSkeleton, fAnimation.frames[iCurrentFrameScroll], ref p_min, ref p_max);
+                    switch (modelType)
+                    {
+                        case ModelType.HRCSkeleton:
+                            if (animation != null)
+                            {
+                                skeleton.ComputeBoundingBox(animation.Frames[iCurrentFrameScroll], ref p_min, ref p_max);
 
-                        SetCameraAroundModel(ref p_min, ref p_max, 0, 0, -2 * ComputeSceneRadius(p_min, p_max),
-                                             0, 0, 0, 1, 1, 1);
+                                SetCameraAroundModel(ref p_min, ref p_max, 0, 0, -2 * ComputeSceneRadius(p_min, p_max),
+                                                     0, 0, 0, 1, 1, 1);
 
-                        SetLights();
+                                SetLights();
 
-                        ApplyFieldChanges(ref fSkeleton, fAnimation.frames[iCurrentFrameScroll], compileMultiPBones);
+                                skeleton.ApplyChanges(animation.Frames[iCurrentFrameScroll], merge: compileMultiPBones);
 
-                        if (isExport)
-                            ExportFieldSkeleton(fSkeleton, fAnimation, strFileName, true);
-                        else
-                            WriteFieldSkeleton(ref fSkeleton, strFileName);
+                                if (isExport)
+                                    ExportSkeleton(skeleton, animation, null, modelType, strFileName, true);
+                                else
+                                    skeleton.WriteSkeleton(strFileName, modelType);
 
-                        //  WriteFieldAnimation(fAnimation, saveFile.FileName);
-                        CreateDListsFromFieldSkeleton(ref fSkeleton);
+                                //  WriteFieldAnimation(animation, saveFile.FileName);
+                                skeleton.CreateDLists();
 
-                        isaveSkeletonResult = 1;
-                        break;
+                                isaveSkeletonResult = 1;
+                            }
+                            break;
 
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-                        if (bSkeleton.IsBattleLocation && ianimIndex > 0) ianimIndex = 0;
+                        case ModelType.AASkeleton:
+                        case ModelType.MagicSkeleton:
+                            if (animationPack != null)
+                            {
+                                if (skeleton.IsBattleLocation && ianimIndex > 0) ianimIndex = 0;
 
-                        ComputeBattleBoundingBox(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex].frames[iCurrentFrameScroll], ref p_min, ref p_max);
+                                skeleton.ComputeBoundingBox(animationPack.SkeletonAnimations[ianimIndex].Frames[iCurrentFrameScroll], ref p_min, ref p_max);
 
-                        SetCameraAroundModel(ref p_min, ref p_max, 0, 0, -2 * ComputeSceneRadius(p_min, p_max),
-                                             0, 0, 0, 1, 1, 1);
+                                SetCameraAroundModel(ref p_min, ref p_max, 0, 0, -2 * ComputeSceneRadius(p_min, p_max),
+                                                     0, 0, 0, 1, 1, 1);
 
-                        SetLights();
+                                SetLights();
 
-                        BattleAnimation? weaponAnim = null;
-                        tmpwpFrame = new BattleFrame();
-                        if (bSkeleton.nWeapons > 0 && bSkeleton.nsWeaponsAnims > 0)
-                        {
-                            weaponAnim = bAnimationsPack.WeaponAnimations[ianimIndex];
-                            tmpwpFrame = bAnimationsPack.WeaponAnimations[0].frames[0];
-                        }
+                                UnifiedAnimation? weaponAnim = null;
+                                tmpwpFrame = new UnifiedFrame();
+                                if (skeleton.WeaponCount > 0 && skeleton.WeaponAnimationCount > 0)
+                                {
+                                    weaponAnim = animationPack.WeaponAnimations[ianimIndex];
+                                    tmpwpFrame = animationPack.WeaponAnimations[0].Frames[0];
+                                }
 
-                        ApplyBattleChanges(ref bSkeleton, bAnimationsPack.SkeletonAnimations[0].frames[0], tmpwpFrame);
+                                skeleton.ApplyChanges(animationPack.SkeletonAnimations[0].Frames[0], tmpwpFrame);
 
-                        if (isExport)
-                        {
-                            // Export
-                            ExportBattleSkeleton(bSkeleton, bAnimationsPack.SkeletonAnimations[ianimIndex],
-                                weaponAnim, strFileName, true);
-                        }
-                        else if (modelType == ModelType.K_AA_SKELETON)
-                        {
-                            // Battle model (*AA)
-                            WriteBattleSkeleton(ref bSkeleton, strFileName);
-                        }
-                        else
-                        {
-                            // Magic model (*.D)
-                            WriteMagicSkeleton(ref bSkeleton, strFileName);
-                        }
+                                if (isExport)
+                                {
+                                    // Export
+                                    ExportSkeleton(skeleton, animationPack.SkeletonAnimations[ianimIndex],
+                                        weaponAnim, modelType, strFileName, true);
+                                }
+                                else
+                                {
+                                    skeleton.WriteSkeleton(strFileName, modelType);
+                                }
 
-                        //  WriteBattleAnimationsPack(bAnimationsPack, strFileNameAnimationsPack);
-                        //  CheckWriteBattleAnimationsPack(bAnimationsPack, strFileNameAnimationsPack);
-                        CreateDListsFromBattleSkeleton(ref bSkeleton);
+                                //  WriteBattleAnimationsPack(animationPack, strFileNameAnimationsPack);
+                                //  CheckWriteBattleAnimationsPack(animationPack, strFileNameAnimationsPack);
+                                skeleton.CreateDLists();
 
-                        isaveSkeletonResult = 1;
-                        break;
+                                isaveSkeletonResult = 1;
+                            }
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    strGlobalExceptionMessage = ex.Message;
+
+                    isaveSkeletonResult = -1;
                 }
             }
-            catch (Exception ex)
-            {
-                strGlobalExceptionMessage = ex.Message;
-
-                isaveSkeletonResult = -1;
-            }
-
             return isaveSkeletonResult;
         }
 
@@ -7861,10 +7728,10 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case ModelType.K_P_FIELD_MODEL:
-                    case ModelType.K_P_BATTLE_MODEL:
-                    case ModelType.K_P_MAGIC_MODEL:
-                    case ModelType.K_3DS_MODEL:
+                    case ModelType.PFieldModel:
+                    case ModelType.PBattleModel:
+                    case ModelType.PMagicModel:
+                    case ModelType.ImportedModel:
                         GL.MatrixMode(MatrixMode.Modelview);
                         GL.PushMatrix();
 

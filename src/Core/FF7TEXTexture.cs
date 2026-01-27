@@ -1,10 +1,6 @@
-using System;
-using System.Drawing;
 using System.Drawing.Imaging;
 using System.Text.RegularExpressions;
-using System.IO;
 using System.Runtime.InteropServices;
-using System.Linq;
 using OpenTK.Graphics.OpenGL.Compatibility;
 
 namespace KimeraCS.Core
@@ -18,7 +14,7 @@ namespace KimeraCS.Core
         {
             public string TEXfileName;
             public uint texID;
-            public Bitmap bitmap;
+            public Bitmap? bitmap;
 
             // TEX file format by Mirex and Aali
             // http://wiki.qhimm.com/FF7/TEX_format
@@ -292,7 +288,7 @@ namespace KimeraCS.Core
         //  Create the OpenGL Texture object
         public static void LoadTEXTexture(ref TEX inTEXTexture)
         {
-            byte[] textureImg = null;
+            byte[] textureImg = [];
 
             OpenTK.Graphics.OpenGL.Compatibility.PixelFormat format = 0x0;
             InternalFormat internalformat = 0x0;
@@ -342,7 +338,7 @@ namespace KimeraCS.Core
             try
             {
                 // Get 32-bit BGRA pixel data using existing conversion function
-                byte[] textureImg = null;
+                byte[] textureImg = [];
                 GetTEXTexturev(ref inTEXTexture, ref textureImg);
 
                 // Create managed bitmap

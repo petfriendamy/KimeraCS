@@ -1,11 +1,5 @@
 ﻿using OpenTK.Graphics.OpenGL.Compatibility;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.IO;
-using System.Linq;
-using System.Windows.Forms;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using KimeraCS.Core;
@@ -13,10 +7,6 @@ using KimeraCS.Core;
 namespace KimeraCS
 {
     using static FrmSkeletonEditor;
-
-    using static FF7BattleSkeleton;
-    using static FF7FieldRSDResource;
-    using static FF7FieldSkeleton;
     using static FF7PModel;
     using static FF7Skeleton;
     using static FileTools;
@@ -68,8 +58,8 @@ namespace KimeraCS
 
         private EditMode primaryFunc, secondaryFunc, ternaryFunc;
 
-        private Color[] vcolorsOriginal;
-        private Color[] pcolorsOriginal;
+        private Color[] vcolorsOriginal = [];
+        private Color[] pcolorsOriginal = [];
 
         public static float alphaPE, betaPE, gammaPE;
         public static float DISTPE;
@@ -98,9 +88,9 @@ namespace KimeraCS
         private static ushort[] tmpVNewPoly = new ushort[3];
         private static double dblPickedVertexZ;
         List<int> lstPickedVertices = new List<int>();
-        int[] lstAdjacentPolys;
-        STIntVector[] lstAdjacentVerts;
-        STIntVector[] lstAdjacentAdjacentPolys;
+        int[] lstAdjacentPolys = [];
+        STIntVector[] lstAdjacentVerts = [];
+        STIntVector[] lstAdjacentAdjacentPolys = [];
 
         public static bool loadedPModel;
         private static bool bLoading;
@@ -118,11 +108,11 @@ namespace KimeraCS
 
         // Palette
         public static List<Color> colorTable = new List<Color>();
-        public static PairIB[] translationTablePolys;
-        public static PairIB[] translationTableVertex;
+        public static PairIB[] translationTablePolys = [];
+        public static PairIB[] translationTableVertex = [];
         private static int iSelectedColor, iBrightnessFactor;
         public static byte iThreshold;
-        private DirectBitmap bmpFullGradientPalette;
+        private DirectBitmap? bmpFullGradientPalette;
         private bool bColorsChanged;  // -- (KimeraVB6 var "ModelDirty")
 
         // Var for Group aspects
@@ -134,7 +124,7 @@ namespace KimeraCS
         private static bool bGlobalChangeGroup;
 
         // GroupPropierties vars
-        private FrmGroupProperties frmGroupProp;
+        private FrmGroupProperties? frmGroupProp;
 
 
         public FrmPEditor(FrmSkeletonEditor frmSkelEdit, PModel ModelIn)
@@ -208,7 +198,7 @@ namespace KimeraCS
                 // Check first if minimized.
                 if (Application.OpenForms.Count > 1)
                 {
-                    if (Application.OpenForms[1].WindowState == FormWindowState.Minimized) return;
+                    if (Application.OpenForms[1]?.WindowState == FormWindowState.Minimized) return;
 
                     // We can redraw the model in panel
                     //panelEditorPModel.Update();
@@ -321,7 +311,7 @@ namespace KimeraCS
 
         private void RbMesh_Click(object sender, EventArgs e)
         {
-            drawMode = Core.DrawMode.K_MESH;
+            drawMode = Core.DrawMode.Mesh;
 
             rbMesh.Checked = true;
             rbPolygonColors.Checked = false;
@@ -332,7 +322,7 @@ namespace KimeraCS
 
         private void RbPolygonColors_Click(object sender, EventArgs e)
         {
-            drawMode = Core.DrawMode.K_PCOLORS;
+            drawMode = Core.DrawMode.PolygonColors;
 
             rbMesh.Checked = false;
             rbPolygonColors.Checked = true;
@@ -343,7 +333,7 @@ namespace KimeraCS
 
         private void RbVertexColors_Click(object sender, EventArgs e)
         {
-            drawMode = Core.DrawMode.K_VCOLORS;
+            drawMode = Core.DrawMode.VertexColors;
 
             rbMesh.Checked = false;
             rbPolygonColors.Checked = false;
@@ -451,7 +441,7 @@ namespace KimeraCS
             }
         }
 
-        private void PanelEditorPModel_MouseWheel(object sender, MouseEventArgs e)
+        private void PanelEditorPModel_MouseWheel(object? sender, MouseEventArgs e)
         {
 
              if (controlPressedQ)
@@ -465,7 +455,7 @@ namespace KimeraCS
 
         }
 
-        public void PanelEditorPModel_Paint(object sender, PaintEventArgs e)
+        public void PanelEditorPModel_Paint(object? sender, PaintEventArgs? e)
         {
 
             if (loadedPModel)
@@ -1227,11 +1217,11 @@ namespace KimeraCS
 
             CommitContextualizedPChanges(false);
 
-            // Apply changes to the Skeleton in frmSkeletonEditor (fSkeleton, bSkeleton, fPModel)
+            // Apply changes to the Skeleton in frmSkeletonEditor
             switch (modelType)
             {
-                case ModelType.K_HRC_SKELETON:
-                    FieldRSDResource tmpRSDResourceModel;
+                case ModelType.HRCSkeleton:
+                    /*FieldRSDResource tmpRSDResourceModel;
 
                     tmpRSDResourceModel = fSkeleton.bones[EditedBone].fRSDResources[EditedBonePiece];
                     tmpRSDResourceModel.Model = CopyPModel(EditedPModel);
@@ -1239,31 +1229,34 @@ namespace KimeraCS
 
                     CreateDListsFromFieldSkeleton(ref fSkeleton);
 
+                    break;*/
+
+                case ModelType.AASkeleton:
+                case ModelType.MagicSkeleton:
+                    if (skeleton != null)
+                    {
+                        PModel tmpPModel;
+
+                        if (EditedBone == skeleton.BoneCount)
+                        {
+                            skeleton.Weapons[ianimWeaponIndex] = CopyPModel(EditedPModel);
+
+                            tmpPModel = skeleton.Weapons[ianimWeaponIndex];
+                            CreateDListsFromPModel(ref tmpPModel);
+                            skeleton.Weapons[ianimWeaponIndex] = tmpPModel;
+                        }
+                        else
+                        {
+                            skeleton.Bones[EditedBone].Models[EditedBonePiece].Model = CopyPModel(EditedPModel);
+                            skeleton.CreateDLists();
+                        }
+                    }
                     break;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    PModel tmpPModel;
-
-                    if (EditedBone == bSkeleton.nBones)
-                    {
-                        bSkeleton.wpModels[ianimWeaponIndex] = CopyPModel(EditedPModel);
-
-                        tmpPModel = bSkeleton.wpModels[ianimWeaponIndex];
-                        CreateDListsFromPModel(ref tmpPModel);
-                        bSkeleton.wpModels[ianimWeaponIndex] = tmpPModel;
-                    }
-                    else
-                    {
-                        bSkeleton.bones[EditedBone].Models[EditedBonePiece] = CopyPModel(EditedPModel);
-                        CreateDListsFromBattleSkeleton(ref bSkeleton);
-                    }
-                    break;
-
-                case ModelType.K_P_BATTLE_MODEL:
-                case ModelType.K_P_FIELD_MODEL:
-                case ModelType.K_P_MAGIC_MODEL:
-                case ModelType.K_3DS_MODEL:
+                case ModelType.PBattleModel:
+                case ModelType.PFieldModel:
+                case ModelType.PMagicModel:
+                case ModelType.ImportedModel:
                     fPModel = CopyPModel(EditedPModel);
                     CreateDListsFromPModel(ref fPModel);
 
@@ -1464,15 +1457,15 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case ModelType.K_HRC_SKELETON:
+                    case ModelType.HRCSkeleton:
                         openFile.FilterIndex = 1;
                         break;
 
-                    case ModelType.K_AA_SKELETON:
+                    case ModelType.AASkeleton:
                         openFile.FilterIndex = 2;
                         break;
 
-                    case ModelType.K_MAGIC_SKELETON:
+                    case ModelType.MagicSkeleton:
                         openFile.FilterIndex = 3;
                         break;
                 }
@@ -1499,7 +1492,7 @@ namespace KimeraCS
                     if (File.Exists(openFile.FileName))
                     {
                         // Set Global Paths and save them
-                        strGlobalPathPModelFolderPE = Path.GetDirectoryName(openFile.FileName);
+                        strGlobalPathPModelFolderPE = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
                         strGlobalPModelNamePE = Path.GetFileName(openFile.FileName).ToUpper();
 
                         iPEFilterIdx = openFile.FilterIndex;
@@ -1516,7 +1509,8 @@ namespace KimeraCS
                         {
                             // Use Assimp for 3D model formats
                             var scene = LoadSceneFromFile(openFile.FileName);
-                            ConvertSceneToPModel(scene, ref EditedPModel, bAdjust3DSImport);
+                            if (scene != null)
+                                ConvertSceneToPModel(scene, ref EditedPModel, bAdjust3DSImport);
                         }
                         else
                         {
@@ -1567,15 +1561,15 @@ namespace KimeraCS
             {
                 switch (modelType)
                 {
-                    case ModelType.K_HRC_SKELETON:
+                    case ModelType.HRCSkeleton:
                         openFile.FilterIndex = 1;
                         break;
 
-                    case ModelType.K_AA_SKELETON:
+                    case ModelType.AASkeleton:
                         openFile.FilterIndex = 2;
                         break;
 
-                    case ModelType.K_MAGIC_SKELETON:
+                    case ModelType.MagicSkeleton:
                         openFile.FilterIndex = 3;
                         break;
                 }
@@ -1602,7 +1596,7 @@ namespace KimeraCS
                     if (File.Exists(openFile.FileName))
                     {
                         // Set Global Paths and save them
-                        strGlobalPathPModelFolderPE = Path.GetDirectoryName(openFile.FileName);
+                        strGlobalPathPModelFolderPE = (Path.GetDirectoryName(openFile.FileName) ?? string.Empty);
                         strGlobalPModelNamePE = Path.GetFileName(openFile.FileName).ToUpper();
 
                         iPEFilterIdx = openFile.FilterIndex;
@@ -1617,7 +1611,8 @@ namespace KimeraCS
                         {
                             // Use Assimp for 3D model formats
                             var scene = LoadSceneFromFile(openFile.FileName);
-                            ConvertSceneToPModel(scene, ref GroupModel, bAdjust3DSImport);
+                            if (scene != null)
+                                ConvertSceneToPModel(scene, ref GroupModel, bAdjust3DSImport);
                         }
                         else
                         {
@@ -1634,44 +1629,47 @@ namespace KimeraCS
                             VCountNewPoly = 0;
 
                             int iGroupIdx = 0, iEditedPModelGroupIdx = EditedPModel.Groups.Length;
-                            foreach (PGroup itmGroup in GroupModel.Groups)
+                            if (GroupModel.Groups != null && GroupModel.Verts != null && GroupModel.Polys != null
+                                && GroupModel.Vcolors != null && GroupModel.Pcolors != null)
                             {
-                                // We will add the group having in mind if it has texFlag or not
-                                if (itmGroup.texFlag == 0)
+                                foreach (PGroup itmGroup in GroupModel.Groups)
                                 {
-                                    AddGroup(ref EditedPModel,
-                                             GroupModel.Verts.Skip(itmGroup.offsetVert).Take(itmGroup.numVert).ToArray(),
-                                             GroupModel.Polys.Skip(itmGroup.offsetPoly).Take(itmGroup.numPoly).ToArray(),
-                                             null,
-                                             GroupModel.Vcolors.Skip(itmGroup.offsetVert).Take(itmGroup.numVert).ToArray(),
-                                             GroupModel.Pcolors.Skip(itmGroup.offsetPoly).Take(itmGroup.numPoly).ToArray(),
-                                             0);
+                                    // We will add the group having in mind if it has texFlag or not
+                                    if (itmGroup.texFlag == 1 && GroupModel.TexCoords != null && GroupModel.Hundrets != null)
+                                    {
+                                        AddGroup(ref EditedPModel,
+                                                 GroupModel.Verts.Skip(itmGroup.offsetVert).Take(itmGroup.numVert).ToArray(),
+                                                 GroupModel.Polys.Skip(itmGroup.offsetPoly).Take(itmGroup.numPoly).ToArray(),
+                                                 GroupModel.TexCoords.Skip(itmGroup.offsetTex).Take(itmGroup.numVert).ToArray(),
+                                                 GroupModel.Vcolors.Skip(itmGroup.offsetVert).Take(itmGroup.numVert).ToArray(),
+                                                 GroupModel.Pcolors.Skip(itmGroup.offsetPoly).Take(itmGroup.numPoly).ToArray(),
+                                                 itmGroup.texID);
+
+                                        EditedPModel.Groups[iEditedPModelGroupIdx].texID = GroupModel.Groups[iGroupIdx].texID;
+                                        EditedPModel.Hundrets[iEditedPModelGroupIdx] = CopyPHundret(GroupModel.Hundrets[iGroupIdx]);
+                                    }
+                                    else
+                                    {
+                                        AddGroup(ref EditedPModel,
+                                                 GroupModel.Verts.Skip(itmGroup.offsetVert).Take(itmGroup.numVert).ToArray(),
+                                                 GroupModel.Polys.Skip(itmGroup.offsetPoly).Take(itmGroup.numPoly).ToArray(),
+                                                 null,
+                                                 GroupModel.Vcolors.Skip(itmGroup.offsetVert).Take(itmGroup.numVert).ToArray(),
+                                                 GroupModel.Pcolors.Skip(itmGroup.offsetPoly).Take(itmGroup.numPoly).ToArray(),
+                                                 0);
+                                    }
+
+                                    // We need to adjust for Assimp formats here also, because we are adding a new
+                                    // Group to the main .P EditedPModel, and the rotGroupGamma would be 0.
+                                    if (isAssimpFormat && bAdjust3DSImport)
+                                    {
+                                        EditedPModel.Groups[iEditedPModelGroupIdx].rotGroupGamma = 180;
+                                    }
+
+                                    iGroupIdx++;
+                                    iEditedPModelGroupIdx++;
 
                                 }
-                                else
-                                {
-                                    AddGroup(ref EditedPModel,
-                                             GroupModel.Verts.Skip(itmGroup.offsetVert).Take(itmGroup.numVert).ToArray(),
-                                             GroupModel.Polys.Skip(itmGroup.offsetPoly).Take(itmGroup.numPoly).ToArray(),
-                                             GroupModel.TexCoords.Skip(itmGroup.offsetTex).Take(itmGroup.numVert).ToArray(),
-                                             GroupModel.Vcolors.Skip(itmGroup.offsetVert).Take(itmGroup.numVert).ToArray(),
-                                             GroupModel.Pcolors.Skip(itmGroup.offsetPoly).Take(itmGroup.numPoly).ToArray(),
-                                             itmGroup.texID);
-
-                                    EditedPModel.Groups[iEditedPModelGroupIdx].texID = GroupModel.Groups[iGroupIdx].texID;
-                                    EditedPModel.Hundrets[iEditedPModelGroupIdx] = CopyPHundret(GroupModel.Hundrets[iGroupIdx]);
-                                }
-
-                                // We need to adjust for Assimp formats here also, because we are adding a new
-                                // Group to the main .P EditedPModel, and the rotGroupGamma would be 0.
-                                if (isAssimpFormat && bAdjust3DSImport)
-                                {
-                                    EditedPModel.Groups[iEditedPModelGroupIdx].rotGroupGamma = 180;
-                                }
-
-                                iGroupIdx++;
-                                iEditedPModelGroupIdx++;
-
                             }
 
                             DestroyPModelResources(ref GroupModel);
@@ -1708,15 +1706,15 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case ModelType.K_HRC_SKELETON:
+                case ModelType.HRCSkeleton:
                     openFile.FilterIndex = 1;
                     break;
 
-                case ModelType.K_AA_SKELETON:
+                case ModelType.AASkeleton:
                     openFile.FilterIndex = 2;
                     break;
 
-                case ModelType.K_MAGIC_SKELETON:
+                case ModelType.MagicSkeleton:
                     openFile.FilterIndex = 3;
                     break;
             }
@@ -1740,7 +1738,7 @@ namespace KimeraCS
                         // I don't think it is needed when saving
                         //AddStateToBuffer(this);
 
-                        strGlobalPathSaveModelFolderPE = Path.GetDirectoryName(saveFile.FileName);
+                        strGlobalPathSaveModelFolderPE = (Path.GetDirectoryName(saveFile.FileName) ?? string.Empty);
                         saveFile.FileName = strGlobalPathSaveModelFolderPE + "\\" + Path.GetFileName(saveFile.FileName).ToUpper();
 
                         // We save the Model.
@@ -1937,7 +1935,7 @@ namespace KimeraCS
             }
         }
 
-        private void ChkPalettized_CheckedChanged(object sender, EventArgs e)
+        private void ChkPalettized_CheckedChanged(object? sender, EventArgs? e)
         {
             if (loadedPModel)
             {
@@ -1999,8 +1997,10 @@ namespace KimeraCS
             ResetCameraToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.Home;
 
             // Scale for different magnitudes when model is from battle location
-            if (bSkeleton.IsBattleLocation) fBattleLocationGroupScale = F_BATTLELOCATION_SCALE;
-            else fBattleLocationGroupScale = 1f;
+            if (skeleton != null && skeleton.IsBattleLocation)
+                fBattleLocationGroupScale = F_BATTLELOCATION_SCALE;
+            else
+                fBattleLocationGroupScale = 1f;
 
             hsbRotateAlpha.Maximum = (int)(360 * fBattleLocationGroupScale);
             hsbRotateBeta.Maximum = (int)(360 * fBattleLocationGroupScale);
@@ -2030,7 +2030,7 @@ namespace KimeraCS
             }
         }
 
-        private void PbPalette_Paint(object sender, PaintEventArgs e)
+        private void PbPalette_Paint(object? sender, PaintEventArgs? e)
         {
             DrawPalette(Event.K_CLICK);
         }
@@ -2079,7 +2079,7 @@ namespace KimeraCS
                         hsbSelectedColorG.Value = 255;
                         hsbSelectedColorB.Value = 255;
                     }
-                    else
+                    else if (bmpFullGradientPalette != null)
                     {
                         cColor = bmpFullGradientPalette.GetPixel(xPos, yPos);
 
@@ -2147,7 +2147,7 @@ namespace KimeraCS
                         hsbSelectedColorG.Value = 255;
                         hsbSelectedColorB.Value = 255;
                     }
-                    else
+                    else if (bmpFullGradientPalette != null)
                     {
                         cColor = bmpFullGradientPalette.GetPixel(xPos, yPos);
 
@@ -2675,8 +2675,8 @@ namespace KimeraCS
 
         private void PbPalette_DragEnter(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(typeof(PictureBox)))
-                            e.Effect = DragDropEffects.Move;
+            if (e.Data != null && e.Data.GetDataPresent(typeof(PictureBox)))
+                e.Effect = DragDropEffects.Move;
         }
 
         private void PbPalette_DragDrop(object sender, DragEventArgs e)
@@ -2756,7 +2756,7 @@ namespace KimeraCS
             hsbLightZ.Minimum = -LIGHT_STEPS;
 
             // Select Vertex colors draw mode by default
-            drawMode = Core.DrawMode.K_VCOLORS;
+            drawMode = Core.DrawMode.VertexColors;
             rbVertexColors.PerformClick();
 
             chkEnableLighting.Checked = false;
@@ -3355,7 +3355,7 @@ namespace KimeraCS
             SolidBrush sBrush;
             Pen hPen;
 
-            DirectBitmap bmpFullPalette = new DirectBitmap(pbPalette.ClientRectangle.Width, pbPalette.ClientRectangle.Height);
+            DirectBitmap? bmpFullPalette = new DirectBitmap(pbPalette.ClientRectangle.Width, pbPalette.ClientRectangle.Height);
 
             if (chkPaletteMode.Checked)
             {
@@ -3437,7 +3437,7 @@ namespace KimeraCS
                                                   pbPalette.ClientRectangle.Width, pbPalette.ClientRectangle.Height));
                 }
             }
-            else
+            else if (bmpFullGradientPalette != null)
             {
                 for (x = 0; x < pbPalette.ClientRectangle.Width; x++)
                 {
@@ -3466,6 +3466,7 @@ namespace KimeraCS
                 }
 
                 if (bmpFullPalette != null) bmpFullPalette.Dispose();
+                bmpFullPalette = new DirectBitmap(pbPalette.ClientRectangle.Width, pbPalette.ClientRectangle.Height);
                 bmpFullPalette.Bitmap = bmpFullGradientPalette.Bitmap.Clone(new Rectangle(0, 0,
                                                                                           bmpFullGradientPalette.Width,
                                                                                           bmpFullGradientPalette.Height),

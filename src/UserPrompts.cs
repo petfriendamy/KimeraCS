@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 
-#nullable enable
+
 namespace KimeraCS
 {
     using static FF7BattleSkeleton;
@@ -91,24 +91,31 @@ namespace KimeraCS
             }
             if (result == -2)
                 bLoaded = false;
-            ModelType modelType = GetSkeletonType(strFileName);
-            switch (modelType)
-            {
-                case ModelType.K_HRC_SKELETON:
-                    var dirName = Path.GetDirectoryName(strFileName);
-                    fAnimation = GetFieldAnimationFromFolder(ref fSkeleton, dirName ?? string.Empty);
-                    strGlobalFieldAnimationName = fAnimation.strFieldAnimationFile;
-                    FieldSkeletonPolyCheck(ref fSkeleton);
-                    break;
 
-                case ModelType.K_AA_SKELETON:
-                    strGlobalBattleAnimationName = bAnimationsPack.strBattleAnimPackFileName;
-                    BattleSkeletonPolyCheck(ref bSkeleton);
-                    break;
-                case ModelType.K_MAGIC_SKELETON:
-                    strGlobalMagicAnimationName = bAnimationsPack.strBattleAnimPackFileName;
-                    BattleSkeletonPolyCheck(ref bSkeleton);
-                    break;
+            if (skeleton != null)
+            {
+                ModelType modelType = GetSkeletonType(strFileName);
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        var dirName = Path.GetDirectoryName(strFileName);
+                        var fSkeleton = skeleton.ToFieldSkeleton();
+                        var fAnimation = GetFieldAnimationFromFolder(ref fSkeleton, dirName ?? string.Empty);
+                        strGlobalFieldAnimationName = fAnimation.strFieldAnimationFile;
+                        FieldSkeletonPolyCheck(ref fSkeleton);
+                        animation = new UnifiedAnimation(fAnimation);
+                        break;
+
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        if (animationPack != null)
+                        {
+                            strGlobalBattleAnimationName = animationPack.FileName;
+                            strGlobalMagicAnimationName = animationPack.FileName;
+                            SkeletonPolyCheck(modelType);
+                        }
+                        break;
+                }
             }
             return result;
         }
@@ -137,23 +144,21 @@ namespace KimeraCS
                 strGlobalFieldAnimationName = Path.GetFileName(strAnimFileName);
 
             ModelType modelType = GetSkeletonType(strFileName);
+            SkeletonPolyCheck(modelType);
+
             switch (modelType)
             {
-                case ModelType.K_HRC_SKELETON:
-                    FieldSkeletonPolyCheck(ref fSkeleton);
-
+                case ModelType.HRCSkeleton:
                     strGlobalFieldSkeletonName = Path.GetFileNameWithoutExtension(strFileName).ToUpper();
                     strGlobalFieldSkeletonFileName = Path.GetFileName(strFileName).ToUpper();
                     break;
-                case ModelType.K_AA_SKELETON:
-                    BattleSkeletonPolyCheck(ref bSkeleton);
-                    
+
+                case ModelType.AASkeleton:
                     strGlobalBattleSkeletonName = Path.GetFileNameWithoutExtension(strFileName).ToUpper();
                     strGlobalBattleSkeletonFileName = Path.GetFileName(strFileName).ToUpper();
                     break;
-                case ModelType.K_MAGIC_SKELETON:
-                    BattleSkeletonPolyCheck(ref bSkeleton);
 
+                case ModelType.MagicSkeleton:
                     strGlobalMagicSkeletonName = Path.GetFileNameWithoutExtension(strFileName).ToUpper();
                     strGlobalMagicSkeletonFileName = Path.GetFileName(strFileName).ToUpper();
                     break;
@@ -177,8 +182,9 @@ namespace KimeraCS
                     throw new FileLoadException("File could not be loaded.", ex);
             }
             var dirName = Path.GetDirectoryName(strfileName);
-            fAnimation = GetFieldAnimationFromFolder(ref fSkeleton, dirName ?? string.Empty);
+            var fAnimation = GetFieldAnimationFromFolder(ref fSkeleton, dirName ?? string.Empty);
             strGlobalFieldAnimationName = Path.GetFileName(fAnimation.strFieldAnimationFile);
+            animation = new UnifiedAnimation(fAnimation);
             FieldSkeletonPolyCheck(ref fSkeleton);
             return fSkeleton;
         }
@@ -221,7 +227,7 @@ namespace KimeraCS
                 else
                     throw new FileLoadException("File could not be loaded.", ex);
             }
-            FieldSkeletonPolyCheck(ref fSkeleton);
+            SkeletonPolyCheck(ModelType.HRCSkeleton);
             return result;
         }
 
@@ -260,6 +266,23 @@ namespace KimeraCS
                     {
                         bSkeleton.RepairPolys();
                     }
+                }
+            }
+        }
+
+        private static void SkeletonPolyCheck(ModelType modelType)
+        {
+            if (skeleton != null)
+            {
+                if (modelType == ModelType.HRCSkeleton)
+                {
+                    var fs = skeleton.ToFieldSkeleton();
+                    FieldSkeletonPolyCheck(ref fs);
+                }
+                else
+                {
+                    var bs = skeleton.ToBattleSkeleton();
+                    BattleSkeletonPolyCheck(ref bs);
                 }
             }
         }

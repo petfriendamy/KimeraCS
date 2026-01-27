@@ -1,9 +1,4 @@
-using System;
-using System.IO;
-using System.Drawing;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Linq;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 
@@ -1494,7 +1489,7 @@ namespace KimeraCS.Core
         //  ---------------------------------------------------------------------------------------------------------
         public static void AddGroup(ref PModel Model, 
                                     Vector3[] aVerts, PPolygon[] aPolys,
-                                    Vector2[] aTexCoords, Color[] aVColors, Color[] aPColors,
+                                    Vector2[]? aTexCoords, Color[] aVColors, Color[] aPColors,
                                     int iTextureID)
         {
             //  ------------------- Warning! Causes the Normals to be inconsistent.------------------------------
@@ -1594,7 +1589,7 @@ namespace KimeraCS.Core
             // Add new Texture Coordinates to the Group
             iMainModelNum = Model.Header.numTexCs;
 
-            if (iNumTexCoords > 0)
+            if (iNumTexCoords > 0 && aTexCoords != null)
             {
                 Model.Header.numTexCs += iNumTexCoords;
                 Model.Groups[iGroupIdx].texID = iTextureID;
@@ -1740,7 +1735,7 @@ namespace KimeraCS.Core
 
         }
 
-        public static List<STVertexNormals> stVertexNormals;
+        public static List<STVertexNormals> stVertexNormals = [];
 
         public static void GenerateNormalsList(PModel Model)
         {
@@ -2676,9 +2671,9 @@ namespace KimeraCS.Core
         {
             string strExt = Path.GetExtension(strGlobalPModelName).ToUpper();
 
-            if (strExt.Length <= 0) return ModelType.K_P_BATTLE_MODEL;
-            else if (strExt == ".P" && strExt.Length < 3) return ModelType.K_P_FIELD_MODEL;
-            else return ModelType.K_P_MAGIC_MODEL;
+            if (strExt.Length <= 0) return ModelType.PBattleModel;
+            else if (strExt == ".P" && strExt.Length < 3) return ModelType.PFieldModel;
+            else return ModelType.PMagicModel;
         }
 
 
@@ -3205,7 +3200,7 @@ namespace KimeraCS.Core
 
             Vector3[] aVerts;
             PPolygon[] aPolys;
-            Vector2[] aTexCoords = null;
+            Vector2[] aTexCoords = [];
             Color[] aVColors;
             Color[] aPColors;
 
@@ -4280,7 +4275,7 @@ namespace KimeraCS.Core
             int iGroupIdx, iPolyIdx, iVertIdx, iNumPolys;
 
             iNumPolys = 0;
-            lstPolysBuffer = new int[0];
+            lstPolysBuffer = [];
 
             foreach (int itmVert in lstVerts)
             {

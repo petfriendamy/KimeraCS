@@ -1,11 +1,5 @@
-﻿using System.Windows.Forms;
-
-namespace KimeraCS.Core
+﻿namespace KimeraCS.Core
 {
-    using static FF7BattleAnimationsPack;
-    using static FF7BattleSkeleton;
-    using static FF7FieldAnimation;
-    using static FF7FieldSkeleton;
     using static FF7PModel;
     using static FF7Skeleton;
     using static FrmSkeletonEditor;
@@ -18,11 +12,12 @@ namespace KimeraCS.Core
         private struct SkeletonState
         {
             public PModel URModel;
-            public FieldSkeleton URfSkeleton;
-            public BattleSkeleton URbSkeleton;
+            //public FieldSkeleton URSkeleton;
+            //public BattleSkeleton URSkeleton;
+            public UnifiedSkeleton URSkeleton;
 
-            public FieldAnimation URfAnimation;
-            public BattleAnimationsPack URbAnimationsPack;
+            public UnifiedAnimation URfAnimation;
+            public UnifiedAnimationPack URbAnimationsPack;
 
             public int frameIndex, battleAnimIndex, weaponIndex, textureIndex;
             public int URSelectedBone, URSelectedBonePiece;
@@ -31,8 +26,8 @@ namespace KimeraCS.Core
             public float URpanX, URpanY, URpanZ;           
         }
 
-        private static SkeletonState[] UndoBuffer;
-        private static SkeletonState[] RedoBuffer;
+        private static SkeletonState[] UndoBuffer = Array.Empty<SkeletonState>();
+        private static SkeletonState[] RedoBuffer = Array.Empty<SkeletonState>();
 
         public static int UndoCursor, RedoCursor;
 
@@ -162,9 +157,9 @@ namespace KimeraCS.Core
 
             switch (modelType)
             {
-                case ModelType.K_HRC_SKELETON:
-                    fSkeleton = CopyfSkeleton(sState.URfSkeleton);
-                    fAnimation = CopyfAnimation(sState.URfAnimation);
+                case ModelType.HRCSkeleton:
+                    skeleton = new UnifiedSkeleton(sState.URSkeleton);
+                    animation = new UnifiedAnimation(sState.URfAnimation);
 
                     if (SelectedBone > -1)
                     {
@@ -183,19 +178,19 @@ namespace KimeraCS.Core
                     if (frmSkEditor.cbTextureSelect.Items.Count > 0)
                         frmSkEditor.cbTextureSelect.SelectedIndex = sState.textureIndex;
 
-                    if (sState.frameIndex > fAnimation.nFrames) 
-                        frmSkEditor.tbCurrentFrameScroll.Value = fAnimation.nFrames - 1;
+                    if (sState.frameIndex > animation.FrameCount) 
+                        frmSkEditor.tbCurrentFrameScroll.Value = animation.FrameCount - 1;
                     else
                         frmSkEditor.tbCurrentFrameScroll.Value = sState.frameIndex;
 
-                    frmSkEditor.tbCurrentFrameScroll.Maximum = fAnimation.nFrames - 1;
+                    frmSkEditor.tbCurrentFrameScroll.Maximum = animation.FrameCount - 1;
 
                     break;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    bSkeleton = CopybSkeleton(sState.URbSkeleton);
-                    bAnimationsPack = CopybAnimationsPack(sState.URbAnimationsPack);
+                case ModelType.AASkeleton:
+                case ModelType.MagicSkeleton:
+                    skeleton = new UnifiedSkeleton(sState.URSkeleton);
+                    animationPack = new UnifiedAnimationPack(sState.URbAnimationsPack);
 
                     if (SelectedBone > -1)
                     {
@@ -209,23 +204,23 @@ namespace KimeraCS.Core
 
                     if (frmSkEditor.cbBattleAnimation.Visible) frmSkEditor.cbBattleAnimation.SelectedIndex = sState.battleAnimIndex;
 
-                    if (sState.frameIndex > sState.URbAnimationsPack.SkeletonAnimations[sState.battleAnimIndex].numFramesShort)
-                        frmSkEditor.tbCurrentFrameScroll.Value = sState.URbAnimationsPack.SkeletonAnimations[sState.battleAnimIndex].numFramesShort - 1;
+                    if (sState.frameIndex > sState.URbAnimationsPack.SkeletonAnimations[sState.battleAnimIndex].FrameCount)
+                        frmSkEditor.tbCurrentFrameScroll.Value = sState.URbAnimationsPack.SkeletonAnimations[sState.battleAnimIndex].FrameCount - 1;
                     else
                         frmSkEditor.tbCurrentFrameScroll.Value = sState.frameIndex;
 
 
-                    frmSkEditor.tbCurrentFrameScroll.Maximum = sState.URbAnimationsPack.SkeletonAnimations[sState.battleAnimIndex].numFramesShort - 1;
+                    frmSkEditor.tbCurrentFrameScroll.Maximum = sState.URbAnimationsPack.SkeletonAnimations[sState.battleAnimIndex].FrameCount - 1;
 
                     if (frmSkEditor.cbWeapon.Visible) frmSkEditor.cbWeapon.SelectedIndex = sState.weaponIndex;
 
                     frmSkEditor.cbTextureSelect.SelectedIndex = sState.textureIndex;
                     break;
 
-                case ModelType.K_P_FIELD_MODEL:
-                case ModelType.K_P_BATTLE_MODEL:
-                case ModelType.K_P_MAGIC_MODEL:
-                case ModelType.K_3DS_MODEL:
+                case ModelType.PFieldModel:
+                case ModelType.PBattleModel:
+                case ModelType.PMagicModel:
+                case ModelType.ImportedModel:
                     fPModel = CopyPModel(sState.URModel);
                     break;
             }
@@ -233,50 +228,56 @@ namespace KimeraCS.Core
 
         private static void StoreState(ref SkeletonState sState, FrmSkeletonEditor frmSkEditor)
         {
-            sState.URSelectedBone = SelectedBone;
-            sState.URSelectedBonePiece = SelectedBonePiece;
-
-            sState.URalpha = alpha;
-            sState.URbeta = beta;
-            sState.URgamma = gamma;
-            sState.URDIST = DIST;
-            sState.URpanX = panX;
-            sState.URpanY = panY;
-            sState.URpanZ = panZ;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    sState.URfSkeleton = CopyfSkeleton(fSkeleton);
-                    sState.URfAnimation = CopyfAnimation(fAnimation);
+                sState.URSelectedBone = SelectedBone;
+                sState.URSelectedBonePiece = SelectedBonePiece;
 
-                    sState.textureIndex = frmSkEditor.cbTextureSelect.SelectedIndex;
-                    sState.frameIndex = frmSkEditor.tbCurrentFrameScroll.Value;
-                    break;
+                sState.URalpha = alpha;
+                sState.URbeta = beta;
+                sState.URgamma = gamma;
+                sState.URDIST = DIST;
+                sState.URpanX = panX;
+                sState.URpanY = panY;
+                sState.URpanZ = panZ;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    sState.URbSkeleton = CopybSkeleton(bSkeleton);
-                    sState.URbAnimationsPack = CopybAnimationsPack(bAnimationsPack);
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        if (animation != null)
+                        {
+                            sState.URSkeleton = new UnifiedSkeleton(skeleton);
+                            sState.URfAnimation = new UnifiedAnimation(animation);
 
-                    sState.frameIndex = frmSkEditor.tbCurrentFrameScroll.Value;
-                    sState.textureIndex = frmSkEditor.cbTextureSelect.SelectedIndex;
-                    
-                    if (frmSkEditor.cbBattleAnimation.Visible) sState.battleAnimIndex = ianimIndex;
-                    if (frmSkEditor.cbWeapon.Visible) sState.weaponIndex = ianimWeaponIndex;
-                    break;
+                            sState.textureIndex = frmSkEditor.cbTextureSelect.SelectedIndex;
+                            sState.frameIndex = frmSkEditor.tbCurrentFrameScroll.Value;
+                        }
+                        break;
 
-                case ModelType.K_P_FIELD_MODEL:
-                case ModelType.K_P_BATTLE_MODEL:
-                case ModelType.K_P_MAGIC_MODEL:
-                case ModelType.K_3DS_MODEL:
-                    sState.URModel = CopyPModel(fPModel);
-                    break;
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        if (animationPack != null)
+                        {
+                            sState.URSkeleton = new UnifiedSkeleton(skeleton);
+                            sState.URbAnimationsPack = new UnifiedAnimationPack(animationPack);
+
+                            sState.frameIndex = frmSkEditor.tbCurrentFrameScroll.Value;
+                            sState.textureIndex = frmSkEditor.cbTextureSelect.SelectedIndex;
+
+                            if (frmSkEditor.cbBattleAnimation.Visible) sState.battleAnimIndex = ianimIndex;
+                            if (frmSkEditor.cbWeapon.Visible) sState.weaponIndex = ianimWeaponIndex;
+                        }
+                        break;
+
+                    case ModelType.PFieldModel:
+                    case ModelType.PBattleModel:
+                    case ModelType.PMagicModel:
+                    case ModelType.ImportedModel:
+                        sState.URModel = CopyPModel(fPModel);
+                        break;
+                }
             }
         }
-
-
-
     }
 
 }

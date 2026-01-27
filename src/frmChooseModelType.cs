@@ -7,13 +7,13 @@ namespace KimeraCS
 {
     public partial class frmChooseModelType : Form
     {
-        public ModelType ModelType { get; private set; } = ModelType.K_NONE;
+        public ModelType ModelType { get; private set; } = ModelType.None;
         private Dictionary<ModelType, string> ModelLookup = new()
         {
-            { ModelType.K_HRC_SKELETON, "Field Skeleton" },
-            { ModelType.K_AA_SKELETON, "Battle Skeleton" },
-            { ModelType.K_MAGIC_SKELETON, "Magic Skeleton" },
-            { ModelType.K_3DS_MODEL, "P File" }
+            { ModelType.HRCSkeleton, "Field Skeleton" },
+            { ModelType.AASkeleton, "Battle Skeleton" },
+            { ModelType.MagicSkeleton, "Magic Skeleton" },
+            { ModelType.ImportedModel, "P File" }
         };
 
         public frmChooseModelType()

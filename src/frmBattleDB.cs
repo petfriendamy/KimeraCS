@@ -1,11 +1,6 @@
-﻿using System;
-using System.IO;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Data;
-using System.Linq;
 using System.Reflection;
-using System.Windows.Forms;
 using KimeraCS.Core;
 
 namespace KimeraCS
@@ -25,7 +20,7 @@ namespace KimeraCS
         private string typedChars = string.Empty;
         private static int iTabPageSelected;
 
-        DataGridViewColumn tmpdgvEnemiesSortColumn;
+        DataGridViewColumn? tmpdgvEnemiesSortColumn;
         SortOrder tmpdgvEnemiesSortOrder;
 
         public FrmBattleDB()
@@ -79,7 +74,7 @@ namespace KimeraCS
                 {
                     DataGridViewRow dgvRow = dgvEnemies.Rows
                                                 .Cast<DataGridViewRow>()
-                                                .Where(r => r.Cells[0].Value.ToString().Equals(strLocalEnemyModelName))
+                                                .Where(r => (r.Cells[0].Value?.ToString() ?? string.Empty).Equals(strLocalEnemyModelName))
                                                 .First();
 
                     dgvEnemies.CurrentCell = dgvEnemies.Rows[dgvRow.Index].Cells[0];
@@ -114,7 +109,7 @@ namespace KimeraCS
                 {
                     DataGridViewRow dgvRow = dgvLocations.Rows
                                                 .Cast<DataGridViewRow>()
-                                                .Where(r => r.Cells[0].Value.ToString().Equals(strLocalLocationModelName))
+                                                .Where(r => (r.Cells[0].Value?.ToString() ?? string.Empty).Equals(strLocalLocationModelName))
                                                 .First();
 
                     dgvLocations.CurrentCell = dgvLocations.Rows[dgvRow.Index].Cells[0];
@@ -148,7 +143,7 @@ namespace KimeraCS
                 {
                     DataGridViewRow dgvRow = dgvMainPCs.Rows
                                                 .Cast<DataGridViewRow>()
-                                                .Where(r => r.Cells[0].Value.ToString().Equals(strLocalMainPCModelName))
+                                                .Where(r => (r.Cells[0].Value?.ToString() ?? string.Empty).Equals(strLocalMainPCModelName))
                                                 .First();
 
                     dgvMainPCs.CurrentCell = dgvMainPCs.Rows[dgvRow.Index].Cells[0];
@@ -161,7 +156,7 @@ namespace KimeraCS
 
             if (iTabPageSelected == 0)
             {
-                if (tmpdgvEnemiesSortColumn != null && tmpdgvEnemiesSortColumn.Index == 1 )
+                if (tmpdgvEnemiesSortColumn != null && dgvEnemies.SortedColumn != null && tmpdgvEnemiesSortColumn.Index == 1 )
                 {
                     if (tmpdgvEnemiesSortOrder == SortOrder.Ascending)
                         dgvEnemies.Sort(dgvEnemies.SortedColumn, ListSortDirection.Ascending);
@@ -246,13 +241,13 @@ namespace KimeraCS
 
         private void DgvEnemies_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (Char.IsLetter(e.KeyChar) || Char.IsWhiteSpace(e.KeyChar))
+            if (char.IsLetter(e.KeyChar) || char.IsWhiteSpace(e.KeyChar))
             {
                 typedChars += e.KeyChar.ToString().ToUpper();
 
                 List<DataGridViewRow> dgvRows = dgvEnemies.Rows
                                                     .Cast<DataGridViewRow>()
-                                                    .Where(r => r.Cells[1].Value.ToString().ToUpper()
+                                                    .Where(r => (r.Cells[1].Value?.ToString() ?? string.Empty).ToUpper()
                                                     .Contains(typedChars)).ToList();
 
                 if (dgvRows.Count > 0)
@@ -286,9 +281,9 @@ namespace KimeraCS
 
         private void BtnClose_Click(object sender, EventArgs e)
         {
-            strLocalEnemyModelName = dgvEnemies.Rows[dgvEnemies.SelectedRows[0].Index].Cells[0].Value.ToString();
-            strLocalLocationModelName = dgvLocations.Rows[dgvLocations.SelectedRows[0].Index].Cells[0].Value.ToString();
-            strLocalMainPCModelName = dgvMainPCs.Rows[dgvMainPCs.SelectedRows[0].Index].Cells[0].Value.ToString();
+            strLocalEnemyModelName = (dgvEnemies.Rows[dgvEnemies.SelectedRows[0].Index].Cells[0].Value?.ToString() ?? string.Empty);
+            strLocalLocationModelName = (dgvLocations.Rows[dgvLocations.SelectedRows[0].Index].Cells[0].Value?.ToString() ?? string.Empty);
+            strLocalMainPCModelName = (dgvMainPCs.Rows[dgvMainPCs.SelectedRows[0].Index].Cells[0].Value?.ToString() ?? string.Empty);
 
             if (!bSelectedBattleFileFromDB)
             {
@@ -308,13 +303,13 @@ namespace KimeraCS
             switch(tcBattleDB.SelectedIndex)
             {
                 case 0:
-                    strLocalEnemyModelName = dgvEnemies.Rows[dgvEnemies.SelectedRows[0].Index].Cells[0].Value.ToString();
+                    strLocalEnemyModelName = (dgvEnemies.Rows[dgvEnemies.SelectedRows[0].Index].Cells[0].Value?.ToString() ?? string.Empty);
                     break;
                 case 1:
-                    strLocalLocationModelName = dgvLocations.Rows[dgvLocations.SelectedRows[0].Index].Cells[0].Value.ToString();
+                    strLocalLocationModelName = (dgvLocations.Rows[dgvLocations.SelectedRows[0].Index].Cells[0].Value?.ToString() ?? string.Empty);
                     break;
                 case 2:
-                    strLocalMainPCModelName = dgvMainPCs.Rows[dgvMainPCs.SelectedRows[0].Index].Cells[0].Value.ToString();
+                    strLocalMainPCModelName = (dgvMainPCs.Rows[dgvMainPCs.SelectedRows[0].Index].Cells[0].Value?.ToString() ?? string.Empty);
                     break;
             }
 
@@ -335,13 +330,13 @@ namespace KimeraCS
             switch (tcBattleDB.SelectedIndex)
             {
                 case 0:
-                    strModelName = dgvEnemies.Rows[dgvEnemies.SelectedRows[0].Index].Cells[0].Value.ToString();
+                    strModelName = (dgvEnemies.Rows[dgvEnemies.SelectedRows[0].Index].Cells[0].Value?.ToString() ?? string.Empty);
                     break;
                 case 1:
-                    strModelName = dgvLocations.Rows[dgvLocations.SelectedRows[0].Index].Cells[0].Value.ToString();
+                    strModelName = (dgvLocations.Rows[dgvLocations.SelectedRows[0].Index].Cells[0].Value?.ToString() ?? string.Empty);
                     break;
                 case 2:
-                    strModelName = dgvMainPCs.Rows[dgvMainPCs.SelectedRows[0].Index].Cells[0].Value.ToString();
+                    strModelName = (dgvMainPCs.Rows[dgvMainPCs.SelectedRows[0].Index].Cells[0].Value?.ToString() ?? string.Empty);
                     break;
             }
 

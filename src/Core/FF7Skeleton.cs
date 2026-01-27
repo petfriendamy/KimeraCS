@@ -1,7 +1,3 @@
-using System;
-using System.IO;
-using System.Collections.Generic;
-
 namespace KimeraCS.Core
 {
     using static FF7FieldSkeleton;
@@ -21,19 +17,11 @@ namespace KimeraCS.Core
     public static class FF7Skeleton
     {
         // The currently loaded model type
-        public static ModelType modelType = ModelType.K_NONE;
+        public static ModelType modelType = ModelType.None;
 
-        // Animation constants for skeleton
-        public const int K_FRAME_BONE_ROTATION = 0;
-        public const int K_FRAME_ROOT_ROTATION = 1;
-        public const int K_FRAME_ROOT_TRANSLATION = 2;
-
-        // Global vars
-        public static FieldSkeleton fSkeleton;
-        public static FieldAnimation fAnimation;
-
-        public static BattleSkeleton bSkeleton;
-        public static BattleAnimationsPack bAnimationsPack;
+        public static UnifiedSkeleton? skeleton;
+        public static UnifiedAnimation? animation;           // Field animations
+        public static UnifiedAnimationPack? animationPack;   // Battle animations
 
         public static PModel fPModel;
         public static TMDModel mTMDModel;
@@ -42,6 +30,63 @@ namespace KimeraCS.Core
         public static bool IsRSDResource;
 
         public static bool bLoaded;
+
+        /// <summary>
+        /// Populate the unified skeleton and animation from the loaded FF7 format data.
+        /// Call this after loading a skeleton to enable unified rendering.
+        /// </summary>
+        /// <param name="fSkeleton">The field skeleton to unify.</param>
+        /// <param name="fAnimation">The field animation to unify.</param>
+        private static void PopulateUnifiedFormat(FieldSkeleton fSkeleton, FieldAnimation fAnimation)
+        {
+            skeleton = new UnifiedSkeleton(fSkeleton);
+            animation = new UnifiedAnimation(fAnimation);
+            animationPack = null;
+        }
+
+        /// <summary>
+        /// Populate the unified skeleton and animation from the loaded FF7 format data.
+        /// Call this after loading a skeleton to enable unified rendering.
+        /// </summary>
+        /// <param name="bSkeleton">The batt;e skeleton to unify.</param>
+        /// <param name="fAnimation">The battle animations pack to unify.</param>
+        private static void PopulateUnifiedFormat(BattleSkeleton bSkeleton, BattleAnimationsPack bAnimationsPack, ModelType type)
+        {
+            skeleton = new UnifiedSkeleton(bSkeleton);
+            animation = null;
+            animationPack = new UnifiedAnimationPack(bAnimationsPack, bSkeleton.nBones);
+        }
+
+        /// <summary>
+        /// Get the current unified frame for rendering.
+        /// </summary>
+        public static UnifiedFrame? GetCurrentFrame(int animationIndex, int frameIndex)
+        {
+            if (animation != null)
+            {
+                return animation.GetFrame(frameIndex);
+            }
+
+            if (animationPack != null)
+            {
+                var anim = animationPack.GetSkeletonAnimation(animationIndex);
+                return anim?.GetFrame(frameIndex);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Get the current weapon frame for rendering (battle only).
+        /// </summary>
+        public static UnifiedFrame? GetCurrentWeaponFrame(int animationIndex, int frameIndex)
+        {
+            if (animationPack == null)
+                return null;
+
+            var anim = animationPack.GetWeaponAnimation(animationIndex);
+            return anim?.GetFrame(frameIndex);
+        }
 
         //
         // Global Skeleton/Model functions/procedures
@@ -69,35 +114,36 @@ namespace KimeraCS.Core
                     // We load the Field Skeleton into memory.
                     switch (modelType)
                     {
-                        case ModelType.K_HRC_SKELETON:
+                        case ModelType.HRCSkeleton:
                             // Field Skeleton (.hrc)
-                            fSkeleton = new FieldSkeleton(strFileName, loadGeometryQ,
+                            var fSkeleton = new FieldSkeleton(strFileName, loadGeometryQ,
                                                           ignoreMissingPFiles, repairPolys,
                                                           removeTextureCoords);
-                            fAnimation = new FieldAnimation(fSkeleton, "DUMMY.A", false);
+                            var fAnimation = new FieldAnimation(fSkeleton, "DUMMY.A", false);
+                            PopulateUnifiedFormat(fSkeleton, fAnimation);
                             break;
 
-                        case ModelType.K_AA_SKELETON:
+                        case ModelType.AASkeleton:
                             // Battle Skeleton (aa)
-                            bSkeleton = new BattleSkeleton(strFileName, isLimitBreak, true, repairPolys,
+                            var bSkeleton = new BattleSkeleton(strFileName, isLimitBreak, true, repairPolys,
                                                            removeTextureCoords);
 
                             // Normally we will have the ??DA file with the Animation Pack.
                             // Location Battle Models has NOT ??DA file.
                             // But editing models, it is possible we work without it. So, we will make something
                             // similiar as we did with Field Models, but we will check if ??DA file for the model exists.
-                            bAnimationsPack = new BattleAnimationsPack(bSkeleton, strFileName);
-
+                            var bAnimationsPack = new BattleAnimationsPack(bSkeleton, modelType, strFileName);
+                            PopulateUnifiedFormat(bSkeleton, bAnimationsPack, modelType);
                             break;
 
-                        case ModelType.K_MAGIC_SKELETON:
+                        case ModelType.MagicSkeleton:
                             // Magic Skeleton (.d)
                             bSkeleton = new BattleSkeleton(strFileName, true, repairPolys, removeTextureCoords);
 
                             // Normally we will have the *.A00 file with the Animation Pack.
                             // But editing models, it is possible we work without it. So, we will make something
                             // similiar as we did with Field Models, but we will check if *.A00 file for the model exists.
-                            bAnimationsPack = new BattleAnimationsPack(bSkeleton, strFileName);
+                            bAnimationsPack = new BattleAnimationsPack(bSkeleton, modelType, strFileName);
 
                             break;
                     }
@@ -142,29 +188,34 @@ namespace KimeraCS.Core
                     // LOAD Skeleton
                     switch (modelType)
                     {
-                        case ModelType.K_HRC_SKELETON:
+                        case ModelType.HRCSkeleton:
                             // We load the Field Skeleton into memory.
 
                             // Field Skeleton (.hrc)
-                            fSkeleton = new FieldSkeleton(strFileName, loadGeometryQ, ignoreMissingPFiles,
+                            var fSkeleton = new FieldSkeleton(strFileName, loadGeometryQ, ignoreMissingPFiles,
                                                           repairPolys, removeTextureCoords);
-
-                            iloadSkeletonResult = LoadAnimationFromDB(strAnimFileName);
+                            var result = LoadAnimationFromDB(fSkeleton, strAnimFileName);
+                            if (result.Item1 != null)
+                            {
+                                PopulateUnifiedFormat(fSkeleton, (FieldAnimation)result.Item1);
+                                iloadSkeletonResult = result.Item2;
+                            }
                             break;
 
-                        case ModelType.K_AA_SKELETON:
+                        case ModelType.AASkeleton:
                             // Battle Skeleton (aa)
-                            bSkeleton = new BattleSkeleton(strFileName, isLimitBreak, true, repairPolys,
+                            var bSkeleton = new BattleSkeleton(strFileName, isLimitBreak, true, repairPolys,
                                                            removeTextureCoords);
 
                             // Normally we will have the ??DA file with the Animation Pack.
                             // Location Battle Models has NOT ??DA file.
                             // But editing models, it is possible we work without it. So, we will make something
                             // similiar as we did with Field Models, but we will check if ??DA file for the model exists.
-                            bAnimationsPack = new BattleAnimationsPack(bSkeleton, strFileName);
+                            var bAnimationsPack = new BattleAnimationsPack(bSkeleton, modelType, strFileName);
+                            PopulateUnifiedFormat(bSkeleton, bAnimationsPack, modelType);
                             break;
 
-                        case ModelType.K_MAGIC_SKELETON:
+                        case ModelType.MagicSkeleton:
                             // Magic Skeleton (.d)
                             bSkeleton = new BattleSkeleton(strFileName, true, repairPolys, removeTextureCoords);
 
@@ -172,9 +223,12 @@ namespace KimeraCS.Core
                             // Location Battle Models has NOT ??DA file.
                             // But editing models, it is possible we work without it. So, we will make something
                             // similiar as we did with Field Models, but we will check if ??DA file for the model exists.
-                            bAnimationsPack = new BattleAnimationsPack(bSkeleton, strFileName);
+                            bAnimationsPack = new BattleAnimationsPack(bSkeleton, modelType, strFileName);
+                            PopulateUnifiedFormat(bSkeleton, bAnimationsPack, modelType);
                             break;
                     }
+
+                    bLoaded = true;
                 }
                 else
                 {
@@ -195,24 +249,9 @@ namespace KimeraCS.Core
         {
             int iDestroySkeletonResult = 1;
 
-            try
-            {
-                switch (modelType)
-                {
-                    case ModelType.K_HRC_SKELETON:
-                        DestroyFieldSkeleton(fSkeleton);
-                        break;
-
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-                        DestroyBattleSkeleton(bSkeleton);
-                        break;
-                }
-            }
-            catch
-            {
-                iDestroySkeletonResult = -1;
-            }
+            skeleton = null;
+            animation = null;
+            animationPack = null;
 
             bLoaded = false;
             return iDestroySkeletonResult;
@@ -220,7 +259,7 @@ namespace KimeraCS.Core
 
         public static ModelType GetSkeletonType(string strFileName)
         {
-            ModelType iSkeletonType = ModelType.K_NONE;
+            ModelType iSkeletonType = ModelType.None;
             string tmpFileName;
 
             if (strFileName.Length > 0)
@@ -228,7 +267,7 @@ namespace KimeraCS.Core
                 switch (Path.GetExtension(strFileName).ToUpper())
                 {
                     case ".HRC":
-                        iSkeletonType = ModelType.K_HRC_SKELETON;
+                        iSkeletonType = ModelType.HRCSkeleton;
                         break;
 
                     case "":
@@ -236,12 +275,12 @@ namespace KimeraCS.Core
                         if (tmpFileName.Length > 2)
                         {
                             if (tmpFileName[tmpFileName.Length - 1] == 'A' && tmpFileName[tmpFileName.Length - 2] == 'A')
-                                iSkeletonType = ModelType.K_AA_SKELETON;
+                                iSkeletonType = ModelType.AASkeleton;
                         }
                         break;
 
                     case ".D":
-                        iSkeletonType = ModelType.K_MAGIC_SKELETON;
+                        iSkeletonType = ModelType.MagicSkeleton;
                         break;
                 }
             }
@@ -258,12 +297,12 @@ namespace KimeraCS.Core
 
             FieldBone tmpfBone;
             FieldRSDResource tmpfRSDResource;
-            List<TEX> textures_pool = new List<TEX>();
+            List<TEX> textures_pool = [];
 
             try
             {
                 // Create fSkeleton with 1 bone
-                fSkeleton = new FieldSkeleton()
+                var fSkeleton = new FieldSkeleton()
                 {
                     nBones = 1,
                     fileName = strRSDName,
@@ -293,12 +332,16 @@ namespace KimeraCS.Core
                 fSkeleton.bones.Add(tmpfBone);
 
                 // Create the Dummy animation (normally individual RSD Resource has not own animation)
-                fAnimation = new FieldAnimation(fSkeleton,
+                var fAnimation = new FieldAnimation(fSkeleton,
                                                 strRSDFolder + "\\" + strfAnimation,
                                                 false);
 
-                modelType = ModelType.K_HRC_SKELETON;
+                modelType = ModelType.HRCSkeleton;
                 IsRSDResource = true;
+                bLoaded = true;
+
+                // Populate unified format for rendering
+                PopulateUnifiedFormat(fSkeleton, fAnimation);
             }
             catch (Exception ex)
             {
@@ -322,15 +365,22 @@ namespace KimeraCS.Core
             {
                 switch (modelType)
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        WriteFieldAnimation(fAnimation, strFileName);
-
-                        isaveAnimationResult = 1;
+                    case ModelType.HRCSkeleton:
+                        var fAnimation = animation?.ToFieldAnimation();
+                        if (fAnimation != null)
+                        {
+                            WriteFieldAnimation((FieldAnimation)fAnimation, strFileName);
+                            isaveAnimationResult = 1;
+                        }
                         break;
 
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-                        isaveAnimationResult = WriteBattleAnimationsPack(ref bAnimationsPack, strFileName);
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        if (animationPack != null)
+                        {
+                            var bAnimationsPack = animationPack.ToBattleAnimationsPack();
+                            isaveAnimationResult = WriteBattleAnimationsPack(ref bAnimationsPack, modelType, strFileName);
+                        }
                         break;
                 }
             }
@@ -349,13 +399,13 @@ namespace KimeraCS.Core
             bool iNumAnimFramesIsOneResult = false;
             switch (modelType)
             {
-                case ModelType.K_HRC_SKELETON:
-                    if (fAnimation.nFrames == 1) iNumAnimFramesIsOneResult = true;
+                case ModelType.HRCSkeleton:
+                    if (animation?.FrameCount == 1) iNumAnimFramesIsOneResult = true;
                     break;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    if (bAnimationsPack.SkeletonAnimations[index].numFramesShort == 1) iNumAnimFramesIsOneResult = true;
+                case ModelType.AASkeleton:
+                case ModelType.MagicSkeleton:
+                    if (animationPack?.SkeletonAnimations[index].FrameCount == 1) iNumAnimFramesIsOneResult = true;
                     break;
             }
 
@@ -365,94 +415,109 @@ namespace KimeraCS.Core
         public static int ReadFrameData(string strFileName, bool bMerge)
         {
             int iinputFrameData = 0;
-
-            try
+            if (skeleton != null)
             {
-                switch (modelType)
+                try
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        ReadFieldFrameData(fSkeleton, ref fAnimation, strFileName, bMerge);
+                    switch (modelType)
+                    {
+                        case ModelType.HRCSkeleton:
+                            if (animation != null)
+                            {
+                                var fSkeleton = skeleton.ToFieldSkeleton();
+                                var fAnimation = animation.ToFieldAnimation();
+                                ReadFieldFrameData(fSkeleton, ref fAnimation, strFileName, bMerge);
+                                animation = new UnifiedAnimation(fAnimation);
+                                iinputFrameData = 1;
+                            }
+                            break;
 
-                        iinputFrameData = 1;
-                        break;
+                        case ModelType.AASkeleton:
+                        case ModelType.MagicSkeleton:
+                            //iinputFrameData = WriteBattleFrameDataPack(ref bAnimationsPack, strFileName);
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    strGlobalExceptionMessage = ex.Message;
 
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-                        //iinputFrameData = WriteBattleFrameDataPack(ref bAnimationsPack, strFileName);
-                        break;
+                    iinputFrameData = -1;
                 }
             }
-            catch (Exception ex)
-            {
-                strGlobalExceptionMessage = ex.Message;
-
-                iinputFrameData = -1;
-            }
-
             return iinputFrameData;
         }
 
         public static int WriteFrameData(string strFileName)
         {
             int ioutputFrameData = 0;
-
-            try
+            if (skeleton != null)
             {
-                switch (modelType)
+                try
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        WriteFieldFrameData(fSkeleton, fAnimation, strFileName);
+                    switch (modelType)
+                    {
+                        case ModelType.HRCSkeleton:
+                            if (animation != null)
+                            {
+                                var fSkeleton = skeleton.ToFieldSkeleton();
+                                var fAnimation = animation.ToFieldAnimation();
+                                WriteFieldFrameData(fSkeleton, fAnimation, strFileName);
+                                animation = new UnifiedAnimation(fAnimation);
+                                ioutputFrameData = 1;
+                            }
+                            break;
 
-                        ioutputFrameData = 1;
-                        break;
+                        case ModelType.AASkeleton:
+                        case ModelType.MagicSkeleton:
+                            //ioutputFrameData = WriteBattleAnimationsPack(ref bAnimationsPack, strFileName);
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    strGlobalExceptionMessage = ex.Message;
 
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-                        //ioutputFrameData = WriteBattleAnimationsPack(ref bAnimationsPack, strFileName);
-                        break;
+                    ioutputFrameData = -1;
                 }
             }
-            catch (Exception ex)
-            {
-                strGlobalExceptionMessage = ex.Message;
-
-                ioutputFrameData = -1;
-            }
-
             return ioutputFrameData;
         }
 
         public static int ReadFrameDataSelective(string strFileName)
         {
             int iinputFrameData = 0;
-
-            try
+            if (skeleton != null)
             {
-                switch (modelType)
+                try
                 {
-                    case ModelType.K_HRC_SKELETON:
-                        ReadFieldFrameDataSelective(fSkeleton, ref fAnimation, strFileName);
+                    switch (modelType)
+                    {
+                        case ModelType.HRCSkeleton:
+                            if (animation != null)
+                            {
+                                var fSkeleton = skeleton.ToFieldSkeleton();
+                                var fAnimation = animation.ToFieldAnimation();
+                                ReadFieldFrameDataSelective(fSkeleton, ref fAnimation, strFileName);
+                                animation = new UnifiedAnimation(fAnimation);
+                                iinputFrameData = 1;
+                            }
+                            break;
 
-                        iinputFrameData = 1;
-                        break;
+                        case ModelType.AASkeleton:
+                        case ModelType.MagicSkeleton:
+                            //iinputFrameData = WriteBattleFrameDataPack(ref bAnimationsPack, strFileName);
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    strGlobalExceptionMessage = ex.Message;
 
-                    case ModelType.K_AA_SKELETON:
-                    case ModelType.K_MAGIC_SKELETON:
-                        //iinputFrameData = WriteBattleFrameDataPack(ref bAnimationsPack, strFileName);
-                        break;
+                    iinputFrameData = -1;
                 }
             }
-            catch (Exception ex)
-            {
-                strGlobalExceptionMessage = ex.Message;
-
-                iinputFrameData = -1;
-            }
-
             return iinputFrameData;
         }
-
-
-
     }
 }

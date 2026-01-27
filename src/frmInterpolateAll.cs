@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using KimeraCS.Core;
+﻿using KimeraCS.Core;
 
 namespace KimeraCS
 {
@@ -647,7 +642,7 @@ namespace KimeraCS
                 //lstbAnimationsPackFiles = new string[1] { "CCDA" };
 
                 // Let's set the global var modelType to battle skeletons
-                modelType = ModelType.K_AA_SKELETON;
+                modelType = ModelType.AASkeleton;
 
                 foreach (string itmBattleAnimation in lstbAnimationsPackFiles)
                 {
@@ -666,9 +661,9 @@ namespace KimeraCS
                         CanHaveLimitBreak(Path.GetFileNameWithoutExtension(strbSkeletonFullFileName).ToUpper()));
 
                     //  Interpolate Animation
-                    if (SameBattleAnimNumBones(strbAnimationsPackFullFileName, bSkeleton))
+                    if (SameBattleAnimNumBones(strbAnimationsPackFullFileName, bSkeleton, modelType))
                     {
-                        bAnimationsPack = new BattleAnimationsPack(bSkeleton, strbAnimationsPackFullFileName);
+                        bAnimationsPack = new BattleAnimationsPack(bSkeleton, modelType, strbAnimationsPackFullFileName);
                         if (bAnimationsPack.WrongAnimationCount)
                             rtbLog.AppendText("Warning. The number of animations of the Battle Animation Pack " +
                                 "is lower than the number of animations of the Battle Skeleton " +
@@ -678,7 +673,7 @@ namespace KimeraCS
                         string strBattleAnimPackFileName;
                         switch (modelType)
                         {
-                            case ModelType.K_AA_SKELETON:
+                            case ModelType.AASkeleton:
                                 if (Path.GetExtension(strbAnimationsPackFullFileName).Length == 4)
                                     strBattleAnimPackFileName = Path.GetFileName(strbAnimationsPackFullFileName).ToUpper();
                                 else
@@ -703,7 +698,7 @@ namespace KimeraCS
 
                         await Task.Run(() => InterpolateBattleAnimationsPack(ref bSkeleton, ref bAnimationsPack, (int)nudInterpFrameBattleMagic.Value, false));
                         Task.WaitAll();
-                        await Task.Run(() => WriteBattleAnimationsPack(ref bAnimationsPack, strbAnimationsPackFullWriteFileName));
+                        await Task.Run(() => WriteBattleAnimationsPack(ref bAnimationsPack, modelType, strbAnimationsPackFullWriteFileName));
                         Task.WaitAll();
 
                         if (!chkShowOnlyNoProcessed.Checked)
@@ -758,7 +753,7 @@ namespace KimeraCS
                 //lstbAnimationsPackFiles = new string[1] { "CCDA" };
 
                 // Let's set the global var modelType to battle skeletons
-                modelType = ModelType.K_MAGIC_SKELETON;
+                modelType = ModelType.MagicSkeleton;
 
                 foreach (string itmMagicAnimation in lstbAnimationsPackFiles)
                 {
@@ -777,13 +772,13 @@ namespace KimeraCS
                         bSkeleton = UserPrompts.BattleSkeletonLoader(strbSkeletonFullFileName, true);
 
                         //  Interpolate Animation
-                        if (SameBattleAnimNumBones(strbAnimationsPackFullFileName, bSkeleton))
+                        if (SameBattleAnimNumBones(strbAnimationsPackFullFileName, bSkeleton, modelType))
                         {
-                            bAnimationsPack = new BattleAnimationsPack(bSkeleton, strbAnimationsPackFullFileName);
+                            bAnimationsPack = new BattleAnimationsPack(bSkeleton, modelType, strbAnimationsPackFullFileName);
 
                             await Task.Run(() => InterpolateBattleAnimationsPack(ref bSkeleton, ref bAnimationsPack, (int)nudInterpFrameBattleMagic.Value, false));
                             Task.WaitAll();
-                            await Task.Run(() => WriteBattleAnimationsPack(ref bAnimationsPack, strbAnimationsPackFullWriteFileName));
+                            await Task.Run(() => WriteBattleAnimationsPack(ref bAnimationsPack, modelType, strbAnimationsPackFullWriteFileName));
                             Task.WaitAll();
 
                             if (!chkShowOnlyNoProcessed.Checked)

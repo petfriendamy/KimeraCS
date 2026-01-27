@@ -9,7 +9,7 @@ using System.Linq;
 //using System.Numerics;
 using System.Text;
 
-#nullable enable
+
 namespace KimeraCS.Core
 {
     using static FF7BattleAnimation;
@@ -2810,6 +2810,28 @@ namespace KimeraCS.Core
             }
 
             return _context.ExportFile(scene, filePath, formatId);
+        }
+
+        /// <summary>
+        /// Exports a skeleton of the specified type
+        /// </summary>
+        /// 
+        public static void ExportSkeleton(UnifiedSkeleton skeleton, UnifiedAnimation animation,
+            UnifiedAnimation? weaponAnimation, ModelType modelType, string filePath, bool bAdjust)
+        {
+            if (modelType == ModelType.HRCSkeleton)
+            {
+                var fSkeleton = skeleton.ToFieldSkeleton();
+                var fAnimation = animation.ToFieldAnimation();
+                ExportFieldSkeleton(fSkeleton, fAnimation, filePath, bAdjust);
+            }
+            else
+            {
+                var bSkeleton = skeleton.ToBattleSkeleton();
+                var bAnimation = animation.ToBattleAnimation();
+                var wpAnimation = weaponAnimation?.ToBattleAnimation();
+                ExportBattleSkeleton(bSkeleton, bAnimation, wpAnimation, filePath, bAdjust);
+            }
         }
 
         /// <summary>

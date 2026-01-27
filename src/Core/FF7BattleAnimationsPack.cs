@@ -16,18 +16,10 @@
 //  n * bytes               padding at 4 bytes      padding calculation = (4 - (blockSizeShort + 5) % 4)) % 4    - the padding is of 4 bytes
 //                                                  padding reading = (blockSize - blockSizeShort) - 5
 
-
-
-
-using System;
-using System.IO;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace KimeraCS.Core
 {
-
-    using static FF7Skeleton;
     using static FF7BattleSkeleton;
     using static FF7BattleAnimation;
 
@@ -56,7 +48,7 @@ namespace KimeraCS.Core
             public bool IsLimit;
             public readonly bool WrongAnimationCount;
 
-            public BattleAnimationsPack(BattleSkeleton bSkeleton, string strFileName)
+            public BattleAnimationsPack(BattleSkeleton bSkeleton, ModelType modelType, string strFileName)
             {
                 nAnimations = 0;
                 nbSkeletonAnims = 0;
@@ -74,7 +66,7 @@ namespace KimeraCS.Core
                 {
                     switch (modelType)
                     {
-                        case ModelType.K_AA_SKELETON:
+                        case ModelType.AASkeleton:
                             if (Path.GetExtension(strFileName).Length == 4)
                                 strBattleAnimPackFileName = Path.GetFileName(strFileName).ToUpper();
                             else
@@ -100,11 +92,11 @@ namespace KimeraCS.Core
                         if (bSkeleton.CanHaveLimitBreak && Path.GetExtension(strFileName).Length == 4)
                         {
                             IsLimit = true;
-                            result = LoadBattleAnimationsPack(strAnimsPackFullFileName, bSkeleton.nBones, 8, 8, ref this);
+                            result = LoadBattleAnimationsPack(strAnimsPackFullFileName, bSkeleton.nBones, 8, 8, bSkeleton, ref this);
                         }
                         else
                             result = LoadBattleAnimationsPack(strAnimsPackFullFileName, bSkeleton.nBones,
-                                bSkeleton.nsSkeletonAnims, bSkeleton.nsWeaponsAnims, ref this);
+                                bSkeleton.nsSkeletonAnims, bSkeleton.nsWeaponsAnims, bSkeleton, ref this);
                         WrongAnimationCount = result == 1;
                     }
                     else
@@ -114,7 +106,9 @@ namespace KimeraCS.Core
         }
 
         public static int LoadBattleAnimationsPack(string strAnimsPackFullFileName, int nsSkeletonBones,
-                                                    int nsSkeletonAnims, int nsWeaponsAnims, ref BattleAnimationsPack bAnimationsPack)
+                                                    int nsSkeletonAnims, int nsWeaponsAnims,
+                                                    BattleSkeleton bSkeleton,
+                                                    ref BattleAnimationsPack bAnimationsPack)
         {
             int ai, result = 0;
             byte[] fileBuffer;
@@ -272,7 +266,7 @@ namespace KimeraCS.Core
             }
         }
 
-        public static int WriteBattleAnimationsPack(ref BattleAnimationsPack bAnimationsPack, string strFileName)
+        public static int WriteBattleAnimationsPack(ref BattleAnimationsPack bAnimationsPack, ModelType modelType, string strFileName)
         {
             int ai;
             byte[] fileBuffer = new byte[MAX_BATTLEANIMATION_SIZE * bAnimationsPack.nAnimations];  // We DON'T know the size of the Battle Animation if there are new frames.
@@ -308,7 +302,7 @@ namespace KimeraCS.Core
                         ai++;
                     }
 
-                    if (!bBlockOverSize && modelType == ModelType.K_AA_SKELETON)
+                    if (!bBlockOverSize && modelType == ModelType.AASkeleton)
                     {
                         ai = 0;
                         while (ai < bAnimationsPack.nbWeaponAnims && !bBlockOverSize)
@@ -426,7 +420,7 @@ namespace KimeraCS.Core
             return numBones;
         }
 
-        public static bool SameBattleAnimNumBones(string strFileAnimationsPack, BattleSkeleton bSkeleton)
+        public static bool SameBattleAnimNumBones(string strFileAnimationsPack, BattleSkeleton bSkeleton, ModelType modelType)
         {
             int tmpnBonesAnim;
 
@@ -440,7 +434,7 @@ namespace KimeraCS.Core
             if (tmpnBonesAnim > 1 )
                 if (bSkeleton.skeletonType == SkeletonType.EnemyOrSummon ||
                     bSkeleton.skeletonType == SkeletonType.PC ||
-                    modelType == ModelType.K_MAGIC_SKELETON) 
+                    modelType == ModelType.MagicSkeleton) 
                     tmpnBonesAnim--;
 
             return tmpnBonesAnim == bSkeleton.nBones; 

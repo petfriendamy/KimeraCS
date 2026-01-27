@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using KimeraCS.Core;
@@ -15,9 +12,9 @@ namespace KimeraCS.Rendering
     /// </summary>
     internal class ContextResources : IDisposable
     {
-        public ShaderProgram ModelShader { get; set; }
-        public ShaderProgram LineShader { get; set; }
-        public ShaderProgram PointShader { get; set; }
+        public ShaderProgram? ModelShader { get; set; }
+        public ShaderProgram? LineShader { get; set; }
+        public ShaderProgram? PointShader { get; set; }
         public Dictionary<string, PModelMesh> MeshCacheByName { get; } = new Dictionary<string, PModelMesh>();
         public Dictionary<string, PModelMesh> PColorMeshCacheByName { get; } = new Dictionary<string, PModelMesh>();
         public bool Initialized { get; set; }
@@ -58,7 +55,7 @@ namespace KimeraCS.Rendering
     {
         // Per-context resources
         private static Dictionary<string, ContextResources> _contexts = new Dictionary<string, ContextResources>();
-        private static string _currentContextId = null;
+        private static string? _currentContextId = null;
 
         // Matrices (shared - set before rendering in each context)
         public static Matrix4 ProjectionMatrix { get; set; } = Matrix4.Identity;
@@ -111,7 +108,7 @@ namespace KimeraCS.Rendering
         /// <summary>
         /// Get the current context's resources, or null if not initialized.
         /// </summary>
-        private static ContextResources CurrentContext
+        private static ContextResources? CurrentContext
         {
             get
             {
@@ -186,7 +183,7 @@ namespace KimeraCS.Rendering
         /// Get or create a mesh for the given PModel in the current context.
         /// Uses fileName as cache key since GetHashCode() for structs can cause collisions.
         /// </summary>
-        public static PModelMesh GetOrCreateMesh(ref PModel model)
+        public static PModelMesh? GetOrCreateMesh(ref PModel model)
         {
             var ctx = CurrentContext;
             if (ctx == null) return null;
@@ -197,7 +194,7 @@ namespace KimeraCS.Rendering
                 ? model.fileName
                 : model.GetHashCode().ToString();
 
-            if (!ctx.MeshCacheByName.TryGetValue(cacheKey, out PModelMesh mesh))
+            if (!ctx.MeshCacheByName.TryGetValue(cacheKey, out PModelMesh? mesh))
             {
                 mesh = PModelMesh.FromPModel(model);
                 ctx.MeshCacheByName[cacheKey] = mesh;
@@ -210,7 +207,7 @@ namespace KimeraCS.Rendering
         /// Get or create a polygon-color mesh for the given PModel in the current context.
         /// Uses polygon colors instead of vertex colors.
         /// </summary>
-        public static PModelMesh GetOrCreatePColorMesh(ref PModel model)
+        public static PModelMesh? GetOrCreatePColorMesh(ref PModel model)
         {
             var ctx = CurrentContext;
             if (ctx == null) return null;
@@ -219,7 +216,7 @@ namespace KimeraCS.Rendering
                 ? model.fileName
                 : model.GetHashCode().ToString();
 
-            if (!ctx.PColorMeshCacheByName.TryGetValue(cacheKey, out PModelMesh mesh))
+            if (!ctx.PColorMeshCacheByName.TryGetValue(cacheKey, out PModelMesh? mesh))
             {
                 mesh = PModelMesh.FromPModel(model, usePolygonColors: true);
                 ctx.PColorMeshCacheByName[cacheKey] = mesh;
@@ -240,13 +237,13 @@ namespace KimeraCS.Rendering
                 ? model.fileName
                 : model.GetHashCode().ToString();
 
-            if (ctx.MeshCacheByName.TryGetValue(cacheKey, out PModelMesh mesh))
+            if (ctx.MeshCacheByName.TryGetValue(cacheKey, out PModelMesh? mesh))
             {
                 mesh.Dispose();
                 ctx.MeshCacheByName.Remove(cacheKey);
             }
 
-            if (ctx.PColorMeshCacheByName.TryGetValue(cacheKey, out PModelMesh pcolorMesh))
+            if (ctx.PColorMeshCacheByName.TryGetValue(cacheKey, out PModelMesh? pcolorMesh))
             {
                 pcolorMesh.Dispose();
                 ctx.PColorMeshCacheByName.Remove(cacheKey);
@@ -265,13 +262,13 @@ namespace KimeraCS.Rendering
 
             foreach (var ctx in _contexts.Values)
             {
-                if (ctx.MeshCacheByName.TryGetValue(cacheKey, out PModelMesh mesh))
+                if (ctx.MeshCacheByName.TryGetValue(cacheKey, out PModelMesh? mesh))
                 {
                     mesh.Dispose();
                     ctx.MeshCacheByName.Remove(cacheKey);
                 }
 
-                if (ctx.PColorMeshCacheByName.TryGetValue(cacheKey, out PModelMesh pcolorMesh))
+                if (ctx.PColorMeshCacheByName.TryGetValue(cacheKey, out PModelMesh? pcolorMesh))
                 {
                     pcolorMesh.Dispose();
                     ctx.PColorMeshCacheByName.Remove(cacheKey);
@@ -323,7 +320,7 @@ namespace KimeraCS.Rendering
         public static void DrawPModelModern(ref PModel model, uint[] texIds, bool hideHidden)
         {
             var ctx = CurrentContext;
-            if (ctx == null || !ctx.Initialized) return;
+            if (ctx == null || !ctx.Initialized || ctx.ModelShader == null) return;
 
             var mesh = GetOrCreateMesh(ref model);
             if (mesh?.Groups == null) return;
@@ -373,7 +370,7 @@ namespace KimeraCS.Rendering
                 // Check if texture exists and is valid in current GL context
                 // Must check TexFlag - groups with texFlag == 0 should not use textures
                 bool hasTexture = group.TexFlag && group.TextureID >= 0 && texIds != null && group.TextureID < texIds.Length;
-                if (hasTexture)
+                if (hasTexture && texIds != null)
                 {
                     uint texId = texIds[group.TextureID];
                     // Verify texture is valid in this GL context (textures aren't shared between contexts)
@@ -406,7 +403,7 @@ namespace KimeraCS.Rendering
         public static void DrawPModelWireframe(ref PModel model, Vector3 wireframeColor, bool hideHidden)
         {
             var ctx = CurrentContext;
-            if (ctx == null || !ctx.Initialized) return;
+            if (ctx == null || !ctx.Initialized || ctx.ModelShader == null) return;
 
             var mesh = GetOrCreateMesh(ref model);
             if (mesh?.Groups == null) return;
@@ -458,7 +455,7 @@ namespace KimeraCS.Rendering
         public static void DrawPModelPolygonColors(ref PModel model, bool hideHidden)
         {
             var ctx = CurrentContext;
-            if (ctx == null || !ctx.Initialized) return;
+            if (ctx == null || !ctx.Initialized || ctx.ModelShader == null) return;
 
             var mesh = GetOrCreatePColorMesh(ref model);
             if (mesh?.Groups == null) return;
@@ -537,10 +534,10 @@ namespace KimeraCS.Rendering
         /// <summary>
         /// Draw lines using modern OpenGL.
         /// </summary>
-        public static void DrawLinesModern(LineMesh lineMesh)
+        public static void DrawLinesModern(LineMesh? lineMesh)
         {
             var ctx = CurrentContext;
-            if (ctx == null || !ctx.Initialized || lineMesh == null) return;
+            if (ctx == null || !ctx.Initialized || lineMesh == null || ctx.LineShader == null) return;
 
             ctx.LineShader.Use();
             ctx.LineShader.SetMatrix4("projection", ProjectionMatrix);
@@ -555,10 +552,10 @@ namespace KimeraCS.Rendering
         /// <summary>
         /// Draw points using modern OpenGL (e.g., skeleton joints, vertices).
         /// </summary>
-        public static void DrawPointsModern(PointMesh pointMesh, float pointSize = 5.0f)
+        public static void DrawPointsModern(PointMesh? pointMesh, float pointSize = 5.0f)
         {
             var ctx = CurrentContext;
-            if (ctx == null || !ctx.Initialized || pointMesh == null) return;
+            if (ctx == null || !ctx.Initialized || pointMesh == null || ctx.PointShader == null) return;
 
             ctx.PointShader.Use();
             ctx.PointShader.SetMatrix4("projection", ProjectionMatrix);

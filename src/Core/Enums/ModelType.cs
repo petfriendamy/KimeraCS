@@ -12,13 +12,13 @@
         //  4: Battle Skeleton
         //  5: Magic Skeleton
         //  6: 3DS Model
-        K_NONE = -1,
-        K_P_FIELD_MODEL = 0,
-        K_P_BATTLE_MODEL = 1,
-        K_P_MAGIC_MODEL = 2,
-        K_HRC_SKELETON = 3,
-        K_AA_SKELETON = 4,
-        K_MAGIC_SKELETON = 5,
-        K_3DS_MODEL = 6
+        None = -1,
+        PFieldModel = 0,
+        PBattleModel = 1,
+        PMagicModel = 2,
+        HRCSkeleton = 3,
+        AASkeleton = 4,
+        MagicSkeleton = 5,
+        ImportedModel = 6
     }
 }

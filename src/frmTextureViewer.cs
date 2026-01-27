@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.IO;
-using System.Windows.Forms;
+﻿using System.Drawing.Drawing2D;
 using KimeraCS.Core;
 
 namespace KimeraCS
@@ -234,140 +229,146 @@ namespace KimeraCS
 
         private void DrawUVs()
         {
-            Bitmap hTmpBMP = null;
-
-            int iGroupIdx, iPolyIdx, iVertCounter, iWidth, iHeight, iTexID;
-            Point[] pointTriPoly = new Point[4];
-
-            iTexID = frmSkelEdit.cbTextureSelect.SelectedIndex;
-
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    hTmpBMP = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[iTexID].bitmap;
+                Bitmap? hTmpBMP = null;
 
-                    iTCWidth = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[iTexID].width;
-                    iTCHeight = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[iTexID].height;
+                int iGroupIdx, iPolyIdx, iVertCounter, iWidth, iHeight, iTexID;
+                Point[] pointTriPoly = new Point[4];
 
-                    break;
+                iTexID = frmSkelEdit.cbTextureSelect.SelectedIndex;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    hTmpBMP = bSkeleton.textures[iTexID].bitmap;
-
-                    iTCWidth = bSkeleton.textures[iTexID].width;
-                    iTCHeight = bSkeleton.textures[iTexID].height;
-
-                    break;
-
-                //case K_AA_SKELETON:
-                //    if (bSkeleton.wpModels.Count > 0 && SelectedBone == bSkeleton.nBones)
-                //    {
-                //        hTmpBMP = bSkeleton.textures[bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].HBMP;
-
-                //        iTCWidth = bSkeleton.textures[bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].Width;
-                //        iTCHeight = bSkeleton.textures[bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].height;
-                //    }
-                //    else
-                //    {
-                //        hTmpBMP = bSkeleton.textures[iTexID].HBMP;
-
-                //        iTCWidth = bSkeleton.textures[iTexID].Width;
-                //        iTCHeight = bSkeleton.textures[iTexID].height;
-                //    }
-
-
-                //    break;
-
-                //case K_MAGIC_SKELETON:
-                //    hTmpBMP = bSkeleton.textures[iTexID].HBMP;
-
-                //    iTCWidth = bSkeleton.textures[iTexID].Width;
-                //    iTCHeight = bSkeleton.textures[iTexID].height;
-                //    break;
-            }
-
-            Bitmap tmpBMP = new Bitmap(pbTextureView.Width, pbTextureView.Height);
-
-            // Get the size available
-            iWidth = tmpBMP.Width;
-            iHeight = tmpBMP.Height;
-
-            using (Graphics g = Graphics.FromImage(tmpBMP))
-            {
-                //g.InterpolationMode = InterpolationMode.Default;
-                g.PixelOffsetMode = PixelOffsetMode.Half;
-                g.InterpolationMode = InterpolationMode.NearestNeighbor;
-
-                g.DrawImage(hTmpBMP, 0, 0, iWidth, iHeight);
-
-                g.PixelOffsetMode = PixelOffsetMode.None;
-                g.InterpolationMode = InterpolationMode.Default ;
-
-                for (iGroupIdx = 0; iGroupIdx < TexViewModel.Header.numGroups; iGroupIdx++)
+                switch (modelType)
                 {
-                    if (TexViewModel.TexCoords != null)
+                    case ModelType.HRCSkeleton:
+                        hTmpBMP = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[iTexID].bitmap;
+
+                        iTCWidth = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[iTexID].width;
+                        iTCHeight = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[iTexID].height;
+
+                        break;
+
+                    case ModelType.AASkeleton:
+                    case ModelType.MagicSkeleton:
+                        hTmpBMP = skeleton.Textures[iTexID].bitmap;
+
+                        iTCWidth = skeleton.Textures[iTexID].width;
+                        iTCHeight = skeleton.Textures[iTexID].height;
+
+                        break;
+
+                        //case K_AA_SKELETON:
+                        //    if (skeleton.Weapons.Count > 0 && SelectedBone == skeleton.BoneCount)
+                        //    {
+                        //        hTmpBMP = skeleton.Textures[skeleton.Weapons[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].HBMP;
+
+                        //        iTCWidth = skeleton.Textures[skeleton.Weapons[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].Width;
+                        //        iTCHeight = skeleton.Textures[skeleton.Weapons[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].height;
+                        //    }
+                        //    else
+                        //    {
+                        //        hTmpBMP = skeleton.Textures[iTexID].HBMP;
+
+                        //        iTCWidth = skeleton.Textures[iTexID].Width;
+                        //        iTCHeight = skeleton.Textures[iTexID].height;
+                        //    }
+
+
+                        //    break;
+
+                        //case K_MAGIC_SKELETON:
+                        //    hTmpBMP = skeleton.Textures[iTexID].HBMP;
+
+                        //    iTCWidth = skeleton.Textures[iTexID].Width;
+                        //    iTCHeight = skeleton.Textures[iTexID].height;
+                        //    break;
+                }
+
+                Bitmap tmpBMP = new Bitmap(pbTextureView.Width, pbTextureView.Height);
+
+                // Get the size available
+                iWidth = tmpBMP.Width;
+                iHeight = tmpBMP.Height;
+
+                if (hTmpBMP != null)
+                {
+                    using (Graphics g = Graphics.FromImage(tmpBMP))
                     {
-                        if (TexViewModel.TexCoords.Length > 0 &&
-                            TexViewModel.Groups[iGroupIdx].texFlag == 1 &&
-                            TexViewModel.Groups[iGroupIdx].texID == iTexID)
+                        //g.InterpolationMode = InterpolationMode.Default;
+                        g.PixelOffsetMode = PixelOffsetMode.Half;
+                        g.InterpolationMode = InterpolationMode.NearestNeighbor;
+
+                        g.DrawImage(hTmpBMP, 0, 0, iWidth, iHeight);
+
+                        g.PixelOffsetMode = PixelOffsetMode.None;
+                        g.InterpolationMode = InterpolationMode.Default;
+
+                        for (iGroupIdx = 0; iGroupIdx < TexViewModel.Header.numGroups; iGroupIdx++)
                         {
-                            for (iPolyIdx = TexViewModel.Groups[iGroupIdx].offsetPoly;
-                                 iPolyIdx < TexViewModel.Groups[iGroupIdx].offsetPoly +
-                                            TexViewModel.Groups[iGroupIdx].numPoly; iPolyIdx++)
+                            if (TexViewModel.TexCoords != null)
                             {
-                                // Get the 2D point (X,Y pos) of each of the points of the poly and draw the UV coordiantes with triangle shape
-                                for (iVertCounter = 0; iVertCounter < 3; iVertCounter++)
+                                if (TexViewModel.TexCoords.Length > 0 &&
+                                    TexViewModel.Groups[iGroupIdx].texFlag == 1 &&
+                                    TexViewModel.Groups[iGroupIdx].texID == iTexID)
                                 {
-                                    // Draw the texture coordinates
-                                    using (Brush tmpBrush = new SolidBrush(btnGreen.BackColor))
+                                    for (iPolyIdx = TexViewModel.Groups[iGroupIdx].offsetPoly;
+                                         iPolyIdx < TexViewModel.Groups[iGroupIdx].offsetPoly +
+                                                    TexViewModel.Groups[iGroupIdx].numPoly; iPolyIdx++)
                                     {
-                                        g.FillEllipse(tmpBrush,
-                                                      Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].x) - I_RADIUS,
-                                                      Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].y) - I_RADIUS,
-                                                      2 * I_RADIUS, 2 * I_RADIUS);
-
-                                        switch (iVertCounter)
+                                        // Get the 2D point (X,Y pos) of each of the points of the poly and draw the UV coordiantes with triangle shape
+                                        for (iVertCounter = 0; iVertCounter < 3; iVertCounter++)
                                         {
-                                            case 0:
+                                            // Draw the texture coordinates
+                                            using (Brush tmpBrush = new SolidBrush(btnGreen.BackColor))
+                                            {
+                                                g.FillEllipse(tmpBrush,
+                                                              Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].x) - I_RADIUS,
+                                                              Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].y) - I_RADIUS,
+                                                              2 * I_RADIUS, 2 * I_RADIUS);
 
-                                                pointTriPoly[0].X = Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].x);
-                                                pointTriPoly[0].Y = Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].y);
-
-                                                if (pointTriPoly[0].X >= iWidth) pointTriPoly[0].X--;
-                                                if (pointTriPoly[0].Y >= iHeight) pointTriPoly[0].Y--;
-
-                                                pointTriPoly[3].X = pointTriPoly[0].X;
-                                                pointTriPoly[3].Y = pointTriPoly[0].Y;
-
-                                                break;
-
-                                            case 1:
-
-                                                pointTriPoly[1].X = Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].x);
-                                                pointTriPoly[1].Y = Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].y);
-
-                                                if (pointTriPoly[1].X >= iWidth) pointTriPoly[1].X--;
-                                                if (pointTriPoly[1].Y >= iHeight) pointTriPoly[1].Y--;
-
-                                                break;
-
-                                            case 2:
-                                                using (Pen tmpPen = new Pen(btnGreen.BackColor))
+                                                switch (iVertCounter)
                                                 {
+                                                    case 0:
 
-                                                    tmpPen.Alignment = PenAlignment.Center;
+                                                        pointTriPoly[0].X = Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].x);
+                                                        pointTriPoly[0].Y = Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].y);
 
-                                                    pointTriPoly[2].X = Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].x);
-                                                    pointTriPoly[2].Y = Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].y);
+                                                        if (pointTriPoly[0].X >= iWidth) pointTriPoly[0].X--;
+                                                        if (pointTriPoly[0].Y >= iHeight) pointTriPoly[0].Y--;
 
-                                                    if (pointTriPoly[2].X >= iWidth) pointTriPoly[2].X--;
-                                                    if (pointTriPoly[2].Y >= iHeight) pointTriPoly[2].Y--;
+                                                        pointTriPoly[3].X = pointTriPoly[0].X;
+                                                        pointTriPoly[3].Y = pointTriPoly[0].Y;
 
-                                                    g.DrawLines(tmpPen, pointTriPoly);
+                                                        break;
+
+                                                    case 1:
+
+                                                        pointTriPoly[1].X = Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].x);
+                                                        pointTriPoly[1].Y = Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].y);
+
+                                                        if (pointTriPoly[1].X >= iWidth) pointTriPoly[1].X--;
+                                                        if (pointTriPoly[1].Y >= iHeight) pointTriPoly[1].Y--;
+
+                                                        break;
+
+                                                    case 2:
+                                                        using (Pen tmpPen = new Pen(btnGreen.BackColor))
+                                                        {
+
+                                                            tmpPen.Alignment = PenAlignment.Center;
+
+                                                            pointTriPoly[2].X = Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].x);
+                                                            pointTriPoly[2].Y = Convert.ToInt32(lstUVXYCoords[iGroupIdx].XYCoords[TexViewModel.Polys[iPolyIdx].Verts[iVertCounter]].y);
+
+                                                            if (pointTriPoly[2].X >= iWidth) pointTriPoly[2].X--;
+                                                            if (pointTriPoly[2].Y >= iHeight) pointTriPoly[2].Y--;
+
+                                                            g.DrawLines(tmpPen, pointTriPoly);
+                                                        }
+
+                                                        break;
                                                 }
-
-                                                break;
+                                            }
                                         }
                                     }
                                 }
@@ -375,11 +376,9 @@ namespace KimeraCS
                         }
                     }
                 }
-
+                pbTextureView.Image = tmpBMP;
+                pbTextureView.Refresh();
             }
-
-            pbTextureView.Image = tmpBMP;
-            pbTextureView.Refresh();
         }
 
         private void BtnClose_Click(object sender, EventArgs e)
@@ -389,47 +388,50 @@ namespace KimeraCS
 
         private void BtnCommit_Click(object sender, EventArgs e)
         {
-            FieldRSDResource tmpfRSDResource;
-            PModel tmpPModel;
-
-            // Update texture coordinates from lstUVXYCoords to the TextureViewerModel
-            UpdateXYCoords();
-
-            // Commit the previous update to the original model
-            switch (modelType)
+            if (skeleton != null)
             {
-                case ModelType.K_HRC_SKELETON:
-                    tmpfRSDResource = CopyRSDResource(fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece]);
-                    tmpfRSDResource.Model.TexCoords = TexViewModel.TexCoords;
-                    fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece] = CopyRSDResource(tmpfRSDResource);
-                    break;
+                UnifiedBoneModel tmpModel;
+                PModel tmpPModel;
 
-                case ModelType.K_AA_SKELETON:
-                    if (bSkeleton.wpModels.Count > 0 && SelectedBone == bSkeleton.nBones)
-                    {
-                        bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex] = CopyPModel(TexViewModel);
+                // Update texture coordinates from lstUVXYCoords to the TextureViewerModel
+                UpdateXYCoords();
 
-                    }
-                    else
-                    {
-                        tmpPModel = CopyPModel(bSkeleton.bones[SelectedBone].Models[SelectedBonePiece]);
+                // Commit the previous update to the original model
+                switch (modelType)
+                {
+                    case ModelType.HRCSkeleton:
+                        tmpModel = new UnifiedBoneModel(skeleton.Bones[SelectedBone].Models[SelectedBonePiece]);
+                        tmpModel.Model.TexCoords = TexViewModel.TexCoords;
+                        skeleton.Bones[SelectedBone].Models[SelectedBonePiece] = tmpModel;
+                        break;
+
+                    case ModelType.AASkeleton:
+                        if (skeleton.WeaponCount > 0 && SelectedBone == skeleton.BoneCount)
+                        {
+                            skeleton.Weapons[frmSkelEdit.cbWeapon.SelectedIndex] = CopyPModel(TexViewModel);
+
+                        }
+                        else
+                        {
+                            tmpPModel = CopyPModel(skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model);
+                            tmpPModel.TexCoords = TexViewModel.TexCoords;
+                            skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model = CopyPModel(tmpPModel);
+                        }
+                        break;
+
+                    case ModelType.MagicSkeleton:
+                        tmpPModel = CopyPModel(skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model);
                         tmpPModel.TexCoords = TexViewModel.TexCoords;
-                        bSkeleton.bones[SelectedBone].Models[SelectedBonePiece] = CopyPModel(tmpPModel);
-                    }
-                    break;
+                        skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Model = CopyPModel(tmpPModel);
+                        break;
+                }
 
-                case ModelType.K_MAGIC_SKELETON:
-                    tmpPModel = CopyPModel(bSkeleton.bones[SelectedBone].Models[SelectedBonePiece]);
-                    tmpPModel.TexCoords = TexViewModel.TexCoords;
-                    bSkeleton.bones[SelectedBone].Models[SelectedBonePiece] = CopyPModel(tmpPModel);
-                    break;
+                // Update main title window
+                bChangesDone = true;
+                frmSkelEdit.UpdateMainSkeletonWindowTitle();
+
+                frmSkelEdit.PanelModel_Paint(null, null);
             }
-
-            // Update main title window
-            bChangesDone = true;
-            frmSkelEdit.UpdateMainSkeletonWindowTitle();
-
-            frmSkelEdit.PanelModel_Paint(null, null);
         }
 
         private void BtnFlipH_Click(object sender, EventArgs e)
@@ -565,34 +567,34 @@ namespace KimeraCS
 
             switch (modelType)
             {
-                case ModelType.K_HRC_SKELETON:
-                    iWidth = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[iTexID].width;
-                    iHeight = fSkeleton.bones[SelectedBone].fRSDResources[SelectedBonePiece].textures[iTexID].height;
+                case ModelType.HRCSkeleton:
+                    iWidth = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[iTexID].width;
+                    iHeight = skeleton.Bones[SelectedBone].Models[SelectedBonePiece].Textures[iTexID].height;
                     break;
 
-                case ModelType.K_AA_SKELETON:
-                case ModelType.K_MAGIC_SKELETON:
-                    iWidth = bSkeleton.textures[iTexID].width;
-                    iHeight = bSkeleton.textures[iTexID].height;
+                case ModelType.AASkeleton:
+                case ModelType.MagicSkeleton:
+                    iWidth = skeleton.Textures[iTexID].width;
+                    iHeight = skeleton.Textures[iTexID].height;
                     break;
 
                     //case K_AA_SKELETON:
-                    //    if (bSkeleton.wpModels.Count > 0 && SelectedBone == bSkeleton.nBones)
+                    //    if (skeleton.Weapons.Count > 0 && SelectedBone == skeleton.BoneCount)
                     //    {
-                    //        iWidth = bSkeleton.textures[bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].Width;
-                    //        iHeight = bSkeleton.textures[bSkeleton.wpModels[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].height;
+                    //        iWidth = skeleton.Textures[skeleton.Weapons[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].Width;
+                    //        iHeight = skeleton.Textures[skeleton.Weapons[frmSkelEdit.cbWeapon.SelectedIndex].Groups[0].texID].height;
                     //    }
                     //    else
                     //    {
-                    //        iWidth = bSkeleton.textures[iTexID].Width;
-                    //        iHeight = bSkeleton.textures[iTexID].height;
+                    //        iWidth = skeleton.Textures[iTexID].Width;
+                    //        iHeight = skeleton.Textures[iTexID].height;
                     //    }
 
                     //    break;
 
                     //case K_MAGIC_SKELETON:
-                    //    iWidth = bSkeleton.textures[iTexID].Width;
-                    //    iHeight = bSkeleton.textures[iTexID].height;
+                    //    iWidth = skeleton.Textures[iTexID].Width;
+                    //    iHeight = skeleton.Textures[iTexID].height;
                     //    break;
             }
 

@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-#nullable enable
+
 namespace KimeraCS.Core
 {
     using static FF7FieldSkeleton;
@@ -58,7 +58,7 @@ namespace KimeraCS.Core
             public List<string> lstLimitsAnimations;
         }
 
-        public static Hashtable lstCFGKeys = new Hashtable();
+        public static Hashtable lstCFGKeys = new();
 
         public static int numCharLGPRegisters;
         public static bool bDBLoaded, bDBEnemiesLoaded, bDBLocationsLoaded, bDBMainPCsLoaded, 
@@ -68,13 +68,13 @@ namespace KimeraCS.Core
         public static int iPEFilterIdx;
         public static bool bShowAxesSkeletonWindow;
 
-        public static List<STCharLGPRegister> lstCharLGPRegisters;
-        public static List<STBattleLGPRegister> lstBattleEnemiesLGPRegisters;
-        public static List<STBattleLGPRegister> lstBattleLocationsLGPRegisters;
-        public static List<STBattleLGPRegister> lstBattleMainPCsLGPRegisters;
-        public static List<STBattleLGPRegister> lstMagicLGPRegisters;
+        public static List<STCharLGPRegister> lstCharLGPRegisters = [];
+        public static List<STBattleLGPRegister> lstBattleEnemiesLGPRegisters = [];
+        public static List<STBattleLGPRegister> lstBattleLocationsLGPRegisters = [];
+        public static List<STBattleLGPRegister> lstBattleMainPCsLGPRegisters = [];
+        public static List<STBattleLGPRegister> lstMagicLGPRegisters = [];
 
-        public static List<STLimitsRegister> lstBattleLimitsAnimations;
+        public static List<STLimitsRegister> lstBattleLimitsAnimations = [];
 
         public static int idefaultFieldInterpFrames = 1;
         public static int idefaultBattleInterpFrames = 3;
@@ -197,57 +197,57 @@ namespace KimeraCS.Core
                     }
                 }
 
-                if (!Int32.TryParse(lstCFGKeys["DEFAULT_FIELD_INTERP_FRAMES"].ToString(), out idefaultFieldInterpFrames)) idefaultFieldInterpFrames = 1;
-                if (!Int32.TryParse(lstCFGKeys["DEFAULT_BATTLE_INTERP_FRAMES"].ToString(), out idefaultBattleInterpFrames)) idefaultBattleInterpFrames = 3;
+                if (!int.TryParse(lstCFGKeys["DEFAULT_FIELD_INTERP_FRAMES"]?.ToString(), out idefaultFieldInterpFrames)) idefaultFieldInterpFrames = 1;
+                if (!int.TryParse(lstCFGKeys["DEFAULT_BATTLE_INTERP_FRAMES"]?.ToString(), out idefaultBattleInterpFrames)) idefaultBattleInterpFrames = 3;
 
-                strCharLGPPathSrc = lstCFGKeys["LGP_CHAR_PATH"].ToString();
-                strBattleLGPPathSrc = lstCFGKeys["LGP_BATTLE_PATH"].ToString();
-                strMagicLGPPathSrc = lstCFGKeys["LGP_MAGIC_PATH"].ToString();
-                strCharLGPPathDest = lstCFGKeys["LGP_CHAR_PATH_DEST"].ToString();
-                strBattleLGPPathDest = lstCFGKeys["LGP_BATTLE_PATH_DEST"].ToString();
-                strMagicLGPPathDest = lstCFGKeys["LGP_MAGIC_PATH_DEST"].ToString();
+                strCharLGPPathSrc = (lstCFGKeys["LGP_CHAR_PATH"]?.ToString() ?? string.Empty);
+                strBattleLGPPathSrc = (lstCFGKeys["LGP_BATTLE_PATH"]?.ToString() ?? string.Empty);
+                strMagicLGPPathSrc = (lstCFGKeys["LGP_MAGIC_PATH"]?.ToString() ?? string.Empty);
+                strCharLGPPathDest = (lstCFGKeys["LGP_CHAR_PATH_DEST"]?.ToString() ?? string.Empty);
+                strBattleLGPPathDest = (lstCFGKeys["LGP_BATTLE_PATH_DEST"]?.ToString() ?? string.Empty);
+                strMagicLGPPathDest = (lstCFGKeys["LGP_MAGIC_PATH_DEST"]?.ToString() ?? string.Empty);
 
-                strGlobalPathFieldSkeletonFolder = lstCFGKeys["PATH_FIELDSKELETON_FOLDER"].ToString();
-                strGlobalPathFieldAnimationFolder = lstCFGKeys["PATH_FIELDANIMATION_FOLDER"].ToString();
-                strGlobalPathBattleSkeletonFolder = lstCFGKeys["PATH_BATTLESKELETON_FOLDER"].ToString();
-                strGlobalPathBattleAnimationFolder = lstCFGKeys["PATH_BATTLEANIMATION_FOLDER"].ToString();
-                strGlobalPathMagicSkeletonFolder = lstCFGKeys["PATH_MAGICSKELETON_FOLDER"].ToString();
-                strGlobalPathMagicAnimationFolder = lstCFGKeys["PATH_MAGICANIMATION_FOLDER"].ToString();
-                strGlobalPathPModelFolder = lstCFGKeys["PATH_PMODEL_FOLDER"].ToString();
-                strGlobalPathRSDResourceFolder = lstCFGKeys["PATH_RSDRESOURCE_FOLDER"].ToString();
-                strGlobalPathPModelFolderPE = lstCFGKeys["PATH_PMODEL_FOLDERPE"].ToString();
-                strGlobalPath3DSModelFolder = lstCFGKeys["PATH_3DSMODEL_FOLDER"].ToString();
-                strGlobalPathTextureFolder = lstCFGKeys["PATH_TEXTURE_FOLDER"].ToString();
-                strGlobalPathPartModelFolder = lstCFGKeys["PATH_PARTMODEL_FOLDER"].ToString();
-                strGlobalPathSaveSkeletonFolder = lstCFGKeys["PATH_SAVESKELETON_FOLDER"].ToString();
-                strGlobalPathSaveAnimationFolder = lstCFGKeys["PATH_SAVEANIMATION_FOLDER"].ToString();
-                strGlobalPathSaveModelFolder = lstCFGKeys["PATH_SAVEMODEL_FOLDER"].ToString();
-                strGlobalPathSaveModelFolderPE = lstCFGKeys["PATH_SAVEMODEL_FOLDERPE"].ToString();
-                strGlobalPathTMDModelFolder = lstCFGKeys["PATH_TMDMODEL_FOLDER"].ToString();
-                strGlobalPathSaveTMDFolder = lstCFGKeys["PATH_SAVETMDMODEL_FOLDER"].ToString();
-                strGlobalPathTEX2PNGBatch = lstCFGKeys["PATH_TEX2PNGBATCH_FOLDER"].ToString();
+                strGlobalPathFieldSkeletonFolder = (lstCFGKeys["PATH_FIELDSKELETON_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathFieldAnimationFolder = (lstCFGKeys["PATH_FIELDANIMATION_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathBattleSkeletonFolder = (lstCFGKeys["PATH_BATTLESKELETON_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathBattleAnimationFolder = (lstCFGKeys["PATH_BATTLEANIMATION_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathMagicSkeletonFolder = (lstCFGKeys["PATH_MAGICSKELETON_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathMagicAnimationFolder = (lstCFGKeys["PATH_MAGICANIMATION_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathPModelFolder = (lstCFGKeys["PATH_PMODEL_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathRSDResourceFolder = (lstCFGKeys["PATH_RSDRESOURCE_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathPModelFolderPE = (lstCFGKeys["PATH_PMODEL_FOLDERPE"]?.ToString() ?? string.Empty);
+                strGlobalPath3DSModelFolder = (lstCFGKeys["PATH_3DSMODEL_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathTextureFolder = (lstCFGKeys["PATH_TEXTURE_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathPartModelFolder = (lstCFGKeys["PATH_PARTMODEL_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathSaveSkeletonFolder = (lstCFGKeys["PATH_SAVESKELETON_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathSaveAnimationFolder = (lstCFGKeys["PATH_SAVEANIMATION_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathSaveModelFolder = (lstCFGKeys["PATH_SAVEMODEL_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathSaveModelFolderPE = (lstCFGKeys["PATH_SAVEMODEL_FOLDERPE"]?.ToString() ?? string.Empty);
+                strGlobalPathTMDModelFolder = (lstCFGKeys["PATH_TMDMODEL_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathSaveTMDFolder = (lstCFGKeys["PATH_SAVETMDMODEL_FOLDER"]?.ToString() ?? string.Empty);
+                strGlobalPathTEX2PNGBatch = (lstCFGKeys["PATH_TEX2PNGBATCH_FOLDER"]?.ToString() ?? string.Empty);
                 
 
-                if (!Int32.TryParse(lstCFGKeys["UNDO_BUFFER_CAPACITY"].ToString(), out iUndoBufferCapacity)) iUndoBufferCapacity = 10;
-                if (!Int32.TryParse(lstCFGKeys["UNDO_BUFFERPE_CAPACITY"].ToString(), out iUndoBufferPECapacity)) iUndoBufferPECapacity = 20;
+                if (!int.TryParse(lstCFGKeys["UNDO_BUFFER_CAPACITY"]?.ToString(), out iUndoBufferCapacity)) iUndoBufferCapacity = 10;
+                if (!int.TryParse(lstCFGKeys["UNDO_BUFFERPE_CAPACITY"]?.ToString(), out iUndoBufferPECapacity)) iUndoBufferPECapacity = 20;
                 if (iUndoBufferCapacity <= 0) iUndoBufferCapacity = 10;
                 if (iUndoBufferPECapacity <= 0) iUndoBufferPECapacity = 20;
 
-                if (!Int32.TryParse(lstCFGKeys["WINDOW_POSX"].ToString(), out iwindowPosX)) iwindowPosX = 0;
-                if (!Int32.TryParse(lstCFGKeys["WINDOW_POSY"].ToString(), out iwindowPosY)) iwindowPosY = 0;
-                if (!Int32.TryParse(lstCFGKeys["WINDOWSIZE_WIDTH"].ToString(), out isizeWindowWidth)) isizeWindowWidth = 750;
-                if (!Int32.TryParse(lstCFGKeys["WINDOWSIZE_HEIGHT"].ToString(), out isizeWindowHeight)) isizeWindowHeight = 688;
+                if (!int.TryParse(lstCFGKeys["WINDOW_POSX"]?.ToString(), out iwindowPosX)) iwindowPosX = 0;
+                if (!int.TryParse(lstCFGKeys["WINDOW_POSY"]?.ToString(), out iwindowPosY)) iwindowPosY = 0;
+                if (!int.TryParse(lstCFGKeys["WINDOWSIZE_WIDTH"]?.ToString(), out isizeWindowWidth)) isizeWindowWidth = 750;
+                if (!int.TryParse(lstCFGKeys["WINDOWSIZE_HEIGHT"]?.ToString(), out isizeWindowHeight)) isizeWindowHeight = 688;
 
-                if (!Int32.TryParse(lstCFGKeys["WINDOW_POSXPE"].ToString(), out iwindowPosXPE)) iwindowPosXPE = 0;
-                if (!Int32.TryParse(lstCFGKeys["WINDOW_POSYPE"].ToString(), out iwindowPosYPE)) iwindowPosYPE = 0;
-                if (!Int32.TryParse(lstCFGKeys["WINDOWSIZE_WIDTHPE"].ToString(), out isizeWindowWidthPE)) isizeWindowWidthPE = 736;
-                if (!Int32.TryParse(lstCFGKeys["WINDOWSIZE_HEIGHTPE"].ToString(), out isizeWindowHeightPE)) isizeWindowHeightPE = 592;
+                if (!int.TryParse(lstCFGKeys["WINDOW_POSXPE"]?.ToString(), out iwindowPosXPE)) iwindowPosXPE = 0;
+                if (!int.TryParse(lstCFGKeys["WINDOW_POSYPE"]?.ToString(), out iwindowPosYPE)) iwindowPosYPE = 0;
+                if (!int.TryParse(lstCFGKeys["WINDOWSIZE_WIDTHPE"]?.ToString(), out isizeWindowWidthPE)) isizeWindowWidthPE = 736;
+                if (!int.TryParse(lstCFGKeys["WINDOWSIZE_HEIGHTPE"]?.ToString(), out isizeWindowHeightPE)) isizeWindowHeightPE = 592;
 
-                if (!bool.TryParse(lstCFGKeys["ADJUST_3DS_IMPORT"].ToString(), out bAdjust3DSImport)) bAdjust3DSImport = false;
-                if (!Int32.TryParse(lstCFGKeys["PELOAD_3DS_FILTER_INDEX"].ToString(), out iPEFilterIdx)) iPEFilterIdx = -1;
+                if (!bool.TryParse(lstCFGKeys["ADJUST_3DS_IMPORT"]?.ToString(), out bAdjust3DSImport)) bAdjust3DSImport = false;
+                if (!int.TryParse(lstCFGKeys["PELOAD_3DS_FILTER_INDEX"]?.ToString(), out iPEFilterIdx)) iPEFilterIdx = -1;
 
-                if (!bool.TryParse(lstCFGKeys["SHOW_AXES_SKELETON_WINDOW"].ToString(), out bShowAxesSkeletonWindow)) bShowAxesSkeletonWindow = false;
-                if (!bool.TryParse(lstCFGKeys["DONT_CHECK_REPAIR_POLYS"].ToString(), out bDontCheckRepairPolys)) bDontCheckRepairPolys = false;
+                if (!bool.TryParse(lstCFGKeys["SHOW_AXES_SKELETON_WINDOW"]?.ToString(), out bShowAxesSkeletonWindow)) bShowAxesSkeletonWindow = false;
+                if (!bool.TryParse(lstCFGKeys["DONT_CHECK_REPAIR_POLYS"]?.ToString(), out bDontCheckRepairPolys)) bDontCheckRepairPolys = false;
             }
         }
 

@@ -1,14 +1,8 @@
 using KimeraCS.Core;
-using System;
 
-#nullable enable
 namespace KimeraCS.Rendering
 {
     using static FF7PModel;
-    using static FF7FieldSkeleton;
-    using static FF7FieldAnimation;
-    using static FF7BattleSkeleton;
-    using static FF7BattleAnimationsPack;
     using static ModelDrawing;
 
     /// <summary>
@@ -154,12 +148,16 @@ namespace KimeraCS.Rendering
         public uint[] TextureIds { get; set; } = Array.Empty<uint>();
 
         // Field skeleton data (for K_HRC_SKELETON)
-        public FieldSkeleton FieldSkeleton { get; set; }
-        public FieldAnimation FieldAnimation { get; set; }
+        //public FieldSkeleton FieldSkeleton { get; set; }
+        //public FieldAnimation FieldAnimation { get; set; }
 
         // Battle skeleton data (for K_AA_SKELETON, K_MAGIC_SKELETON)
-        public BattleSkeleton BattleSkeleton { get; set; }
-        public BattleAnimationsPack BattleAnimations { get; set; }
+        //public BattleSkeleton BattleSkeleton { get; set; }
+        //public BattleAnimationsPack BattleAnimations { get; set; }
+
+        public UnifiedSkeleton? Skeleton { get; set; }
+        public UnifiedAnimation? Animation { get; set; }
+        public UnifiedAnimationPack? AnimationPack { get; set; }
     }
 
     /// <summary>
@@ -305,7 +303,7 @@ namespace KimeraCS.Rendering
         public uint[] TextureIds { get; set; } = Array.Empty<uint>();
         public CameraState Camera { get; set; }
         public ModelTransform Transform { get; set; }
-        public DrawMode DrawMode { get; set; }
+        public Core.DrawMode DrawMode { get; set; }
         public bool EnableLighting { get; set; }
         public int LightX { get; set; }
         public int LightY { get; set; }
@@ -315,7 +313,7 @@ namespace KimeraCS.Rendering
         {
             Camera = CameraState.Default;
             Transform = ModelTransform.Default;
-            DrawMode = DrawMode.K_VCOLORS;
+            DrawMode = Core.DrawMode.VertexColors;
             EnableLighting = false;
             LightX = 0;
             LightY = 1;
@@ -333,7 +331,7 @@ namespace KimeraCS.Rendering
             float panX, float panY, float panZ,
             float resizeX, float resizeY, float resizeZ,
             float reposX, float reposY, float reposZ,
-            DrawMode drawMode,
+            Core.DrawMode drawMode,
             bool enableLighting,
             int lightX, int lightY, int lightZ)
         {
