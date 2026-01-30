@@ -3,6 +3,7 @@ using System.Drawing.Drawing2D;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using KimeraCS.Core;
+using KimeraCS.Rendering;
 
 namespace KimeraCS
 {
@@ -14,9 +15,8 @@ namespace KimeraCS
     using static UndoRedoPE;
     using static Utils;
 
-    using Rendering;
-    using static Rendering.Lighting;
-    using static Rendering.ModelDrawing;
+    using static Lighting;
+    using static ModelDrawing;
 
     public partial class FrmPEditor : Form
     {
@@ -670,7 +670,7 @@ namespace KimeraCS
         {
             if (loadingModifiersQ) return;
 
-            if (Int32.TryParse(txtResizeX.Text, out int iResizeX))
+            if (int.TryParse(txtResizeX.Text, out int iResizeX))
             {
                 if (iResizeX < 0 || iResizeX > 500)
                 {
@@ -690,7 +690,7 @@ namespace KimeraCS
         {
             if (loadingModifiersQ) return;
 
-            if (Int32.TryParse(txtResizeY.Text, out int iResizeY))
+            if (int.TryParse(txtResizeY.Text, out int iResizeY))
             {
                 if (iResizeY < 0 || iResizeY > 500)
                 {
@@ -710,7 +710,7 @@ namespace KimeraCS
         {
             if (loadingModifiersQ) return;
 
-            if (Int32.TryParse(txtResizeZ.Text, out int iResizeZ))
+            if (int.TryParse(txtResizeZ.Text, out int iResizeZ))
             {
                 if (iResizeZ < 0 || iResizeZ > 500)
                 {
@@ -802,7 +802,7 @@ namespace KimeraCS
         {
             if (loadingModifiersQ) return;
 
-            if (Int32.TryParse(txtRepositionX.Text, out int iRepositionX))
+            if (int.TryParse(txtRepositionX.Text, out int iRepositionX))
             {
                 if (iRepositionX < -500 * fBattleLocationGroupScale || 
                     iRepositionX > 500 * fBattleLocationGroupScale)
@@ -823,7 +823,7 @@ namespace KimeraCS
         {
             if (loadingModifiersQ) return;
 
-            if (Int32.TryParse(txtRepositionY.Text, out int iRepositionY))
+            if (int.TryParse(txtRepositionY.Text, out int iRepositionY))
             {
                 if (iRepositionY < -500 * fBattleLocationGroupScale || 
                     iRepositionY > 500 * fBattleLocationGroupScale)
@@ -844,7 +844,7 @@ namespace KimeraCS
         {
             if (loadingModifiersQ) return;
 
-            if (Int32.TryParse(txtRepositionZ.Text, out int iRepositionZ))
+            if (int.TryParse(txtRepositionZ.Text, out int iRepositionZ))
             {
                 if (iRepositionZ < -500 * fBattleLocationGroupScale || 
                     iRepositionZ > 500 * fBattleLocationGroupScale)
@@ -909,7 +909,7 @@ namespace KimeraCS
 
             if (loadingModifiersQ) return;
 
-            if (Int32.TryParse(txtRotateAlpha.Text, out int iRotateAlpha))
+            if (int.TryParse(txtRotateAlpha.Text, out int iRotateAlpha))
             {
                 if (iRotateAlpha < 0 || iRotateAlpha > 360 * fBattleLocationGroupScale)
                 {
@@ -930,7 +930,7 @@ namespace KimeraCS
 
             if (loadingModifiersQ) return;
 
-            if (Int32.TryParse(txtRotateBeta.Text, out int iRotateBeta))
+            if (int.TryParse(txtRotateBeta.Text, out int iRotateBeta))
             {
                 if (iRotateBeta < 0 || iRotateBeta > 360 * fBattleLocationGroupScale)
                 {
@@ -951,7 +951,7 @@ namespace KimeraCS
 
             if (loadingModifiersQ) return;
 
-            if (Int32.TryParse(txtRotateGamma.Text, out int iRotateGamma))
+            if (int.TryParse(txtRotateGamma.Text, out int iRotateGamma))
             {
                 if (iRotateGamma < 0 || iRotateGamma > 360 * fBattleLocationGroupScale)
                 {
@@ -2290,7 +2290,7 @@ namespace KimeraCS
 
             string oldSelColR = hsbSelectedColorR.Value.ToString();
 
-            if (Int32.TryParse(txtSelectedColorR.Text, out int iColorR))
+            if (int.TryParse(txtSelectedColorR.Text, out int iColorR))
             {
                 if (iColorR >= 0 && iColorR <= 255)
                     hsbSelectedColorR.Value = iColorR;
@@ -2307,7 +2307,7 @@ namespace KimeraCS
 
             string oldSelColG = hsbSelectedColorG.Value.ToString();
 
-            if (Int32.TryParse(txtSelectedColorG.Text, out int iColorG))
+            if (int.TryParse(txtSelectedColorG.Text, out int iColorG))
             {
                 if (iColorG >= 0 && iColorG <= 255)
                     hsbSelectedColorG.Value = iColorG;
@@ -2324,7 +2324,7 @@ namespace KimeraCS
 
             string oldSelColB = hsbSelectedColorB.Value.ToString();
 
-            if (Int32.TryParse(txtSelectedColorB.Text, out int iColorB))
+            if (int.TryParse(txtSelectedColorB.Text, out int iColorB))
             {
                 if (iColorB >= 0 && iColorB <= 255)
                     hsbSelectedColorB.Value = iColorB;
@@ -2340,7 +2340,7 @@ namespace KimeraCS
 
             string oldThreshold = hsbThresholdSlider.Value.ToString();
 
-            if (Int32.TryParse(txtThresholdSlider.Text, out int iLocalThreshold))
+            if (int.TryParse(txtThresholdSlider.Text, out int iLocalThreshold))
             {
                 if (iLocalThreshold >= 0 && iLocalThreshold <= 255)
                     hsbThresholdSlider.Value = iLocalThreshold;

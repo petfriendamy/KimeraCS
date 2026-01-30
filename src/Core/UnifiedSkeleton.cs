@@ -12,7 +12,6 @@ namespace KimeraCS.Core
     using static FF7PModel;
     using static FF7TEXTexture;
     using static GLRenderer;
-    using static KimeraCS.Core.FF7BattleAnimation;
     using static Utils;
 
     /// <summary>
@@ -184,7 +183,9 @@ namespace KimeraCS.Core
             {
                 foreach (var pm in bb.Models)
                 {
-                    Models.Add(new UnifiedBoneModel(pm));
+                    var model = new UnifiedBoneModel(pm);
+                    model.ResourceFile = pm.fileName;
+                    Models.Add(model);
                 }
             }
         }

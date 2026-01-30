@@ -2969,7 +2969,7 @@ namespace KimeraCS
                 // Process input if the user clicked OK.
                 if (saveFile.ShowDialog() == DialogResult.OK)
                 {
-                    if (bLoaded && skeleton != null)
+                    if (bLoaded)
                     {
                         isExport = IsValidExport(saveFile.FileName);
 
@@ -2981,47 +2981,50 @@ namespace KimeraCS
                             case ModelType.HRCSkeleton:
                             case ModelType.AASkeleton:
                             case ModelType.MagicSkeleton:
-                                if (isExport)
+                                if (skeleton != null)
                                 {
-                                    if (!(modelType == ModelType.AASkeleton && skeleton.IsBattleLocation))
+                                    if (isExport)
                                     {
-                                        if (MessageBox.Show("The skeleton will be exported with the currently selected animation.",
-                                        "Information", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
-                                            return;
+                                        if (!(modelType == ModelType.AASkeleton && skeleton.IsBattleLocation))
+                                        {
+                                            if (MessageBox.Show("The skeleton will be exported with the currently selected animation.",
+                                            "Information", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
+                                                return;
+                                        }
                                     }
-                                }
-                                // Prepare Path
-                                strGlobalPathSaveSkeletonFolder = (Path.GetDirectoryName(saveFile.FileName) ?? string.Empty);
-                                saveFile.FileName = strGlobalPathSaveSkeletonFolder + "\\" + Path.GetFileName(saveFile.FileName).ToUpper();
-                                strGlobalPathSaveAsSkeletonFolder = strGlobalPathSaveSkeletonFolder;
+                                    // Prepare Path
+                                    strGlobalPathSaveSkeletonFolder = (Path.GetDirectoryName(saveFile.FileName) ?? string.Empty);
+                                    saveFile.FileName = strGlobalPathSaveSkeletonFolder + "\\" + Path.GetFileName(saveFile.FileName).ToUpper();
+                                    strGlobalPathSaveAsSkeletonFolder = strGlobalPathSaveSkeletonFolder;
 
-                                // We have a different process for RSD Resource
-                                if (IsRSDResource)
-                                {
-                                    // We save the RSD Resource.
-                                    var bone = skeleton.Bones[0].ToFieldBone();
-                                    iSaveResult = WriteFullRSDResource(bone, saveFile.FileName, strGlobalPathSaveSkeletonFolder);
-                                }
-                                else
-                                {
-                                    // We save the Skeleton.
-                                    bool mergeBones = false;
-                                    if (modelType == ModelType.HRCSkeleton)
+                                    // We have a different process for RSD Resource
+                                    if (IsRSDResource)
                                     {
-                                        mergeBones = (MessageBox.Show("Merge multi PModels bones in a single file?", "Confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes);
+                                        // We save the RSD Resource.
+                                        var bone = skeleton.Bones[0].ToFieldBone();
+                                        iSaveResult = WriteFullRSDResource(bone, saveFile.FileName, strGlobalPathSaveSkeletonFolder);
                                     }
-                                    iSaveResult = WriteSkeleton(saveFile.FileName, mergeBones, isExport);
-                                }
-                                if (iSaveResult == 1)
-                                {
-                                    MessageBox.Show(modelTypeStr + " " + Path.GetFileName(saveFile.FileName).ToUpper() + " saved.",
-                                                    "Information");
-                                }
-                                else
-                                {
-                                    MessageBox.Show("Error saving " + modelTypeStr + " " + Path.GetFileName(saveFile.FileName).ToUpper() + ".",
-                                                    "Error");
-                                    return;
+                                    else
+                                    {
+                                        // We save the Skeleton.
+                                        bool mergeBones = false;
+                                        if (modelType == ModelType.HRCSkeleton)
+                                        {
+                                            mergeBones = (MessageBox.Show("Merge multi PModels bones in a single file?", "Confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes);
+                                        }
+                                        iSaveResult = WriteSkeleton(saveFile.FileName, mergeBones, isExport);
+                                    }
+                                    if (iSaveResult == 1)
+                                    {
+                                        MessageBox.Show(modelTypeStr + " " + Path.GetFileName(saveFile.FileName).ToUpper() + " saved.",
+                                                        "Information");
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show("Error saving " + modelTypeStr + " " + Path.GetFileName(saveFile.FileName).ToUpper() + ".",
+                                                        "Error");
+                                        return;
+                                    }
                                 }
                                 break;
 

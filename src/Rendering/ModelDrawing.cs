@@ -623,31 +623,33 @@ namespace KimeraCS.Rendering
                                             DrawUnifiedWeapon(skeleton, weaponFrame, ctx.Animation.WeaponAnimationIndex,
                                                 battleTexIds, ctx.Options.EnableDisplayLists, ctx.Options);
                                         }
+                                    }
 
-                                        if (ctx.Options.ShowLastFrameGhost && !skeleton.IsBattleLocation && modelData.AnimationPack != null)
+                                    if (ctx.Options.ShowLastFrameGhost && !skeleton.IsBattleLocation && modelData.AnimationPack != null)
+                                    {
+                                        GL.ColorMask(true, true, false, true);
+                                        int ghostFrameIndex = ctx.Animation.CurrentFrame == 0
+                                            ? modelData.AnimationPack.SkeletonAnimations[ctx.Animation.AnimationIndex].FrameCount - 1
+                                            : ctx.Animation.CurrentFrame - 1;
+                                        var ghostFrame = GetCurrentFrame(ctx.Animation.AnimationIndex, ghostFrameIndex);
+                                        if (ghostFrame != null)
                                         {
-                                            GL.ColorMask(true, true, false, true);
-                                            int ghostFrameIndex = ctx.Animation.CurrentFrame == 0
-                                                ? modelData.AnimationPack.SkeletonAnimations[ctx.Animation.AnimationIndex].FrameCount - 1
-                                                : ctx.Animation.CurrentFrame - 1;
-                                            var ghostFrame = GetCurrentFrame(ctx.Animation.AnimationIndex, ghostFrameIndex);
-                                            if (ghostFrame != null)
-                                            {
-                                                DrawUnifiedSkeleton(skeleton, ghostFrame, battleTexIds, ctx.Options.EnableDisplayLists, ctx.Options);
-                                                GL.ColorMask(true, true, true, true);
-                                            }
+                                            DrawUnifiedSkeleton(skeleton, ghostFrame, battleTexIds, ctx.Options.EnableDisplayLists, ctx.Options);
+                                            GL.ColorMask(true, true, true, true);
                                         }
+                                    }
 
-                                        GL.Disable(EnableCap.Lighting);
+                                    GL.Disable(EnableCap.Lighting);
 
-                                        if (ctx.Options.ShowBones)
-                                        {
-                                            GL.Disable(EnableCap.DepthTest);
-                                            SkeletonRenderer.RenderSkeletonBones(skeleton, currentFrame,
-                                                0, 1, 0, 1, 0, 0);
-                                            GL.Enable(EnableCap.DepthTest);
-                                        }
+                                    if (ctx.Options.ShowBones)
+                                    {
+                                        GL.Disable(EnableCap.DepthTest);
+                                        SkeletonRenderer.RenderSkeletonBones(skeleton, currentFrame,
+                                            0, 1, 0, 1, 0, 0);
+                                        GL.Enable(EnableCap.DepthTest);
+                                    }
 
+                                    {
                                         var selectWeaponFrame = GetCurrentWeaponFrame(ctx.Animation.AnimationIndex, ctx.Animation.CurrentFrame);
                                         skeleton.SelectBoneAndModel(currentFrame,
                                             ctx.Selection.SelectedBone, ctx.Selection.SelectedBonePiece,
